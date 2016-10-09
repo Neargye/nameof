@@ -3,7 +3,7 @@
 #define nameof(name) template_nameof((name), #name)
 
 template <typename T>
-const char* template_nameof(T test, const char* name)
+const char* template_nameof(const T& validate_type, const char* name)
 {
     return name;
 }
