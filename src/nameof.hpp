@@ -43,9 +43,13 @@ inline constexpr const char* template_nameof(const char* name, const size_t leng
 #define NAMEOF(x) #x
 
 // Used to obtain the string name of a variable.
-#define NAMEOF_VARIABLE(variable) template_nameof_variable<decltype(variable)>(#variable, sizeof(#variable) / sizeof(char) - 1)
+#define NAMEOF_VARIABLE(variable) template_nameof_variable(variable, #variable, sizeof(#variable) / sizeof(char) - 1)
 template <typename T>
-inline constexpr const char* template_nameof_variable(const char* name, const size_t length) { return template_nameof(name, length); }
+inline constexpr const char* template_nameof_variable(const T&  variable, const char* name, const size_t length) { return template_nameof(name, length); }
+template <typename T>
+inline constexpr const char* template_nameof_variable(const T* const variable, const char* name, const size_t length) { return template_nameof(name, length); }
+template <typename T>
+inline constexpr const char* template_nameof_variable(T&& variable, const char* name, const size_t length) { return template_nameof(name, length); }
 #define NAMEOF_VAR(var) NAMEOF_VARIABLE(var)
 
 // Used to obtain the string name of a type.
