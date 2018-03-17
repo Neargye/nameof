@@ -31,43 +31,40 @@ struct SomeStruct {
   void SomeMethod() { std::cout << "No called!" << std::endl; }
 };
 
-struct Long
-{
-  struct LongLong
-  {
-    int LongLongLongField;
+struct Long {
+  struct LL {
+    int LLLField;
   };
-  LongLong LongLongField;
+  LL LLField;
 };
 
 int someVar = 0;
 
 int main() {
   SomeStruct someVar{1};
-  Long otherVar{};
+  Long otherVar{2};
+  int innValue{3};
   SomeStruct* ptrVar = &someVar;
 
-  constexpr auto a = NAMEOF_VAR(someVar.SomeField);
-  constexpr auto b = NAMEOF_VAR((&someVar)->SomeField);
-  constexpr auto c = NAMEOF_VAR(someVar);
-  constexpr auto d = NAMEOF_VAR(::someVar);
-  constexpr auto e = NAMEOF_VAR(&SomeStruct::SomeMethod);
-  constexpr auto f = NAMEOF_FUN(someVar.SomeMethod());
-  constexpr auto g = NAMEOF_TYPE(SomeStruct);
-  constexpr auto h = NAMEOF_VAR(otherVar.LongLongField.LongLongLongField);
-  constexpr auto i = NAMEOF_VAR(&someVar);
-  constexpr auto j = NAMEOF_VAR(*ptrVar);
-  constexpr auto k = NAMEOF_TYPE(Long::LongLong);
+  constexpr auto constexpr_work_fine = NAMEOF_VAR(innValue);
+  std::cout << constexpr_work_fine << std::endl;
 
-  std::cout << a << std::endl;  // SomeField
-  std::cout << b << std::endl;  // SomeField
-  std::cout << c << std::endl;  // someVar
-  std::cout << d << std::endl;  // someVar
-  std::cout << e << std::endl;  // SomeMethod
-  std::cout << f << std::endl;  // SomeMethod()
-  std::cout << g << std::endl;  // SomeStruct
-  std::cout << h << std::endl;  // LongLongLongField
-  std::cout << i << std::endl;  // someVar
-  std::cout << j << std::endl;  // ptrVar
-  std::cout << k << std::endl;  // LongLong
+  std::cout << NAMEOF_TYPE(int[]) << std::endl; // int[]
+  std::cout << NAMEOF_TYPE(SomeStruct) << std::endl; // SomeStruct
+  std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // LL
+
+  std::cout << NAMEOF_FUN(someVar.SomeMethod()) << std::endl; // SomeMethod()
+
+  std::cout << NAMEOF_VAR(someVar) << std::endl; // someVar
+  std::cout << NAMEOF_VAR(someVar.SomeField) << std::endl; // SomeField
+  std::cout << NAMEOF_VAR((&someVar)->SomeField) << std::endl; // SomeField
+  std::cout << NAMEOF_VAR(::someVar) << std::endl; // someVar
+  std::cout << NAMEOF_VAR(&SomeStruct::SomeMethod) << std::endl; // SomeMethod
+  std::cout << NAMEOF_VAR(otherVar.LLField.LLLField) << std::endl; // LLLField
+  std::cout << NAMEOF_VAR(&someVar) << std::endl; // someVar
+  std::cout << NAMEOF_VAR(*ptrVar) << std::endl; // ptrVar
+  std::cout << NAMEOF_VAR(+innValue) << std::endl; // innValue
+  std::cout << NAMEOF_VAR(-innValue) << std::endl; // innValue
+  std::cout << NAMEOF_VAR(~innValue) << std::endl; // innValue
+  std::cout << NAMEOF_VAR(!innValue) << std::endl; // unsignedValue
 }

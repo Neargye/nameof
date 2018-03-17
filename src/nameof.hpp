@@ -26,18 +26,21 @@
 
 inline constexpr const char* template_nameof(const char* name, const size_t length) {
   return length == 0 ? name
-                     : (name[length - 1] == '.' ||
+                     : (name[length - 1] == ' ' ||
+                        name[length - 1] == '.' ||
                         name[length - 1] == '>' ||
                         name[length - 1] == ':' ||
                         name[length - 1] == '&' ||
-                        name[length - 1] == '*')
+                        name[length - 1] == '*' ||
+                        name[length - 1] == '+' ||
+                        name[length - 1] == '~' ||
+                        name[length - 1] == '-' ||
+                        name[length - 1] == '!')
                            ? &name[length]
                            : template_nameof(name, length - 1);
 }
 
-#define NAMEOF(x) template_nameof(#x, sizeof(#x) / sizeof(char) - 1)
-
-#define RAW_NAMEOF(x) #x
+#define NAMEOF(x) #x
 
 // Used to obtain the string name of a variable.
 #define NAMEOF_VARIABLE(variable) template_nameof_variable<decltype(variable)>(#variable, sizeof(#variable) / sizeof(char) - 1)
