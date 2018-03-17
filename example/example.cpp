@@ -24,7 +24,6 @@
 // Simple Example.
 
 #include <iostream>
-#include <cstdint>
 #include <nameof.hpp>
 
 struct SomeStruct {

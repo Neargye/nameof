@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #pragma once
+#include <cstddef>
 
 inline constexpr const char* template_nameof_(const char* name, size_t length) {
   return length == 0 ? name
