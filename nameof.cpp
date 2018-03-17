@@ -22,16 +22,16 @@
   
 ///Used to obtain the string name of a variable.
 #define nameof_variable(name) template_nameof_variable(name, #name)
-template <typename T> const char* template_nameof_variable(const T& validate_type, const char* name) { return name; }
+template <typename T> constexpr const char* template_nameof_variable(const T& validate_type, const char* name) { return name; }
 
 ///Used to obtain the string name of a type.
 #define nameof_type(name) template_nameof_type<name>(#name)
-template <typename T> const char* template_nameof_type(const char* name) { return name; }
+template <typename T> constexpr const char* template_nameof_type(const char* name) { return name; }
 
 ///Used to obtain the string name of a function.
 
 #define nameof_function(name) template_nameof_function(#name); if (false) { (name) };
-const char* template_nameof_function(const char* name) { return name; }
+constexpr const char* template_nameof_function(const char* name) { return name; }
 
 //example
 int test = 0;
