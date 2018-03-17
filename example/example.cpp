@@ -38,6 +38,10 @@ struct Long {
   LL LLField;
 };
 
+struct TestRValue {
+  int Field;
+};
+
 int someVar = 0;
 
 int main() {
@@ -62,9 +66,11 @@ int main() {
   std::cout << NAMEOF_VAR(&SomeStruct::SomeMethod) << std::endl; // SomeMethod
   std::cout << NAMEOF_VAR(otherVar.LLField.LLLField) << std::endl; // LLLField
   std::cout << NAMEOF_VAR(&someVar) << std::endl; // someVar
+  std::cout << NAMEOF_VAR(ptrVar) << std::endl; // ptrVar
   std::cout << NAMEOF_VAR(*ptrVar) << std::endl; // ptrVar
   std::cout << NAMEOF_VAR(+innValue) << std::endl; // innValue
   std::cout << NAMEOF_VAR(-innValue) << std::endl; // innValue
   std::cout << NAMEOF_VAR(~innValue) << std::endl; // innValue
-  std::cout << NAMEOF_VAR(!innValue) << std::endl; // unsignedValue
+  std::cout << NAMEOF_VAR(!innValue) << std::endl; // innValue
+  std::cout << NAMEOF_VAR(TestRValue()) << std::endl;  // TestRValue()
 }

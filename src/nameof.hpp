@@ -26,16 +26,11 @@
 
 inline constexpr const char* template_nameof(const char* name, const size_t length) {
   return length == 0 ? name
-                     : (name[length - 1] == ' ' ||
-                        name[length - 1] == '.' ||
-                        name[length - 1] == '>' ||
-                        name[length - 1] == ':' ||
-                        name[length - 1] == '&' ||
-                        name[length - 1] == '*' ||
-                        name[length - 1] == '+' ||
-                        name[length - 1] == '~' ||
-                        name[length - 1] == '-' ||
-                        name[length - 1] == '!')
+                     : (name[length - 1] == ' ' || name[length - 1] == '.' ||
+                        name[length - 1] == '>' || name[length - 1] == ':' ||
+                        name[length - 1] == '&' || name[length - 1] == '*' ||
+                        name[length - 1] == '+' || name[length - 1] == '~' ||
+                        name[length - 1] == '-' || name[length - 1] == '!')
                            ? &name[length]
                            : template_nameof(name, length - 1);
 }
