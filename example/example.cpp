@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 // Simple Example.
+
 #include <iostream>
 #include <cstdint>
 #include <nameof.hpp>
@@ -36,13 +37,13 @@ int someVar = 0;
 int main() {
   SomeStruct someVar{1};
 
-  constexpr auto a = nameof_variable(someVar.SomeField);
-  constexpr auto b = nameof_variable((&someVar)->SomeField);
-  constexpr auto c = nameof_variable(someVar);
-  constexpr auto d = nameof_variable(::someVar);
-  constexpr auto e = nameof_variable(&SomeStruct::SomeMethod);
-  constexpr auto f = nameof_function(someVar.SomeMethod());
-  constexpr auto g = nameof_type(SomeStruct);
+  constexpr auto a = NAMEOF_VAR(someVar.SomeField);
+  constexpr auto b = NAMEOF_VAR((&someVar)->SomeField);
+  constexpr auto c = NAMEOF_VAR(someVar);
+  constexpr auto d = NAMEOF_VAR(::someVar);
+  constexpr auto e = NAMEOF_VAR(&SomeStruct::SomeMethod);
+  constexpr auto f = NAMEOF_FUN(someVar.SomeMethod());
+  constexpr auto g = NAMEOF_TYPE(SomeStruct);
 
   std::cout << a << std::endl;  // SomeField
   std::cout << b << std::endl;  // SomeField

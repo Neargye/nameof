@@ -31,14 +31,16 @@ inline constexpr const char* template_nameof_(const char* name, size_t length) {
 }
 
 // Used to obtain the string name of a variable.
-#define nameof_variable(variable) template_nameof_variable(variable, #variable, sizeof(#variable) / sizeof(char) - 1)
+#define NAMEOF_VARIABLE(variable) template_nameof_variable(variable, #variable, sizeof(#variable) / sizeof(char) - 1)
 template <typename T>
 inline constexpr const char* template_nameof_variable(const T& validate_type, const char* name, size_t length) { return template_nameof_(name, length); }
+#define NAMEOF_VAR(var) NAMEOF_VARIABLE(var)
 
 // Used to obtain the string name of a type.
-#define nameof_type(type) template_nameof_type<type>(#type)
+#define NAMEOF_TYPE(type) template_nameof_type<type>(#type)
 template <typename T> inline constexpr const char* template_nameof_type(const char* name) { return name; }
 
 // Used to obtain the string name of a function.
-#define nameof_function(function) template_nameof_function(#function, sizeof(#function) / sizeof(char) - 1); if (false) (void)(function);
+#define NAMEOF_FUNCTION(function) template_nameof_function(#function, sizeof(#function) / sizeof(char) - 1); if (false) (void)(function);
 inline constexpr const char* template_nameof_function(const char* name, size_t length) { return template_nameof_(name, length); }
+#define NAMEOF_FUN(fun) NAMEOF_FUNCTION(fun)
