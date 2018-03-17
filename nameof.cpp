@@ -27,6 +27,7 @@ inline constexpr const char* template_nameof_(const char* name, size_t length) {
                            ? &name[length]
                            : template_nameof_(name, length - 1);
 }
+
 // Used to obtain the string name of a variable.
 #define nameof_variable(variable) template_nameof_variable(variable, #variable, sizeof(#variable) / sizeof(char) - 1)
 template <typename T>
@@ -40,6 +41,7 @@ template <typename T> inline constexpr const char* template_nameof_type(const ch
 #define nameof_function(function) template_nameof_function(#function, sizeof(#function) / sizeof(char) - 1); if (false) (void)(function);
 inline constexpr const char* template_nameof_function(const char* name, size_t length) { return template_nameof_(name, length); }
 
+// Example.
 #include <iostream>
 
 struct SomeStruct {
