@@ -49,6 +49,7 @@ int main() {
   Long otherVar{2};
   int innValue{3};
   SomeStruct* ptrVar = &someVar;
+  SomeStruct** ptrptrVar = &ptrVar;
 
   constexpr auto constexpr_work_fine = NAMEOF_VAR(innValue);
   std::cout << constexpr_work_fine << std::endl;
@@ -68,6 +69,9 @@ int main() {
   std::cout << NAMEOF_VAR(&someVar) << std::endl; // someVar
   std::cout << NAMEOF_VAR(ptrVar) << std::endl; // ptrVar
   std::cout << NAMEOF_VAR(*ptrVar) << std::endl; // ptrVar
+  std::cout << NAMEOF_VAR(ptrptrVar) << std::endl; // ptrptrVar
+  std::cout << NAMEOF_VAR(*ptrptrVar) << std::endl; // ptrptrVar
+  std::cout << NAMEOF_VAR(**ptrptrVar) << std::endl; // ptrptrVar
   std::cout << NAMEOF_VAR(+innValue) << std::endl; // innValue
   std::cout << NAMEOF_VAR(-innValue) << std::endl; // innValue
   std::cout << NAMEOF_VAR(~innValue) << std::endl; // innValue
