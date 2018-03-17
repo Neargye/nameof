@@ -21,16 +21,16 @@
 //SOFTWARE.
   
 ///Used to obtain the string name of a variable.
-#define nameof_variable(name) template_nameof_variable(name, #name)
+#define nameof_variable(variable) template_nameof_variable(variable, #variable)
 template <typename T> constexpr const char* template_nameof_variable(const T& validate_type, const char* name) { return name; }
 
 ///Used to obtain the string name of a type.
-#define nameof_type(name) template_nameof_type<name>(#name)
+#define nameof_type(typ) template_nameof_type<typ>(#typ)
 template <typename T> constexpr const char* template_nameof_type(const char* name) { return name; }
 
 ///Used to obtain the string name of a function.
 
-#define nameof_function(name) template_nameof_function(#name); if (false) { (name) };
+#define nameof_function(function) template_nameof_function(#function); if (false) (void)(function);
 constexpr const char* template_nameof_function(const char* name) { return name; }
 
 //example
