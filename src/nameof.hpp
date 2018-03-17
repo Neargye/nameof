@@ -21,6 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#pragma once
+
 inline constexpr const char* template_nameof_(const char* name, size_t length) {
   return length == 0 ? name
                      : (name[length - 1] == '.' || name[length - 1] == '>' || name[length - 1] == ':')
@@ -40,33 +42,3 @@ template <typename T> inline constexpr const char* template_nameof_type(const ch
 // Used to obtain the string name of a function.
 #define nameof_function(function) template_nameof_function(#function, sizeof(#function) / sizeof(char) - 1); if (false) (void)(function);
 inline constexpr const char* template_nameof_function(const char* name, size_t length) { return template_nameof_(name, length); }
-
-// Example.
-#include <iostream>
-
-struct SomeStruct {
-  int SomeField;
-  void SomeMethod() { std::cout << "No called!" << std::endl; }
-};
-
-int someVar = 0;
-
-int main() {
-  SomeStruct someVar{1};
-
-  constexpr auto a = nameof_variable(someVar.SomeField);
-  constexpr auto b = nameof_variable((&someVar)->SomeField);
-  constexpr auto c = nameof_variable(someVar);
-  constexpr auto d = nameof_variable(::someVar);
-  constexpr auto e = nameof_variable(&SomeStruct::SomeMethod);
-  constexpr auto f = nameof_function(someVar.SomeMethod());
-  constexpr auto g = nameof_type(SomeStruct);
-
-  std::cout << a << std::endl;  // SomeField
-  std::cout << b << std::endl;  // SomeField
-  std::cout << c << std::endl;  // someVar
-  std::cout << d << std::endl;  // someVar
-  std::cout << e << std::endl;  // SomeMethod
-  std::cout << f << std::endl;  // SomeMethod()
-  std::cout << g << std::endl;  // SomeStruct
-}
