@@ -3,7 +3,7 @@
 C++ alternative to [nameOf](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator.
 
 Simple Example:
-```
+```cpp
 #include <iostream>
 #include <nameof.hpp>
 
