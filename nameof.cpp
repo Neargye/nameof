@@ -29,7 +29,8 @@ template <typename T> const char* template_nameof_variable(const T& validate_typ
 template <typename T> const char* template_nameof_type(const char* name) { return name; }
 
 ///Used to obtain the string name of a function.
-#define nameof_function(name) template_nameof_function(#name, sizeof(#name)/sizeof(char) - 1); (name);
+
+#define nameof_function(name) template_nameof_function(#name); if (false) { (name) };
 const char* template_nameof_function(const char* name) { return name; }
 
 //example
