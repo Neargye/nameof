@@ -24,7 +24,9 @@
 #pragma once
 #include <cstddef>
 
-inline constexpr const char* template_nameof(const char* name, const size_t length) {
+#define NAMEOF_RAW(x) (#x)
+
+inline constexpr const char* nameof(const char* name, const size_t length) {
   return length == 0 ? name
                      : (name[length - 1] == ' ' || name[length - 1] == '.' ||
                         name[length - 1] == '>' || name[length - 1] == ':' ||
@@ -32,28 +34,19 @@ inline constexpr const char* template_nameof(const char* name, const size_t leng
                         name[length - 1] == '+' || name[length - 1] == '~' ||
                         name[length - 1] == '-' || name[length - 1] == '!')
                            ? &name[length]
-                           : template_nameof(name, length - 1);
+                           : nameof(name, length - 1);
 }
 
-#define NAMEOF(x) #x
+// Used to obtain the string name of a variable, function and etc.
+template <typename T>
+inline constexpr const char* template_nameof(const char* name, const size_t length) { return nameof(name, length); }
+#define NAMEOF(name) template_nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
 
-// Used to obtain the string name of a variable.
-#define NAMEOF_VARIABLE(variable) template_nameof_variable(variable, #variable, sizeof(#variable) / sizeof(char) - 1)
-template <typename T>
-inline constexpr const char* template_nameof_variable(const T&  variable, const char* name, const size_t length) { return template_nameof(name, length); }
-template <typename T>
-inline constexpr const char* template_nameof_variable(const T* const variable, const char* name, const size_t length) { return template_nameof(name, length); }
-template <typename T>
-inline constexpr const char* template_nameof_variable(T&& variable, const char* name, const size_t length) { return template_nameof(name, length); }
+#define NAMEOF_VARIABLE(variable) NAMEOF(variable)
 #define NAMEOF_VAR(var) NAMEOF_VARIABLE(var)
 
-// Used to obtain the string name of a type.
-#define NAMEOF_TYPE(type) template_nameof_type<type>(#type, sizeof(#type) / sizeof(char) - 1)
-template <typename T>
-inline constexpr const char* template_nameof_type(const char* name, const size_t length) { return template_nameof(name, length); }
-
-// Used to obtain the string name of a function.
-#define NAMEOF_FUNCTION(function) template_nameof_function<decltype(function)>(#function, sizeof(#function) / sizeof(char) - 1)
-template <typename T>
-inline constexpr const char* template_nameof_function(const char* name, const size_t length) { return template_nameof(name, length); }
+#define NAMEOF_FUNCTION(function) NAMEOF(function)
 #define NAMEOF_FUN(fun) NAMEOF_FUNCTION(fun)
+
+// Used to obtain the string name of a type.
+#define NAMEOF_TYPE(type) template_nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
