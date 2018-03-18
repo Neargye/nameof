@@ -76,7 +76,7 @@ int main() {
   std::cout << NAMEOF(~intValue) << std::endl; // intValue
   std::cout << NAMEOF(!intValue) << std::endl; // intValue
   std::cout << NAMEOF(someVar.SomeMethod1()) << std::endl; // SomeMethod1()
-  std::cout << NAMEOF(&someVar.SomeMethod2) << std::endl; // SomeMethod2
+  std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
 
   std::cout << NAMEOF_TYPE(int[]) << std::endl; // int[]
@@ -84,7 +84,7 @@ int main() {
   std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // LL
 
   std::cout << NAMEOF_FUN(someVar.SomeMethod1()) << std::endl; // SomeMethod1()
-  std::cout << NAMEOF_FUN(&someVar.SomeMethod2) << std::endl; // SomeMethod2
+  std::cout << NAMEOF_FUN(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF_FUN(SomeMethod3) << std::endl; // SomeMethod3
 
   std::cout << NAMEOF_VAR(someVar.SomeField) << std::endl; // SomeField
