@@ -26,9 +26,11 @@
 #pragma once
 #include <cstddef>
 
+namespace nameof {
+
 #define NAMEOF_RAW(x) (#x)
 
-inline constexpr const char* nameof(const char* name, const size_t length) {
+inline constexpr const char* Nameof(const char* name, const size_t length) {
   return length == 0 ? name
                      : (name[length - 1] == ' ' || name[length - 1] == '.' ||
                         name[length - 1] == '>' || name[length - 1] == ':' ||
@@ -36,13 +38,13 @@ inline constexpr const char* nameof(const char* name, const size_t length) {
                         name[length - 1] == '+' || name[length - 1] == '~' ||
                         name[length - 1] == '-' || name[length - 1] == '!')
                            ? &name[length]
-                           : nameof(name, length - 1);
+                           : Nameof(name, length - 1);
 }
 
 // Used to obtain the string name of a variable, function and etc.
 template <typename T>
-inline constexpr const char* template_nameof(const char* name, const size_t length) { return nameof(name, length); }
-#define NAMEOF(name) template_nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
+inline constexpr const char* Nameof(const char* name, const size_t length) { return Nameof(name, length); }
+#define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
 
 #define NAMEOF_VARIABLE(variable) NAMEOF(variable)
 #define NAMEOF_VAR(var) NAMEOF_VARIABLE(var)
@@ -51,4 +53,6 @@ inline constexpr const char* template_nameof(const char* name, const size_t leng
 #define NAMEOF_FUN(fun) NAMEOF_FUNCTION(fun)
 
 // Used to obtain the string name of a type.
-#define NAMEOF_TYPE(type) template_nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
+#define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
+
+}
