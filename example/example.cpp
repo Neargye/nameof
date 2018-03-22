@@ -21,8 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Simple Example.
-
 #include <iostream>
 #include <nameof.hpp>
 
@@ -44,13 +42,9 @@ struct Long {
   LL LLField;
 };
 
-struct TestRValue {
-  int Field;
-};
-
 int someVar = 0;
 
-int main() {
+void TestCase1() {
   SomeStruct someVar{1};
   Long otherVar{2};
   int intValue{3};
@@ -90,6 +84,28 @@ int main() {
   std::cout << NAMEOF_VAR(someVar.SomeField) << std::endl; // SomeField
   std::cout << NAMEOF_VAR((&someVar)->SomeField) << std::endl; // SomeField
   std::cout << NAMEOF_VAR(::someVar) << std::endl; // someVar
+}
+
+void TestCase2() {
+  auto div = [](int x, int y) {
+    if (y == 0) {
+      throw std::invalid_argument(std::string(NAMEOF(y)).append(" should not be zero!"));
+    }
+    return x / y;
+  };
+
+  try {
+    int z = div(10, 0);
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl; // y should not be zero!
+  }
+
+}
+
+int main() {
+  TestCase1();
+
+  TestCase2();
 
   return 0;
 }
