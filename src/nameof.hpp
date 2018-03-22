@@ -1,5 +1,5 @@
 // nameof() c++ https://github.com/Terik23/Nameof
-// Vesion 0.1.1
+// Vesion 0.1.2
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright(c) 2016 - 2018 Terik23
@@ -28,9 +28,10 @@
 
 namespace nameof {
 
-#define NAMEOF_RAW(x) (#x)
+#define NAMEOF_RAW_(x) #x
+#define NAMEOF_RAW(x) NAMEOF_RAW_(x)
 
-inline constexpr const char* Nameof(const char* name, const size_t length) {
+constexpr const char* Nameof(const char* name, const size_t length) {
   return length == 0 ? name
                      : (name[length - 1] == ' ' || name[length - 1] == '.' ||
                         name[length - 1] == '>' || name[length - 1] == ':' ||
@@ -43,7 +44,7 @@ inline constexpr const char* Nameof(const char* name, const size_t length) {
 
 // Used to obtain the string name of a variable, function and etc.
 template <typename T>
-inline constexpr const char* Nameof(const char* name, const size_t length) { return Nameof(name, length); }
+constexpr const char* Nameof(const char* name, const size_t length) { return Nameof(name, length); }
 #define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
 
 #define NAMEOF_VARIABLE(variable) NAMEOF(variable)
