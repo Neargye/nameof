@@ -1,5 +1,5 @@
 // nameof() c++ https://github.com/Terik23/Nameof
-// Vesion 0.1.2
+// Vesion 0.1.3
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright(c) 2016 - 2018 Terik23
@@ -28,9 +28,7 @@
 
 namespace nameof {
 
-#define NAMEOF_RAW_(x) #x
-#define NAMEOF_RAW(x) NAMEOF_RAW_(x)
-
+template <typename T>
 constexpr const char* Nameof(const char* name, const size_t length) {
   return length == 0 ? name
                      : (name[length - 1] == ' ' || name[length - 1] == '.' ||
@@ -39,21 +37,32 @@ constexpr const char* Nameof(const char* name, const size_t length) {
                         name[length - 1] == '+' || name[length - 1] == '~' ||
                         name[length - 1] == '-' || name[length - 1] == '!')
                            ? &name[length]
-                           : Nameof(name, length - 1);
+                           : Nameof<T>(name, length - 1);
 }
 
+}
+
+#define NAMEOF_RAW_(x) #x
+#define NAMEOF_RAW(x) NAMEOF_RAW_(x)
+
 // Used to obtain the string name of a variable, function and etc.
-template <typename T>
-constexpr const char* Nameof(const char* name, const size_t length) { return Nameof(name, length); }
 #define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
 
+#define NAMEOF_FULL(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), 0)
+
 #define NAMEOF_VARIABLE(variable) NAMEOF(variable)
-#define NAMEOF_VAR(var) NAMEOF_VARIABLE(var)
+#define NAMEOF_VAR(var) NAMEOF(var)
+
+#define NAMEOF_VARIABLE_FULL(variable) NAMEOF_FULL(variable)
+#define NAMEOF_VAR_FULL(var) NAMEOF_FULL(var)
 
 #define NAMEOF_FUNCTION(function) NAMEOF(function)
-#define NAMEOF_FUN(fun) NAMEOF_FUNCTION(fun)
+#define NAMEOF_FUN(fun) NAMEOF(fun)
+
+#define NAMEOF_FUNCTION_FULL(function) NAMEOF_FULL(function)
+#define NAMEOF_FUN_FULL(fun) NAMEOF_FULL(fun)
 
 // Used to obtain the string name of a type.
 #define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
 
-}
+#define NAMEOF_TYPE_FULL(type) nameof::Nameof<type>(NAMEOF_RAW(type), 0)
