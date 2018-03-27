@@ -104,10 +104,16 @@ void TestCase2() {
   }
 }
 
+void TestCase3() {
+  std::cout << NAMEOF_FUNCTION(TestCase3) << " method entry" << std::endl; // TestCase3 method entry
+}
+
 int main() {
   TestCase1();
 
   TestCase2();
+
+  TestCase3();
 
   return 0;
 }
