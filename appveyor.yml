@@ -1,4 +1,4 @@
-version: "{branch}#{build}"
+version: "{branch} #{build}"
 
 branches:
   only:

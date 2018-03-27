@@ -12,7 +12,7 @@ Before, you had to use string literals to refer to definitions, which is brittle
 A nameof expression has this form:
 
 ```cpp
-std::cout << NAMEOF(person.Address.zip_code) << std::endl; // prints "zip_code"
+std::cout << NAMEOF(person.address.zip_code) << std::endl; // prints "zip_code"
 ```
 
 ## Features
