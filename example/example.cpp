@@ -21,8 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <iostream>
 #include <nameof.hpp>
+#include <iostream>
+#include <stdexcept>
 
 struct SomeStruct {
   int SomeField;

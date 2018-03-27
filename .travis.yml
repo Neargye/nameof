@@ -1,0 +1,22 @@
+dist: trusty
+sudo: required
+
+language: cpp
+
+os:
+  - linux
+  - osx
+
+compiler:
+  - g++
+  - clang++
+
+env:
+  - TARGET_CPU=amd64 BUILD_CONFIGURATION=Release
+
+script:
+  - mkdir build
+  - cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_CONFIGURATION -DTARGET_CPU=$TARGET_CPU
+  - cmake --build .
+  - ctest -V --output-on-failure -С $BUILD_CONFIGURATION

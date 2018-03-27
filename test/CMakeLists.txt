@@ -7,3 +7,5 @@ set(SRC
     ${CMAKE_SOURCE_DIR}/src/nameof.hpp)
 
 add_executable(${PROJECT_NAME}_test ${SRC})
+
+add_test(NAME ${PROJECT_NAME}_test COMMAND ${PROJECT_NAME}_test)
