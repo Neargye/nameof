@@ -49,6 +49,8 @@ struct Long {
 
 int someVar = 0;
 
+enum class Color { RED, GREEN, BLUE };
+
 TEST_CASE("NAMEOF") {
   SomeStruct someVar{1};
   Long otherVar{2};
@@ -63,6 +65,7 @@ TEST_CASE("NAMEOF") {
 
   SECTION("NAMEOF") {
     REQUIRE(std::strcmp(NAMEOF(someVar), "someVar") == 0);
+    REQUIRE(std::strcmp(NAMEOF(Color::RED), "RED") == 0);
     REQUIRE(std::strcmp(NAMEOF(someVar.SomeField), "SomeField") == 0);
     REQUIRE(std::strcmp(NAMEOF((&someVar)->SomeField), "SomeField") == 0);
     REQUIRE(std::strcmp(NAMEOF(::someVar), "someVar") == 0);

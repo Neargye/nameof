@@ -42,6 +42,13 @@ NAMEOF_VAR(someVar) -> "someVar"
 NAMEOF_VAR(someVar.SomeField) -> "SomeField"
 ```
 
+* Name of enum
+
+```cpp
+NAMEOF(SomeEnum::RED) -> "RED"
+NAMEOF(SomeEnum::GREEN) -> "GREEN"
+```
+
 * Name of type
 
 ```cpp
@@ -76,6 +83,22 @@ void f() {
 void f(char* s) {
   if (s == nullptr)
     throw std::invalid_argument(NAMEOF(s));
+}
+```
+
+* Serialization, for example json:
+
+```cpp
+void to_json(json& j, const person& p) {
+  j = json{{NAMEOF(p.name), p.name},
+           {NAMEOF(p.address), p.address},
+           {NAMEOF(p.age), p.age}};
+}
+
+void from_json(const json& j, person& p) {
+  p.name = j.at(NAMEOF(p.name));
+  p.address = j.at(NAMEOF(p.address));
+  p.age = j.at(NAMEOF(p.age));
 }
 ```
 

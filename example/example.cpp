@@ -45,6 +45,8 @@ struct Long {
 
 int someVar = 0;
 
+enum class Color { RED, GREEN, BLUE };
+
 void TestCase1() {
   SomeStruct someVar{1};
   Long otherVar{2};
@@ -56,6 +58,7 @@ void TestCase1() {
   std::cout << constexpr_work_fine << std::endl; // intValue
 
   std::cout << NAMEOF(someVar) << std::endl; // someVar
+  std::cout << NAMEOF(Color::RED) << std::endl; // RED
   std::cout << NAMEOF(someVar.SomeField) << std::endl; // SomeField
   std::cout << NAMEOF((&someVar)->SomeField) << std::endl; // SomeField
   std::cout << NAMEOF(::someVar) << std::endl; // someVar
