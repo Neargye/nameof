@@ -102,7 +102,8 @@ void TestCase2() {
   };
 
   try {
-    int z = div(10, 0);
+    const int z = div(10, 0);
+    std::cout << z << std::endl;
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl; // y should not be zero!
   }
