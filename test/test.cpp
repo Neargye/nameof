@@ -52,11 +52,11 @@ int someVar = 0;
 enum class Color { RED, GREEN, BLUE };
 
 TEST_CASE("NAMEOF") {
-  SomeStruct someVar{1};
-  Long otherVar{2};
-  int intValue{3};
-  SomeStruct* ptrVar = &someVar;
-  SomeStruct** ptrptrVar = &ptrVar;
+  SomeStruct someVar;
+  Long otherVar;
+  int intValue;
+  SomeStruct* ptrVar;
+  SomeStruct** ptrptrVar;
 
   SECTION("constexpr") {
     constexpr auto constexpr_work_fine = NAMEOF(intValue);
@@ -107,11 +107,11 @@ TEST_CASE("NAMEOF_TYPE") {
 }
 
 TEST_CASE("NAMEOF_FULL") {
-  SomeStruct someVar{1};
-  Long otherVar{2};
-  int intValue{3};
-  SomeStruct* ptrVar = &someVar;
-  SomeStruct** ptrptrVar = &ptrVar;
+  SomeStruct someVar;
+  Long otherVar;
+  int intValue;
+  SomeStruct* ptrVar;
+  SomeStruct** ptrptrVar;
 
   SECTION("NAMEOF_FULL") {
     REQUIRE(std::strcmp(NAMEOF_FULL(someVar), "someVar") == 0);

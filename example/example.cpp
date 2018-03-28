@@ -48,11 +48,11 @@ int someVar = 0;
 enum class Color { RED, GREEN, BLUE };
 
 void TestCase1() {
-  SomeStruct someVar{1};
-  Long otherVar{2};
-  int intValue{3};
-  SomeStruct* ptrVar = &someVar;
-  SomeStruct** ptrptrVar = &ptrVar;
+  SomeStruct someVar;
+  Long otherVar;
+  int intValue;
+  SomeStruct* ptrVar;
+  SomeStruct** ptrptrVar;
 
   constexpr auto constexpr_work_fine = NAMEOF(intValue);
   std::cout << constexpr_work_fine << std::endl; // intValue
