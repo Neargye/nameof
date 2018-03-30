@@ -86,15 +86,15 @@ TEST_CASE("NAMEOF") {
   }
 
   SECTION("NAMEOF_VARIABLE") {
-    REQUIRE(std::strcmp(NAMEOF_VARIABLE(someVar.SomeField), "SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF_VARIABLE((&someVar)->SomeField), "SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF_VARIABLE(::someVar), "someVar") == 0);
+    REQUIRE(std::strcmp(NAMEOF(someVar.SomeField), "SomeField") == 0);
+    REQUIRE(std::strcmp(NAMEOF((&someVar)->SomeField), "SomeField") == 0);
+    REQUIRE(std::strcmp(NAMEOF(::someVar), "someVar") == 0);
   }
 
   SECTION("NAMEOF_FUNCTION") {
-    REQUIRE(std::strcmp(NAMEOF_FUNCTION(someVar.SomeMethod1()), "SomeMethod1()") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FUNCTION(&SomeStruct::SomeMethod2), "SomeMethod2") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FUNCTION(SomeMethod3), "SomeMethod3") == 0);
+    REQUIRE(std::strcmp(NAMEOF(someVar.SomeMethod1()), "SomeMethod1()") == 0);
+    REQUIRE(std::strcmp(NAMEOF(&SomeStruct::SomeMethod2), "SomeMethod2") == 0);
+    REQUIRE(std::strcmp(NAMEOF(SomeMethod3), "SomeMethod3") == 0);
   }
 }
 
@@ -135,15 +135,15 @@ TEST_CASE("NAMEOF_FULL") {
   }
 
   SECTION("NAMEOF_VARIABLE_FULL") {
-    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(someVar.SomeField), "someVar.SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL((&someVar)->SomeField), "(&someVar)->SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(::someVar), "::someVar") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(someVar.SomeField), "someVar.SomeField") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL((&someVar)->SomeField), "(&someVar)->SomeField") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(::someVar), "::someVar") == 0);
   }
 
   SECTION("NAMEOF_FUNCTION_FULL") {
-    REQUIRE(std::strcmp(NAMEOF_FUNCTION_FULL(someVar.SomeMethod1()), "someVar.SomeMethod1()") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FUNCTION_FULL(&SomeStruct::SomeMethod2), "&SomeStruct::SomeMethod2") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FUNCTION_FULL(SomeMethod3), "SomeMethod3") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(someVar.SomeMethod1()), "someVar.SomeMethod1()") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(&SomeStruct::SomeMethod2), "&SomeStruct::SomeMethod2") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(SomeMethod3), "SomeMethod3") == 0);
   }
 }
 

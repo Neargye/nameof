@@ -49,18 +49,6 @@ constexpr const char* Nameof(const char* name, const size_t length) {
 
 #define NAMEOF_FULL(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), 0)
 
-#define NAMEOF_VARIABLE(variable) NAMEOF(variable)
-#define NAMEOF_VAR(var) NAMEOF(var)
-
-#define NAMEOF_VARIABLE_FULL(variable) NAMEOF_FULL(variable)
-#define NAMEOF_VAR_FULL(var) NAMEOF_FULL(var)
-
-#define NAMEOF_FUNCTION(function) NAMEOF(function)
-#define NAMEOF_FUN(fun) NAMEOF(fun)
-
-#define NAMEOF_FUNCTION_FULL(function) NAMEOF_FULL(function)
-#define NAMEOF_FUN_FULL(fun) NAMEOF_FULL(fun)
-
 // Used to obtain the string name of a type.
 #define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
 

@@ -81,14 +81,6 @@ void TestCase1() {
   std::cout << NAMEOF_TYPE(SomeStruct) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // LL
 
-  std::cout << NAMEOF_FUN(someVar.SomeMethod1()) << std::endl; // SomeMethod1()
-  std::cout << NAMEOF_FUN(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
-  std::cout << NAMEOF_FUN(SomeMethod3) << std::endl; // SomeMethod3
-
-  std::cout << NAMEOF_VAR(someVar.SomeField) << std::endl; // SomeField
-  std::cout << NAMEOF_VAR((&someVar)->SomeField) << std::endl; // SomeField
-  std::cout << NAMEOF_VAR(::someVar) << std::endl; // someVar
-
   std::cout << NAMEOF_FULL(someVar.SomeField) << std::endl; // someVar.SomeField
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
 }
@@ -110,7 +102,7 @@ void TestCase2() {
 }
 
 void TestCase3() {
-  std::cout << NAMEOF_FUNCTION(TestCase3) << " method entry" << std::endl; // TestCase3 method entry
+  std::cout << NAMEOF(TestCase3) << " method entry" << std::endl; // TestCase3 method entry
 }
 
 int main() {

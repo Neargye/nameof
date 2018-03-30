@@ -34,12 +34,6 @@ NAMEOF(someVar.SomeField) -> "SomeField"
 
 NAMEOF(someVar.SomeMethod1()) -> "SomeMethod1()"
 NAMEOF(&SomeStruct::SomeMethod2) -> "SomeMethod2"
-
-NAMEOF_FUNCTION(someVar.SomeMethod1()) -> "SomeMethod1()"
-NAMEOF_FUNCTION(&SomeStruct::SomeMethod2) -> "SomeMethod2"
-
-NAMEOF_VAR(someVar) -> "someVar"
-NAMEOF_VAR(someVar.SomeField) -> "SomeField"
 ```
 
 * Name of enum
@@ -54,7 +48,6 @@ NAMEOF(SomeEnum::GREEN) -> "GREEN"
 ```cpp
 NAMEOF_TYPE(int[]) -> "int[]"
 NAMEOF_TYPE(std::string) -> "string"
-NAMEOF_TYPE(std::stringgg) -> error namespace "std" has no member "stringgg"
 ```
 
 * Constexpr
