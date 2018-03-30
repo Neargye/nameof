@@ -27,8 +27,8 @@
 
 namespace nameof {
 
-template <typename T>
-constexpr const char* Nameof(const char* name, const size_t length) {
+template <typename T, size_t N>
+constexpr const char* Nameof(const char(&name)[N], const size_t length = N) {
   return length == 0 ? name
                      : (name[length - 1] == ' ' || name[length - 1] == '.' ||
                         name[length - 1] == '>' || name[length - 1] == ':' ||
@@ -45,11 +45,11 @@ constexpr const char* Nameof(const char* name, const size_t length) {
 #define NAMEOF_RAW(x) NAMEOF_RAW_(x)
 
 // Used to obtain the string name of a variable, function and etc.
-#define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
+#define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name))
 
 #define NAMEOF_FULL(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), 0)
 
 // Used to obtain the string name of a type.
-#define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
+#define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type))
 
 #define NAMEOF_TYPE_FULL(type) nameof::Nameof<type>(NAMEOF_RAW(type), 0)
