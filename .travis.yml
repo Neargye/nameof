@@ -19,3 +19,6 @@ script:
   - cmake .. -DCMAKE_BUILD_TYPE=$CONFIGURATION -DTARGET_CPU=$PLATFORM
   - cmake --build . --config $CONFIGURATION
   - ctest -V --output-on-failure -С $CONFIGURATION
+
+notifications:
+  email: false
