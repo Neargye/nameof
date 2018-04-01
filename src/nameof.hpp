@@ -2,7 +2,7 @@
 // Vesion 0.1.3
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-// Copyright (c) 2016 - 2018 Terik23 <neargye@gmail.com>.
+// Copyright (c) 2016 - 2018 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
