@@ -1,15 +1,15 @@
 # nameof() c++11
 
-C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator.
+C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in C#.
 
  Linux/OSX | Windows
 -----------|---------
 [![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)|[![Build status](https://ci.appveyor.com/api/projects/status/yq5fk0d9mwljbubt/branch/master?svg=true)](https://ci.appveyor.com/project/Neargye/nameof/branch/master)
 
-Used to obtain the simple name of a variable, type, function.
+Used to obtain the simple name of a variable, type, member or function and etc.
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
 
-A nameof expression has this form:
+A nameof macros expression has this form:
 
 ```cpp
 std::cout << NAMEOF(person.address.zip_code) << std::endl; // prints "zip_code"
@@ -26,7 +26,7 @@ std::cout << NAMEOF(person.address.zip_code) << std::endl; // prints "zip_code"
 
 ## [Example & Key Use Cases](https://github.com/Neargye/nameof/blob/master/example/example.cpp)
 
-* Name of a variable, function and etc
+* Name of a variable, member or function and etc
 
 ```cpp
 NAMEOF(someVar) -> "someVar"
