@@ -31,6 +31,7 @@ inline constexpr bool IsLexeme(const char s) {
   return (s == '.' || s == '>' || s == ':' || s == '&' || s == '*' ||
           s == '+' || s == '~' || s == '-' || s == '!');
 }
+
 template <typename T, std::size_t N>
 inline constexpr const char* Nameof(const char(&name)[N], const std::size_t length = N) {
   return length == 0 ? name : IsLexeme(name[length - 1])
