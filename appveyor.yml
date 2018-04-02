@@ -31,6 +31,7 @@ init:
 
 before_build:
   - ps: 'Write-Host "Running $env:BUILDER with $env:GENERATOR" -ForegroundColor Magenta'
+  - if not exist build mkdir build
   - cd build
   - if "%BUILDER%"=="CMake" cmake.exe .. -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DTARGET_CPU=$PLATFORM
 
