@@ -51,6 +51,30 @@ int someVar = 0;
 
 enum class Color { RED, GREEN, BLUE };
 
+TEST_CASE("constexpr") {
+  SomeStruct someVar;
+
+  SECTION("NAMEOF") {
+    constexpr auto n = NAMEOF(someVar);
+    REQUIRE(std::strcmp(n, "someVar") == 0);
+  }
+
+  SECTION("NAMEOF_FULL") {
+    constexpr auto n = NAMEOF_FULL((&someVar)->SomeField);
+    REQUIRE(std::strcmp(n, "(&someVar)->SomeField") == 0);
+  }
+
+  SECTION("NAMEOF_TYPE") {
+    constexpr auto n = NAMEOF_TYPE(std::string);
+    REQUIRE(std::strcmp(n, "string") == 0);
+  }
+
+  SECTION("NAMEOF_TYPE_FULL") {
+    constexpr auto n = NAMEOF_TYPE_FULL(std::string);
+    REQUIRE(std::strcmp(n, "std::string") == 0);
+  }
+}
+
 TEST_CASE("NAMEOF") {
   SomeStruct someVar;
   Long otherVar;
@@ -58,14 +82,8 @@ TEST_CASE("NAMEOF") {
   SomeStruct* ptrVar;
   SomeStruct** ptrptrVar;
 
-  SECTION("constexpr") {
-    constexpr auto constexpr_work_fine = NAMEOF(intValue);
-    REQUIRE(std::strcmp(constexpr_work_fine, "intValue") == 0);
-  }
-
-  SECTION("NAMEOF") {
+  SECTION("NAMEOF_VARIABLE") {
     REQUIRE(std::strcmp(NAMEOF(someVar), "someVar") == 0);
-    REQUIRE(std::strcmp(NAMEOF(Color::RED), "RED") == 0);
     REQUIRE(std::strcmp(NAMEOF(someVar.SomeField), "SomeField") == 0);
     REQUIRE(std::strcmp(NAMEOF((&someVar)->SomeField), "SomeField") == 0);
     REQUIRE(std::strcmp(NAMEOF(::someVar), "someVar") == 0);
@@ -80,15 +98,6 @@ TEST_CASE("NAMEOF") {
     REQUIRE(std::strcmp(NAMEOF(-intValue), "intValue") == 0);
     REQUIRE(std::strcmp(NAMEOF(~intValue), "intValue") == 0);
     REQUIRE(std::strcmp(NAMEOF(!intValue), "intValue") == 0);
-    REQUIRE(std::strcmp(NAMEOF(someVar.SomeMethod1()), "SomeMethod1()") == 0);
-    REQUIRE(std::strcmp(NAMEOF(&SomeStruct::SomeMethod2), "SomeMethod2") == 0);
-    REQUIRE(std::strcmp(NAMEOF(SomeMethod3), "SomeMethod3") == 0);
-  }
-
-  SECTION("NAMEOF_VARIABLE") {
-    REQUIRE(std::strcmp(NAMEOF(someVar.SomeField), "SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF((&someVar)->SomeField), "SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF(::someVar), "someVar") == 0);
   }
 
   SECTION("NAMEOF_FUNCTION") {
@@ -96,14 +105,21 @@ TEST_CASE("NAMEOF") {
     REQUIRE(std::strcmp(NAMEOF(&SomeStruct::SomeMethod2), "SomeMethod2") == 0);
     REQUIRE(std::strcmp(NAMEOF(SomeMethod3), "SomeMethod3") == 0);
   }
+
+  SECTION("NAMEOF_ENUM") {
+    REQUIRE(std::strcmp(NAMEOF(Color::RED), "RED") == 0);
+    REQUIRE(std::strcmp(NAMEOF(Color::BLUE), "BLUE") == 0);
+  }
 }
 
 TEST_CASE("NAMEOF_TYPE") {
-  REQUIRE(std::strcmp(NAMEOF_TYPE(int[]), "int[]") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE(int), "int") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE(std::string), "string") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE(SomeStruct), "SomeStruct") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE(Long::LL), "LL") == 0);
+  SECTION("NAMEOF_TYPE") {
+    REQUIRE(std::strcmp(NAMEOF_TYPE(int[]), "int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(int), "int") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(std::string), "string") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(SomeStruct), "SomeStruct") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(Long::LL), "LL") == 0);
+  }
 }
 
 TEST_CASE("NAMEOF_FULL") {
@@ -113,7 +129,7 @@ TEST_CASE("NAMEOF_FULL") {
   SomeStruct* ptrVar;
   SomeStruct** ptrptrVar;
 
-  SECTION("NAMEOF_FULL") {
+  SECTION("NAMEOF_VARIABLE_FULL") {
     REQUIRE(std::strcmp(NAMEOF_FULL(someVar), "someVar") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(someVar.SomeField), "someVar.SomeField") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL((&someVar)->SomeField), "(&someVar)->SomeField") == 0);
@@ -129,28 +145,27 @@ TEST_CASE("NAMEOF_FULL") {
     REQUIRE(std::strcmp(NAMEOF_FULL(-intValue), "-intValue") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(~intValue), "~intValue") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(!intValue), "!intValue") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(someVar.SomeMethod1()), "someVar.SomeMethod1()") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(&SomeStruct::SomeMethod2), "&SomeStruct::SomeMethod2") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(SomeMethod3), "SomeMethod3") == 0);
-  }
 
-  SECTION("NAMEOF_VARIABLE_FULL") {
-    REQUIRE(std::strcmp(NAMEOF_FULL(someVar.SomeField), "someVar.SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL((&someVar)->SomeField), "(&someVar)->SomeField") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(::someVar), "::someVar") == 0);
   }
-
   SECTION("NAMEOF_FUNCTION_FULL") {
     REQUIRE(std::strcmp(NAMEOF_FULL(someVar.SomeMethod1()), "someVar.SomeMethod1()") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(&SomeStruct::SomeMethod2), "&SomeStruct::SomeMethod2") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(SomeMethod3), "SomeMethod3") == 0);
   }
+
+  SECTION("NAMEOF_ENUM_FULL") {
+    REQUIRE(std::strcmp(NAMEOF_FULL(Color::RED), "Color::RED") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(Color::BLUE), "Color::BLUE") == 0);
+  }
+
 }
 
 TEST_CASE("NAMEOF_TYPE_FULL") {
-  REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int[]), "int[]") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int), "int") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(std::string), "std::string") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(SomeStruct), "SomeStruct") == 0);
-  REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(Long::LL), "Long::LL") == 0);
+  SECTION("NAMEOF_TYPE_FULL") {
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int[]), "int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int), "int") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(std::string), "std::string") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(SomeStruct), "SomeStruct") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(Long::LL), "Long::LL") == 0);
+  }
 }
