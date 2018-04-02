@@ -1,5 +1,5 @@
 // nameof() c++11 https://github.com/Terik23/nameof
-// Vesion 0.1.3
+// Vesion 0.1.4
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2016 - 2018 Daniil Goncharov <neargye@gmail.com>.
@@ -28,7 +28,7 @@
 namespace nameof {
 
 template <typename T, size_t N>
-constexpr const char* Nameof(const char(&name)[N], const size_t length = N) {
+inline constexpr const char* Nameof(const char(&name)[N], const size_t length = N) {
   return length == 0 ? name
                      : (name[length - 1] == ' ' || name[length - 1] == '.' ||
                         name[length - 1] == '>' || name[length - 1] == ':' ||
