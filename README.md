@@ -4,7 +4,7 @@ C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/langu
 
  Linux/OSX | Windows
 -----------|---------
-[![Build Status](https://travis-ci.org/Terik23/nameof.svg?branch=master)](https://travis-ci.org/Terik23/nameof)|[![Build status](https://ci.appveyor.com/api/projects/status/4tyl8lee10ckw10k/branch/master?svg=true)](https://ci.appveyor.com/project/Terik23/nameof/branch/master)
+[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)|[![Build status](https://ci.appveyor.com/api/projects/status/yq5fk0d9mwljbubt/branch/master?svg=true)](https://ci.appveyor.com/project/Neargye/nameof/branch/master)
 
 Used to obtain the simple name of a variable, type, function.
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
@@ -24,7 +24,7 @@ std::cout << NAMEOF(person.address.zip_code) << std::endl; // prints "zip_code"
 * Compile-time
 * Compilation check
 
-## [Example & Key Use Cases](https://github.com/Terik23/nameof/blob/master/example/example.cpp)
+## [Example & Key Use Cases](https://github.com/Neargye/nameof/blob/master/example/example.cpp)
 
 * Name of a variable, function and etc
 

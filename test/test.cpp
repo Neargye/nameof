@@ -116,6 +116,7 @@ TEST_CASE("NAMEOF_TYPE") {
   SECTION("NAMEOF_TYPE") {
     REQUIRE(std::strcmp(NAMEOF_TYPE(int[]), "int[]") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE(int), "int") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(const volatile int[]), "const volatile int[]") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE(std::string), "string") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE(SomeStruct), "SomeStruct") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE(Long::LL), "LL") == 0);
@@ -163,7 +164,8 @@ TEST_CASE("NAMEOF_FULL") {
 TEST_CASE("NAMEOF_TYPE_FULL") {
   SECTION("NAMEOF_TYPE_FULL") {
     REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int[]), "int[]") == 0);
-    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int), "int") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(const volatile int[]), "const volatile int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(Long::LL), "Long::LL") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(std::string), "std::string") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(SomeStruct), "SomeStruct") == 0);
     REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(Long::LL), "Long::LL") == 0);

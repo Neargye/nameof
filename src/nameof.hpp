@@ -1,8 +1,8 @@
-// nameof() c++11 https://github.com/Terik23/nameof
-// Vesion 0.1.4
+// nameof() c++11 https://github.com/Neargye/nameof
+// Vesion 0.1.5
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-// Copyright (c) 2016 - 2018 Daniil Goncharov <neargye@gmail.com>.
+// Copyright (c) 2016, 2018 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
@@ -27,16 +27,15 @@
 
 namespace nameof {
 
-template <typename T, size_t N>
-inline constexpr const char* Nameof(const char(&name)[N], const size_t length = N) {
-  return length == 0 ? name
-                     : (name[length - 1] == ' ' || name[length - 1] == '.' ||
-                        name[length - 1] == '>' || name[length - 1] == ':' ||
-                        name[length - 1] == '&' || name[length - 1] == '*' ||
-                        name[length - 1] == '+' || name[length - 1] == '~' ||
-                        name[length - 1] == '-' || name[length - 1] == '!')
-                           ? &name[length]
-                           : Nameof<T>(name, length - 1);
+inline constexpr bool IsLexeme(const char s) {
+  return (s == '.' || s == '>' || s == ':' || s == '&' || s == '*' ||
+          s == '+' || s == '~' || s == '-' || s == '!');
+}
+template <typename T, std::size_t N>
+inline constexpr const char* Nameof(const char(&name)[N], const std::size_t length = N) {
+  return length == 0 ? name : IsLexeme(name[length - 1])
+                                  ? &name[length]
+                                  : Nameof<T>(name, length - 1);
 }
 
 }

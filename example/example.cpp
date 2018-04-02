@@ -80,6 +80,7 @@ void TestCase1() {
   std::cout << NAMEOF_TYPE(int[]) << std::endl; // int[]
   std::cout << NAMEOF_TYPE(SomeStruct) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // LL
+  std::cout << NAMEOF_TYPE(const volatile int) << std::endl; // const volatile int
 
   std::cout << NAMEOF_FULL(someVar.SomeField) << std::endl; // someVar.SomeField
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
