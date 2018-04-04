@@ -1,6 +1,6 @@
 # nameof() c++11
 
-C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in C#.
+C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in [C#](https://en.wikipedia.org/wiki/C_Sharp_(programming_language)).
 
 Branch | Linux/OSX | Windows
 -------|-----------|---------

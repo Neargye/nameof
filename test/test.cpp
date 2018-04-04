@@ -188,5 +188,4 @@ TEST_CASE("NAMEOF_FULL") {
     REQUIRE(std::strcmp(NAMEOF_FULL(Color::RED), "Color::RED") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(Color::BLUE), "Color::BLUE") == 0);
   }
-
 }
