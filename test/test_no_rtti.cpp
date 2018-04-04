@@ -1,4 +1,4 @@
-// nameof() c++11 test
+// nameof() c++11 test_no_rtti
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2018 Daniil Goncharov <neargye@gmail.com>.
@@ -20,6 +20,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#if defined(__GXX_RTTI) || defined(_CPPRTTI) || defined(__RTTI) || defined(__INTEL_RTTI__)
+#error "need test case with no rtti"
+#endif
 
 #define CATCH_CONFIG_MAIN
 
@@ -65,12 +69,12 @@ TEST_CASE("constexpr") {
   }
 
   SECTION("NAMEOF_TYPE") {
-    constexpr auto n = NAMEOF(std::string);
+    constexpr auto n = NAMEOF_TYPE(std::string);
     REQUIRE(std::strcmp(n, "string") == 0);
   }
 
   SECTION("NAMEOF_TYPE_FULL") {
-    constexpr auto n = NAMEOF_FULL(std::string);
+    constexpr auto n = NAMEOF_TYPE_FULL(std::string);
     REQUIRE(std::strcmp(n, "std::string") == 0);
   }
 }
@@ -101,23 +105,12 @@ TEST_CASE("NAMEOF") {
   }
 
   SECTION("NAMEOF_TYPE") {
-    REQUIRE(std::strcmp(NAMEOF(int[]), "int[]") == 0);
-    REQUIRE(std::strcmp(NAMEOF(int[]), NAMEOF_TYPE(int[])) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF(int), "int") == 0);
-    REQUIRE(std::strcmp(NAMEOF(int), NAMEOF_TYPE(int)) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF(const volatile int[]), "const volatile int[]") == 0);
-    REQUIRE(std::strcmp(NAMEOF(const volatile int[]), NAMEOF_TYPE(const volatile int[])) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF(std::string), "string") == 0);
-    REQUIRE(std::strcmp(NAMEOF(std::string), NAMEOF_TYPE(std::string)) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF(SomeStruct), "SomeStruct") == 0);
-    REQUIRE(std::strcmp(NAMEOF(SomeStruct), NAMEOF_TYPE(SomeStruct)) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF(Long::LL), "LL") == 0);
-    REQUIRE(std::strcmp(NAMEOF(Long::LL), NAMEOF_TYPE(Long::LL)) == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(int[]), "int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(int), "int") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(const volatile int[]), "const volatile int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(std::string), "string") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(SomeStruct), "SomeStruct") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE(Long::LL), "LL") == 0);
   }
 
   SECTION("NAMEOF_FUNCTION") {
@@ -159,23 +152,11 @@ TEST_CASE("NAMEOF_FULL") {
   }
 
   SECTION("NAMEOF_TYPE_FULL") {
-    REQUIRE(std::strcmp(NAMEOF_FULL(int[]), "int[]") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(int[]), NAMEOF_TYPE_FULL(int[])) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF_FULL(int), "int") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(int), NAMEOF_TYPE_FULL(int)) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF_FULL(const volatile int[]), "const volatile int[]") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(const volatile int[]), NAMEOF_TYPE_FULL(const volatile int[])) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF_FULL(std::string), "std::string") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(std::string), NAMEOF_TYPE_FULL(std::string)) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF_FULL(SomeStruct), "SomeStruct") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(SomeStruct), NAMEOF_TYPE_FULL(SomeStruct)) == 0);
-
-    REQUIRE(std::strcmp(NAMEOF_FULL(Long::LL), "Long::LL") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(Long::LL), NAMEOF_TYPE_FULL(Long::LL)) == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(int[]), "int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(const volatile int[]), "const volatile int[]") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(std::string), "std::string") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(SomeStruct), "SomeStruct") == 0);
+    REQUIRE(std::strcmp(NAMEOF_TYPE_FULL(Long::LL), "Long::LL") == 0);
   }
 
   SECTION("NAMEOF_FUNCTION_FULL") {

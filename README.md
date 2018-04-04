@@ -46,8 +46,8 @@ NAMEOF(SomeEnum::GREEN) -> "GREEN"
 * Name of type
 
 ```cpp
-NAMEOF_TYPE(int[]) -> "int[]"
-NAMEOF_TYPE(std::string) -> "string"
+NAMEOF(int[]) -> "int[]"
+NAMEOF(std::string) -> "string"
 ```
 
 * Constexpr
@@ -66,7 +66,7 @@ void f() {
   int i;
   NAMEOF(i); -> "i"
   NAMEOF(iii); -> error identifier "iii" is undefined
-  NAMEOF_TYPE(std::stringgg) -> error namespace "std" has no member "stringgg"
+  NAMEOF(std::stringgg) -> error namespace "std" has no member "stringgg"
 }
 ```
 
@@ -105,11 +105,20 @@ void f() {
 
 ## Remarks
 
-If you need to get the fully-qualified name, you can use the NAMEOF_FULL(). For example:
+* If you need to get the fully-qualified name, you could use the NAMEOF_FULL().
 
 ```cpp
 NAMEOF_FULL(someVar.SomeField) -> "someVar.SomeField"
 NAMEOF_FULL(&SomeStruct::SomeMethod2) -> "&SomeStruct::SomeMethod2"
+NAMEOF_FULL(std::string) -> "std::string"
+```
+
+* If compiling without RTTI, you need use the NAMEOF_TYPE() for get name of type.
+
+```cpp
+NAMEOF_TYPE(int[]) -> "int[]"
+NAMEOF_TYPE(std::string) -> "string"
+
 NAMEOF_TYPE_FULL(std::string) -> "std::string"
 ```
 

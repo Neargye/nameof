@@ -1,5 +1,5 @@
 // nameof() c++11 https://github.com/Neargye/nameof
-// Vesion 0.1.5
+// Vesion 0.2.0
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2016, 2018 Daniil Goncharov <neargye@gmail.com>.
@@ -25,31 +25,61 @@
 #pragma once
 #include <cstddef>
 
-namespace nameof {
+#define NAMEOF_RAW_(x) #x
+#define NAMEOF_RAW(x) NAMEOF_RAW_(x)
 
+namespace nameof {
+namespace detail {
 inline constexpr bool IsLexeme(const char s) {
   return (s == '.' || s == '>' || s == ':' || s == '&' || s == '*' ||
           s == '+' || s == '~' || s == '-' || s == '!');
 }
+}
+}
 
-template <typename T, std::size_t N>
-inline constexpr const char* Nameof(const char(&name)[N], const std::size_t length = N) {
-  return length == 0 ? name : IsLexeme(name[length - 1])
+#if defined(__GXX_RTTI) || defined(_CPPRTTI) || defined(__RTTI) || defined(__INTEL_RTTI__)
+
+#include <typeinfo>
+
+namespace nameof {
+inline constexpr const char* Nameof(const char* name, const std::size_t length, const std::size_t) {
+  return length == 0 ? name : detail::IsLexeme(name[length - 1])
+                                  ? &name[length]
+                                  : Nameof(name, length - 1, 0);
+}
+}
+
+// Used to obtain the string name of a variable, type, function and etc.
+#define NAMEOF(name) nameof::Nameof(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1, sizeof(typeid(name)))
+
+// Used to obtain the string full name of a variable, type, function and etc.
+#define NAMEOF_FULL(name) nameof::Nameof(NAMEOF_RAW(name), 0, sizeof(typeid(name)))
+
+// Alias
+#define NAMEOF_TYPE(type) NAMEOF(type)
+#define NAMEOF_TYPE_FULL(type) NAMEOF_FULL(type)
+
+#else
+
+namespace nameof {
+template <typename T>
+inline constexpr const char* Nameof(const char* name, const std::size_t length) {
+  return length == 0 ? name : detail::IsLexeme(name[length - 1])
                                   ? &name[length]
                                   : Nameof<T>(name, length - 1);
 }
-
 }
 
-#define NAMEOF_RAW_(x) #x
-#define NAMEOF_RAW(x) NAMEOF_RAW_(x)
-
 // Used to obtain the string name of a variable, function and etc.
-#define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name))
+#define NAMEOF(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1)
 
+// Used to obtain the string full name of a variable, function and etc.
 #define NAMEOF_FULL(name) nameof::Nameof<decltype(name)>(NAMEOF_RAW(name), 0)
 
 // Used to obtain the string name of a type.
-#define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type))
+#define NAMEOF_TYPE(type) nameof::Nameof<type>(NAMEOF_RAW(type), sizeof(NAMEOF_RAW(type)) / sizeof(char) - 1)
 
+// Used to obtain the string full name of a type.
 #define NAMEOF_TYPE_FULL(type) nameof::Nameof<type>(NAMEOF_RAW(type), 0)
+
+#endif

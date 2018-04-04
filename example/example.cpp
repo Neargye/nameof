@@ -77,10 +77,18 @@ void TestCase1() {
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
 
+  std::cout << NAMEOF(int[]) << std::endl; // int[]
+  std::cout << NAMEOF(SomeStruct) << std::endl; // SomeStruct
+  std::cout << NAMEOF(Long::LL) << std::endl; // LL
+  std::cout << NAMEOF(volatile const int) << std::endl; // const volatile int
+
+  // If no RTTI, use NAMEOF_TYPE().
+#if !defined(__GXX_RTTI) && !defined(_CPPRTTI) && !defined(__RTTI) && !defined(__INTEL_RTTI__)
   std::cout << NAMEOF_TYPE(int[]) << std::endl; // int[]
   std::cout << NAMEOF_TYPE(SomeStruct) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // LL
-  std::cout << NAMEOF_TYPE(const volatile int) << std::endl; // const volatile int
+  std::cout << NAMEOF_TYPE(volatile const int) << std::endl; // const volatile int
+#endif
 
   std::cout << NAMEOF_FULL(someVar.SomeField) << std::endl; // someVar.SomeField
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
