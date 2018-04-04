@@ -113,7 +113,7 @@ NAMEOF_FULL(&SomeStruct::SomeMethod2) -> "&SomeStruct::SomeMethod2"
 NAMEOF_FULL(std::string) -> "std::string"
 ```
 
-* If compiling without RTTI, you need use the NAMEOF_TYPE() for get name of type.
+* By default nameof work with RTTI, but can work without RTTI. If compiling without RTTI, you need use the NAMEOF_TYPE() for get name of type.
 
 ```cpp
 NAMEOF_TYPE(int[]) -> "int[]"
