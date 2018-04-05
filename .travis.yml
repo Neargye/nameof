@@ -16,6 +16,7 @@ env:
   - PLATFORM=x64 CONFIGURATION=Release
 
 script:
+  - rm -rf build
   - mkdir -p build
   - cd build
   - cmake .. -DCMAKE_BUILD_TYPE=$CONFIGURATION -DTARGET_CPU=$PLATFORM
