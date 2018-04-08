@@ -14,6 +14,7 @@ compiler:
 
 env:
   - PLATFORM=x64 CONFIGURATION=Release
+  - PLATFORM=x64 CONFIGURATION=Debug
 
 script:
   - rm -rf build
