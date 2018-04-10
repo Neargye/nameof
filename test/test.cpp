@@ -53,12 +53,12 @@ struct Long {
   LL ll;
 };
 
-int somevar = 0;
+int somevar;
 
 enum class Color { RED, GREEN, BLUE };
 
 TEST_CASE("constexpr") {
-  SomeStruct somevar{};
+  SomeStruct somevar;
 
   SECTION("NAMEOF") {
     constexpr auto n = NAMEOF(somevar);
@@ -82,8 +82,8 @@ TEST_CASE("constexpr") {
 }
 
 TEST_CASE("NAMEOF") {
-  SomeStruct somevar{};
-  Long othervar{};
+  SomeStruct somevar;
+  Long othervar;
   int intvar;
   SomeStruct* ptrvar;
   SomeStruct** ptrptrvar;
@@ -122,7 +122,6 @@ TEST_CASE("NAMEOF") {
   }
 
   SECTION("NAMEOF_FUNCTION") {
-    REQUIRE(std::strcmp(NAMEOF(somevar.SomeMethod1), "SomeMethod1") == 0);
     REQUIRE(std::strcmp(NAMEOF(&SomeStruct::SomeMethod2), "SomeMethod2") == 0);
     REQUIRE(std::strcmp(NAMEOF(SomeMethod3), "SomeMethod3") == 0);
   }
@@ -134,8 +133,8 @@ TEST_CASE("NAMEOF") {
 }
 
 TEST_CASE("NAMEOF_FULL") {
-  SomeStruct somevar{};
-  Long othervar{};
+  SomeStruct somevar;
+  Long othervar;
   int intvar;
   SomeStruct* ptrvar;
   SomeStruct** ptrptrvar;
@@ -175,7 +174,6 @@ TEST_CASE("NAMEOF_FULL") {
   }
 
   SECTION("NAMEOF_FUNCTION_FULL") {
-    REQUIRE(std::strcmp(NAMEOF_FULL(somevar.SomeMethod1), "somevar.SomeMethod1") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(&SomeStruct::SomeMethod2), "&SomeStruct::SomeMethod2") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(SomeMethod3), "SomeMethod3") == 0);
   }

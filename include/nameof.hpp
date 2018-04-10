@@ -54,7 +54,7 @@ inline constexpr const char* Nameof(const char* name, const std::size_t length, 
 #define NAMEOF(name) ::nameof::Nameof(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1, sizeof(void(*)(__typeof__(name))))
 
 // Used to obtain the string full name of a variable, type, function and etc.
-#define NAMEOF_FULL(name) ::nameof::Nameof(NAMEOF_RAW(name), sizeof(void(*)(__typeof__(name))))
+#define NAMEOF_FULL(name) ::nameof::Nameof(NAMEOF_RAW(name), 0, sizeof(void(*)(__typeof__(name))))
 
 #else
 

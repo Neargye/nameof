@@ -48,13 +48,13 @@ struct Long {
   LL ll;
 };
 
-int somevar = 0;
+int somevar;
 
 enum class Color { RED, GREEN, BLUE };
 
 void TestCase1() {
-  SomeStruct somevar{};
-  Long othervar{};
+  SomeStruct somevar;
+  Long othervar;
   int intvar;
   SomeStruct* ptrvar;
   SomeStruct** ptrptrvar;
@@ -84,7 +84,6 @@ void TestCase1() {
   std::cout << NAMEOF(~intvar) << std::endl; // intvar
   std::cout << NAMEOF(!intvar) << std::endl; // intvar
 
-  std::cout << NAMEOF(somevar.SomeMethod1) << std::endl; // SomeMethod1
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
 
