@@ -26,11 +26,16 @@
 #include <stdexcept>
 
 struct SomeStruct {
-  int SomeField;
-  void SomeMethod1() { std::cout << "No called!" << std::endl; }
-  int SomeMethod2() {
+  int somefield;
+
+  void SomeMethod1(const int i) {
+    somefield = i;
     std::cout << "No called!" << std::endl;
-    return 1;
+  }
+
+  int SomeMethod2() const {
+    std::cout << "No called!" << std::endl;
+    return somefield;
   }
 };
 
@@ -38,42 +43,48 @@ void SomeMethod3() { std::cout << "No called!" << std::endl; }
 
 struct Long {
   struct LL {
-    int LLLField;
+    int field;
   };
-  LL LLField;
+  LL ll;
 };
 
-int someVar = 0;
+int somevar = 0;
 
 enum class Color { RED, GREEN, BLUE };
 
 void TestCase1() {
-  SomeStruct someVar;
-  Long otherVar;
-  int intValue;
-  SomeStruct* ptrVar;
-  SomeStruct** ptrptrVar;
+  SomeStruct somevar{};
+  Long othervar{};
+  int intvar;
+  SomeStruct* ptrvar;
+  SomeStruct** ptrptrvar;
 
-  constexpr auto constexpr_work_fine = NAMEOF(intValue);
-  std::cout << constexpr_work_fine << std::endl; // intValue
+  constexpr auto constexpr_work_fine = NAMEOF(intvar);
+  std::cout << constexpr_work_fine << std::endl; // intvar
 
-  std::cout << NAMEOF(someVar) << std::endl; // someVar
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
-  std::cout << NAMEOF(someVar.SomeField) << std::endl; // SomeField
-  std::cout << NAMEOF((&someVar)->SomeField) << std::endl; // SomeField
-  std::cout << NAMEOF(::someVar) << std::endl; // someVar
-  std::cout << NAMEOF(otherVar.LLField.LLLField) << std::endl; // LLLField
-  std::cout << NAMEOF(&someVar) << std::endl; // someVar
-  std::cout << NAMEOF(ptrVar) << std::endl; // ptrVar
-  std::cout << NAMEOF(*ptrVar) << std::endl; // ptrVar
-  std::cout << NAMEOF(ptrptrVar) << std::endl; // ptrptrVar
-  std::cout << NAMEOF(*ptrptrVar) << std::endl; // ptrptrVar
-  std::cout << NAMEOF(**ptrptrVar) << std::endl; // ptrptrVar
-  std::cout << NAMEOF(+intValue) << std::endl; // intValue
-  std::cout << NAMEOF(-intValue) << std::endl; // intValue
-  std::cout << NAMEOF(~intValue) << std::endl; // intValue
-  std::cout << NAMEOF(!intValue) << std::endl; // intValue
-  std::cout << NAMEOF(someVar.SomeMethod1()) << std::endl; // SomeMethod1()
+
+  std::cout << NAMEOF(somevar) << std::endl; // somevar
+  std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
+  std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
+  std::cout << NAMEOF(::somevar) << std::endl; // somevar
+  std::cout << NAMEOF(&somevar) << std::endl; // somevar
+
+  std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
+
+  std::cout << NAMEOF(ptrvar) << std::endl; // ptrvar
+  std::cout << NAMEOF(*ptrvar) << std::endl; // ptrvar
+
+  std::cout << NAMEOF(ptrptrvar) << std::endl; // ptrptrvar
+  std::cout << NAMEOF(*ptrptrvar) << std::endl; // ptrptrvar
+  std::cout << NAMEOF(**ptrptrvar) << std::endl; // ptrptrvar
+
+  std::cout << NAMEOF(+intvar) << std::endl; // intvar
+  std::cout << NAMEOF(-intvar) << std::endl; // intvar
+  std::cout << NAMEOF(~intvar) << std::endl; // intvar
+  std::cout << NAMEOF(!intvar) << std::endl; // intvar
+
+  std::cout << NAMEOF(somevar.SomeMethod1) << std::endl; // SomeMethod1
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
 
@@ -82,20 +93,14 @@ void TestCase1() {
   std::cout << NAMEOF(Long::LL) << std::endl; // LL
   std::cout << NAMEOF(volatile const int) << std::endl; // const volatile int
 
-  // If no RTTI, use NAMEOF_TYPE().
-#if !defined(__GXX_RTTI) && !defined(_CPPRTTI) && !defined(__RTTI) && !defined(__INTEL_RTTI__)
-  std::cout << NAMEOF_TYPE(int[]) << std::endl; // int[]
-  std::cout << NAMEOF_TYPE(SomeStruct) << std::endl; // SomeStruct
-  std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // LL
-  std::cout << NAMEOF_TYPE(volatile const int) << std::endl; // const volatile int
-#endif
-
-  std::cout << NAMEOF_FULL(someVar.SomeField) << std::endl; // someVar.SomeField
+  std::cout << NAMEOF_FULL(somevar.somefield) << std::endl; // somevar.somefield
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
+  std::cout << NAMEOF_FULL(Long::LL) << std::endl; // Long::LL
+  std::cout << NAMEOF_FULL(std::string) << std::endl; // std::string
 }
 
 void TestCase2() {
-  auto div = [](int x, int y) {
+  const auto div = [](int x, int y) {
     if (y == 0) {
       throw std::invalid_argument(std::string(NAMEOF(y)).append(" should not be zero!"));
     }
