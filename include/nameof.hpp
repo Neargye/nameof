@@ -1,5 +1,11 @@
-// nameof() c++11 https://github.com/Neargye/nameof
-// Vesion 0.2.1
+//  _   _                             __    _____
+// | \ | |                           / _|  / ____|_     _
+// |  \| | __ _ _ __ ___   ___  ___ | |_  | |   _| |_ _| |_
+// | . ` |/ _` | '_ ` _ \ / _ \/ _ \|  _| | |  |_   _|_   _|
+// | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
+// |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
+// https://github.com/Neargye/nameof
+// vesion 0.2.2
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2016, 2018 Daniil Goncharov <neargye@gmail.com>.

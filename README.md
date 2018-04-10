@@ -1,10 +1,19 @@
-# nameof() c++11
+# nameof c++
 
-C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in [C#](https://en.wikipedia.org/wiki/C_Sharp_(programming_language)).
+```text
+ _   _                             __    _____
+| \ | |                           / _|  / ____|_     _
+|  \| | __ _ _ __ ___   ___  ___ | |_  | |   _| |_ _| |_
+| . ` |/ _` | '_ ` _ \ / _ \/ _ \|  _| | |  |_   _|_   _|
+| |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
+|_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
+```
 
 Branch | Linux/OSX | Windows
 -------|-----------|---------
 master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)|[![Build status](https://ci.appveyor.com/api/projects/status/yq5fk0d9mwljbubt/branch/master?svg=true)](https://ci.appveyor.com/project/Neargye/nameof/branch/master)
+
+C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in [C#](https://en.wikipedia.org/wiki/C_Sharp_(programming_language)).
 
 Used to obtain the simple name of a variable, type, member or function and etc.
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
@@ -24,16 +33,14 @@ std::cout << NAMEOF(person.address.zip_code) << std::endl; // prints "zip_code"
 * Compile-time
 * Compilation check
 
-## [Example & Key Use Cases](https://github.com/Neargye/nameof/blob/master/example/example.cpp)
+## [Example](example/example.cpp) & Key Use Cases
 
 * Name of a variable, member or function and etc
 
 ```cpp
-NAMEOF(someVar) -> "someVar"
-NAMEOF(someVar.SomeField) -> "SomeField"
-
-NAMEOF(someVar.SomeMethod1()) -> "SomeMethod1()"
-NAMEOF(&SomeStruct::SomeMethod2) -> "SomeMethod2"
+NAMEOF(somevar) -> "somevar"
+NAMEOF(somevar.somefield) -> "somefield"
+NAMEOF(SomeMethod) -> "SomeMethod"
 ```
 
 * Name of enum
@@ -46,28 +53,20 @@ NAMEOF(SomeEnum::GREEN) -> "GREEN"
 * Name of type
 
 ```cpp
-NAMEOF(int[]) -> "int[]"
+NAMEOF(volatile const int) -> "volatile const int int"
 NAMEOF(std::string) -> "string"
 ```
 
 * Constexpr
 
 ```cpp
-void f() {
-  int i;
-  constexpr auto constexpr_work_fine = NAMEOF(i); -> "i"
-}
+constexpr auto constexpr_work_fine = NAMEOF(somevar); -> "somevar"
 ```
 
 * Compilation check
 
 ```cpp
-void f() {
-  int i;
-  NAMEOF(i); -> "i"
-  NAMEOF(iii); -> error identifier "iii" is undefined
-  NAMEOF(std::stringgg) -> error namespace "std" has no member "stringgg"
-}
+NAMEOF(std::stringgg) -> error namespace "std" has no member "stringgg"
 ```
 
 * Validate parameters
@@ -105,21 +104,24 @@ void f() {
 
 ## Remarks
 
+* The argument expression identifies a code definition, but it is never evaluated.
+
 * If you need to get the fully-qualified name, you could use the NAMEOF_FULL().
 
 ```cpp
-NAMEOF_FULL(someVar.SomeField) -> "someVar.SomeField"
-NAMEOF_FULL(&SomeStruct::SomeMethod2) -> "&SomeStruct::SomeMethod2"
+NAMEOF_FULL(somevar.somefield) -> "somevar.somefield"
+NAMEOF_FULL(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
 NAMEOF_FULL(std::string) -> "std::string"
 ```
 
-* By default nameof work with RTTI, but can work without RTTI. If compiling without RTTI, you need use the NAMEOF_TYPE() for get name of type.
+## Integration
 
-```cpp
-NAMEOF_TYPE(int[]) -> "int[]"
-NAMEOF_TYPE(std::string) -> "string"
+You need to add the single required file [nameof.hpp](include/nameof.hpp), and the necessary switches to enable C++11.
 
-NAMEOF_TYPE_FULL(std::string) -> "std::string"
-```
+## Compiler compatibility
 
-## License MIT
+* GCC
+* Clang
+* MSVC
+
+## Licensed under the [MIT License](LICENSE)

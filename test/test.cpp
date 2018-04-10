@@ -1,4 +1,4 @@
-// nameof() c++11 test
+// nameof c++ test
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2018 Daniil Goncharov <neargye@gmail.com>.
@@ -91,9 +91,10 @@ TEST_CASE("NAMEOF") {
   SECTION("NAMEOF_VARIABLE") {
     REQUIRE(std::strcmp(NAMEOF(somevar), "somevar") == 0);
     REQUIRE(std::strcmp(NAMEOF(&somevar), "somevar") == 0);
+    REQUIRE(std::strcmp(NAMEOF(::somevar), "somevar") == 0);
+
     REQUIRE(std::strcmp(NAMEOF(somevar.somefield), "somefield") == 0);
     REQUIRE(std::strcmp(NAMEOF((&somevar)->somefield), "somefield") == 0);
-    REQUIRE(std::strcmp(NAMEOF(::somevar), "somevar") == 0);
 
     REQUIRE(std::strcmp(NAMEOF(othervar.ll.field), "field") == 0);
 

@@ -1,4 +1,4 @@
-// nameof() c++11 example
+// nameof c++ example
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2018 Daniil Goncharov <neargye@gmail.com>.
@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 #include <nameof.hpp>
+
 #include <iostream>
 #include <stdexcept>
 
@@ -65,10 +66,11 @@ void TestCase1() {
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
 
   std::cout << NAMEOF(somevar) << std::endl; // somevar
-  std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
-  std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
   std::cout << NAMEOF(::somevar) << std::endl; // somevar
   std::cout << NAMEOF(&somevar) << std::endl; // somevar
+
+  std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
+  std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
 
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
 
@@ -90,7 +92,7 @@ void TestCase1() {
   std::cout << NAMEOF(int[]) << std::endl; // int[]
   std::cout << NAMEOF(SomeStruct) << std::endl; // SomeStruct
   std::cout << NAMEOF(Long::LL) << std::endl; // LL
-  std::cout << NAMEOF(volatile const int) << std::endl; // const volatile int
+  std::cout << NAMEOF(volatile const int) << std::endl; // volatile const int
 
   std::cout << NAMEOF_FULL(somevar.somefield) << std::endl; // somevar.somefield
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
