@@ -11,6 +11,7 @@
 
 Branch | Linux/OSX | Windows
 -------|-----------|---------
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d2f8dca0a55146eb90503c4d5ed643bf)](https://app.codacy.com/app/Neargye/nameof?utm_source=github.com&utm_medium=referral&utm_content=Neargye/nameof&utm_campaign=badger)
 master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)|[![Build status](https://ci.appveyor.com/api/projects/status/yq5fk0d9mwljbubt/branch/master?svg=true)](https://ci.appveyor.com/project/Neargye/nameof/branch/master)
 
 C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in [C#](https://en.wikipedia.org/wiki/C_Sharp_(programming_language)).
