@@ -60,40 +60,44 @@ void TestCase1() {
   SomeStruct* ptrvar;
   SomeStruct** ptrptrvar;
 
+  // constexpr
   constexpr auto constexpr_work_fine = NAMEOF(intvar);
   std::cout << constexpr_work_fine << std::endl; // intvar
-
+  // enum
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
-
+  // variable
   std::cout << NAMEOF(somevar) << std::endl; // somevar
   std::cout << NAMEOF(::somevar) << std::endl; // somevar
   std::cout << NAMEOF(&somevar) << std::endl; // somevar
-
+  // member
   std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
   std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
-
+  // member
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
-
+  // variable
   std::cout << NAMEOF(ptrvar) << std::endl; // ptrvar
   std::cout << NAMEOF(*ptrvar) << std::endl; // ptrvar
-
+  // variable
   std::cout << NAMEOF(ptrptrvar) << std::endl; // ptrptrvar
   std::cout << NAMEOF(*ptrptrvar) << std::endl; // ptrptrvar
   std::cout << NAMEOF(**ptrptrvar) << std::endl; // ptrptrvar
-
+  // variable
   std::cout << NAMEOF(+intvar) << std::endl; // intvar
   std::cout << NAMEOF(-intvar) << std::endl; // intvar
   std::cout << NAMEOF(~intvar) << std::endl; // intvar
   std::cout << NAMEOF(!intvar) << std::endl; // intvar
-
+  // function
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
-
+  // type
   std::cout << NAMEOF(int[]) << std::endl; // int[]
   std::cout << NAMEOF(SomeStruct) << std::endl; // SomeStruct
   std::cout << NAMEOF(Long::LL) << std::endl; // LL
   std::cout << NAMEOF(volatile const int) << std::endl; // volatile const int
-
+  // macros
+  std::cout << NAMEOF(__LINE__) << std::endl; // __LINE__
+  std::cout << NAMEOF(__FILE__) << std::endl; // __FILE__
+  // full name
   std::cout << NAMEOF_FULL(somevar.somefield) << std::endl; // somevar.somefield
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
   std::cout << NAMEOF_FULL(Long::LL) << std::endl; // Long::LL
