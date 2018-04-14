@@ -15,7 +15,7 @@ master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)
 
 C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in [C#](https://en.wikipedia.org/wiki/C_Sharp_(programming_language)).
 
-Used to obtain the simple name of a variable, type, member or function and etc.
+Used to obtain the simple name of a variable, type, member, function, macros and etc.
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
 
 A nameof macros expression has this form:
@@ -55,6 +55,13 @@ NAMEOF(SomeEnum::GREEN) -> "GREEN"
 ```cpp
 NAMEOF(volatile const int) -> "volatile const int int"
 NAMEOF(std::string) -> "string"
+```
+
+* Name of macros
+
+```cpp
+NAMEOF(__LINE__) -> "__LINE__"
+NAMEOF(__FILE__) -> "__FILE__"
 ```
 
 * Constexpr
