@@ -73,6 +73,9 @@ TEST_CASE("constexpr") {
     // enum
     constexpr auto cx4 = NAMEOF(Color::RED);
     REQUIRE(std::strcmp(cx4, "RED") == 0);
+    // macros
+    constexpr auto cx5 = NAMEOF(__cplusplus);
+    REQUIRE(std::strcmp(cx5, "__cplusplus") == 0);
   }
 
   SECTION("NAMEOF_FULL") {
@@ -88,6 +91,9 @@ TEST_CASE("constexpr") {
     // enum
     constexpr auto cx4 = NAMEOF_FULL(Color::RED);
     REQUIRE(std::strcmp(cx4, "Color::RED") == 0);
+    // macros
+    constexpr auto cx5 = NAMEOF_FULL(__cplusplus);
+    REQUIRE(std::strcmp(cx5, "__cplusplus") == 0);
   }
 }
 
@@ -141,6 +147,12 @@ TEST_CASE("NAMEOF") {
     REQUIRE(std::strcmp(NAMEOF(Color::RED), "RED") == 0);
     REQUIRE(std::strcmp(NAMEOF(Color::BLUE), "BLUE") == 0);
   }
+
+  SECTION("macros") {
+    REQUIRE(std::strcmp(NAMEOF(__cplusplus), "__cplusplus") == 0);
+    REQUIRE(std::strcmp(NAMEOF(__LINE__), "__LINE__") == 0);
+    REQUIRE(std::strcmp(NAMEOF(__FILE__), "__FILE__") == 0);
+  }
 }
 
 TEST_CASE("NAMEOF_FULL") {
@@ -192,5 +204,11 @@ TEST_CASE("NAMEOF_FULL") {
   SECTION("enum") {
     REQUIRE(std::strcmp(NAMEOF_FULL(Color::RED), "Color::RED") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(Color::BLUE), "Color::BLUE") == 0);
+  }
+
+  SECTION("macros") {
+    REQUIRE(std::strcmp(NAMEOF_FULL(__cplusplus), "__cplusplus") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(__LINE__), "__LINE__") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(__FILE__), "__FILE__") == 0);
   }
 }
