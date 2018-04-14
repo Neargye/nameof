@@ -32,9 +32,6 @@
 
 #include <cstddef>
 
-#define NAMEOF_RAW_(x) #x
-#define NAMEOF_RAW(x) NAMEOF_RAW_(x)
-
 namespace nameof {
 
 namespace detail {
@@ -56,18 +53,18 @@ inline constexpr const char* Nameof(const char* name, const std::size_t length, 
 
 #if defined(__GNUC__) || defined(__clang__)
 
-// Used to obtain the string name of a variable, type, function and etc.
-#define NAMEOF(name) ::nameof::Nameof(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1, sizeof(void(*)(__typeof__(name))))
+// Used to obtain the string name of a variable, type, function, macros and etc.
+#define NAMEOF(name) ::nameof::Nameof(#name, sizeof(#name) / sizeof(char) - 1, sizeof(void(*)(__typeof__(name))))
 
-// Used to obtain the string full name of a variable, type, function and etc.
-#define NAMEOF_FULL(name) ::nameof::Nameof(NAMEOF_RAW(name), 0, sizeof(void(*)(__typeof__(name))))
+// Used to obtain the string full name of a variable, type, function, macros and etc.
+#define NAMEOF_FULL(name) ::nameof::Nameof(#name, 0, sizeof(void(*)(__typeof__(name))))
 
 #else
 
-// Used to obtain the string name of a variable, type, function and etc.
-#define NAMEOF(name) ::nameof::Nameof(NAMEOF_RAW(name), sizeof(NAMEOF_RAW(name)) / sizeof(char) - 1, sizeof(typeid(name)))
+// Used to obtain the string name of a variable, type, function, macros and etc.
+#define NAMEOF(name) ::nameof::Nameof(#name, sizeof(#name) / sizeof(char) - 1, sizeof(typeid(name)))
 
-// Used to obtain the string full name of a variable, type, function and etc.
-#define NAMEOF_FULL(name) ::nameof::Nameof(NAMEOF_RAW(name), 0, sizeof(typeid(name)))
+// Used to obtain the string full name of a variable, type, function, macros and etc.
+#define NAMEOF_FULL(name) ::nameof::Nameof(#name, 0, sizeof(typeid(name)))
 
 #endif
