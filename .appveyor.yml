@@ -13,27 +13,21 @@ configuration:
 shallow_clone: true
 
 matrix:
-  fast_finish: false
+  fast_finish: true
 
 environment:
   matrix:
     - TOOLCHAIN: msvc14
     - TOOLCHAIN: msvc15
 
-init:
-  - ps: 'Write-Host "Building branch: $env:APPVEYOR_REPO_BRANCH" -ForegroundColor Magenta'
-
 before_build:
-  - ps: 'Write-Host "Running CMake:" -ForegroundColor Magenta'
   - if exist build RMDIR /S /Q build
   - if not exist build mkdir build
   - cd build
   - cmake.exe .. %CMAKE_CONFIGURE_FLAGS%
 
 build_script:
-  - ps: 'Write-Host "Running build:" -ForegroundColor Magenta'
   - cmake --build . --config %CONFIGURATION%
 
 test_script:
-  - ps: 'Write-Host "Running tests:" -ForegroundColor Magenta'
   - ctest -V --output-on-failure -C %CONFIGURATION%

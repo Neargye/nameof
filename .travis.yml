@@ -4,6 +4,12 @@ sudo: required
 
 language: cpp
 
+git:
+  depth: 1
+
+matrix:
+  fast_finish: true
+
 os:
   - linux
   - osx
