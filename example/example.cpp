@@ -1,4 +1,4 @@
-// nameof c++ example
+// nameof example
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2018 Daniil Goncharov <neargye@gmail.com>.
