@@ -43,7 +43,7 @@ inline constexpr bool IsLexeme(const char s) noexcept {
 
 } // namespace detail
 
-inline constexpr const char* Nameof(const char* name, const std::size_t length, const std::size_t) noexcept {
+inline constexpr const char* Nameof(const char* name, const ::std::size_t length, const ::std::size_t) noexcept {
   return length == 0 ? name : detail::IsLexeme(name[length - 1])
                                   ? &name[length]
                                   : Nameof(name, length - 1, 0);
