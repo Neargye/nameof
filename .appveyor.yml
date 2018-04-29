@@ -24,7 +24,7 @@ before_build:
   - if exist build RMDIR /S /Q build
   - if not exist build mkdir build
   - cd build
-  - cmake.exe .. %CMAKE_CONFIGURE_FLAGS%
+  - cmake .. %CMAKE_CONFIGURE_FLAGS%
 
 build_script:
   - cmake --build . --config %CONFIGURATION%
