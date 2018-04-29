@@ -53,7 +53,7 @@ int somevar;
 
 enum class Color { RED, GREEN, BLUE };
 
-void TestCase1() {
+int main() {
   SomeStruct somevar;
   Long othervar;
   int intvar;
@@ -102,10 +102,8 @@ void TestCase1() {
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
   std::cout << NAMEOF_FULL(Long::LL) << std::endl; // Long::LL
   std::cout << NAMEOF_FULL(std::string) << std::endl; // std::string
-}
 
-void TestCase2() {
-  const auto div = [](int x, int y) {
+  const auto div = [](int x, int y) -> int {
     if (y == 0) {
       throw std::invalid_argument(std::string(NAMEOF(y)).append(" should not be zero!"));
     }
@@ -118,18 +116,8 @@ void TestCase2() {
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl; // y should not be zero!
   }
-}
 
-void TestCase3() {
-  std::cout << NAMEOF(TestCase3) << " method entry" << std::endl; // TestCase3 method entry
-}
-
-int main() {
-  TestCase1();
-
-  TestCase2();
-
-  TestCase3();
+  std::cout << NAMEOF(main) << " method entry" << std::endl; // main method entry
 
   return 0;
 }
