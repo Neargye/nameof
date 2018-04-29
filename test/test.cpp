@@ -28,23 +28,23 @@
 
 #include <cstring>
 #include <string>
-#include <iostream>
+#include <stdexcept>
 
 struct SomeStruct {
   int somefield;
 
   void SomeMethod1(const int i) {
     somefield = i;
-    std::cout << "No called!" << std::endl;
+    throw std::exception{};
   }
 
   int SomeMethod2() const {
-    std::cout << "No called!" << std::endl;
+    throw std::exception{};
     return somefield;
   }
 };
 
-void SomeMethod3() { std::cout << "No called!" << std::endl; }
+void SomeMethod3() { throw std::exception{}; }
 
 struct Long {
   struct LL {
