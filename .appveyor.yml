@@ -1,13 +1,12 @@
 version: "{branch} #{build}"
 
-image: Visual Studio 2017
+image:
+  - Visual Studio 2017
 
 platform:
   - x64
-  - x32
 
 configuration:
-  - Release
   - Debug
 
 shallow_clone: true
@@ -17,14 +16,16 @@ matrix:
 
 environment:
   matrix:
-    - TOOLCHAIN: msvc14
-    - TOOLCHAIN: msvc15
+    - GENERATOR: "Visual Studio 15 2017 Win64"
+    - GENERATOR: "Visual Studio 15 2017"
+    - GENERATOR: "Visual Studio 14 2015 Win64"
+    - GENERATOR: "Visual Studio 14 2015"
 
 before_build:
   - if exist build RMDIR /S /Q build
   - if not exist build mkdir build
   - cd build
-  - cmake .. %CMAKE_CONFIGURE_FLAGS%
+  - cmake .. -G "%GENERATOR%"
 
 build_script:
   - cmake --build . --config %CONFIGURATION%

@@ -10,25 +10,137 @@ git:
 matrix:
   fast_finish: true
 
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+      compiler: g++
+      env:
+        - CXX_COMPILER=g++-4.8 CC_COMPILER=gcc-4.8 CONFIGURATION=Debug
 
-compiler:
-  - g++
-  - clang++
+    - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+      env:
+        - CXX_COMPILER=g++-4.9 CC_COMPILER=gcc-4.9 CONFIGURATION=Debug
 
-env:
-  - PLATFORM=x64 CONFIGURATION=Release
-  - PLATFORM=x64 CONFIGURATION=Debug
+    - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+        - CXX_COMPILER=g++-5 CC_COMPILER=gcc-5 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+      env:
+        - CXX_COMPILER=g++-6 CC_COMPILER=gcc-6 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env:
+        - CXX_COMPILER=g++-7 CC_COMPILER=gcc-7 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-4.0
+          packages:
+            - clang-4.0
+      env:
+        - CXX_COMPILER=clang++-4.0 CC_COMPILER=clang-4.0 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-5.0
+          packages:
+            - clang-5.0
+      env:
+        - CXX_COMPILER=clang++-5.0 CC_COMPILER=clang-5.0 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
+          packages:
+            - clang-6.0
+      env:
+        - CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0 CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode8.3
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode9.0
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode9.1
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode9.2
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode9.3
+      env:
+        - CONFIGURATION=Debug
+
+install:
+  - |
+      if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+        export CXX=${CXX_COMPILER}
+        export CC=${CC_COMPILER}
+      fi
 
 script:
   - rm -rf build
   - mkdir -p build
   - cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=$CONFIGURATION -DTARGET_CPU=$PLATFORM
-  - cmake --build . --config $CONFIGURATION
-  - ctest -V --output-on-failure -С $CONFIGURATION
+  - cmake .. -DCMAKE_BUILD_TYPE=${CONFIGURATION}
+  - cmake --build . --config ${CONFIGURATION}
+  - ctest -V --output-on-failure -С ${CONFIGURATION}
 
 notifications:
   email: false
