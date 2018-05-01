@@ -8,9 +8,7 @@ git:
   depth: 1
 
 matrix:
-  fast_finish: true
-
-matrix:
+  fast_finish: false
   include:
     - os: linux
       compiler: g++
