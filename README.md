@@ -16,7 +16,7 @@ master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)
 C++ alternative to [nameof](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/nameof) operator in [C#](https://en.wikipedia.org/wiki/C_Sharp_(programming_language)).
 
 Used to obtain the simple name of a variable, type, member, function, macros and etc.
-Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
+Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not check these string literals.
 
 A nameof macros expression has this form:
 
@@ -113,7 +113,7 @@ void f() {
 
 * The argument expression identifies a code definition, but it is never evaluated.
 
-* If you need to get the fully-qualified name, you could use the NAMEOF_FULL().
+* If you need to get the fully-qualified name, you can use the NAMEOF_FULL().
 
 ```cpp
 NAMEOF_FULL(somevar.somefield) -> "somevar.somefield"
@@ -123,7 +123,7 @@ NAMEOF_FULL(std::string) -> "std::string"
 
 ## Integration
 
-You need to add the single required file [nameof.hpp](include/nameof.hpp), and the necessary switches to enable C++11.
+You should add required file [nameof.hpp](include/nameof.hpp) and switch to C++11.
 
 ## Compiler compatibility
 
