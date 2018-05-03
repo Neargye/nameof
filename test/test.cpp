@@ -203,7 +203,7 @@ TEST_CASE("NAMEOF_FULL") {
   }
 }
 
-TEST_CASE("Spaces and Tabs are ignored") {
+TEST_CASE("Spaces and Tabs ignored") {
   SECTION("Spaces") {
     // variable
     REQUIRE(std::strcmp(NAMEOF(   (&somevar)->somefield   ), "somefield") == 0);
