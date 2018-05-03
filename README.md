@@ -121,6 +121,13 @@ NAMEOF_FULL(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
 NAMEOF_FULL(std::string) -> "std::string"
 ```
 
+* Spaces and Tabs ignored
+
+```cpp
+NAMEOF(   std::string   ) -> "string"
+NAMEOF(	std::string	) -> "string"
+```
+
 ## Integration
 
 You should add required file [nameof.hpp](include/nameof.hpp) and switch to C++11.
