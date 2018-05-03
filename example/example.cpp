@@ -117,5 +117,17 @@ int main() {
 
   std::cout << NAMEOF(main) << " method entry" << std::endl; // main method entry
 
+  /* Remarks */
+
+  // Spaces and Tabs ignored
+  std::cout << NAMEOF(   std::string   ) << std::endl; // string
+  std::cout << NAMEOF(	std::string	) << std::endl; // string
+
+  // Bad case
+  std::cout << NAMEOF(std::string()) << std::endl; // string()
+  std::cout << NAMEOF(std::string{}) << std::endl; // string{}
+  std::cout << NAMEOF(std::string{"test"}) << std::endl; // string{"test"}
+  std::cout << NAMEOF(ptrvar[0]) << std::endl; // ptrvar[0]
+
   return 0;
 }
