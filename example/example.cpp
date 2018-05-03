@@ -124,10 +124,13 @@ int main() {
   std::cout << NAMEOF(	std::string	) << std::endl; // string
 
   // Bad case
-  std::cout << NAMEOF(std::string()) << std::endl; // string()
-  std::cout << NAMEOF(std::string{}) << std::endl; // string{}
-  std::cout << NAMEOF(std::string{"test"}) << std::endl; // string{"test"}
-  std::cout << NAMEOF(ptrvar[0]) << std::endl; // ptrvar[0]
+  std::cout << NAMEOF(std::string()) << std::endl; // "string()"
+  std::cout << NAMEOF(std::string{}) << std::endl; // "string{}"
+  std::cout << NAMEOF(std::string{"test"}) << std::endl; // "string{"test"}"
+  std::cout << NAMEOF(ptrvar[0]) << std::endl; // "ptrvar[0]"
+  std::cout << NAMEOF(intvar + intvar) << std::endl; // " intvar"
+  std::cout << NAMEOF(NAMEOF(intvar)) << std::endl; // "NAMEOF(intvar)"
+  std::cout << NAMEOF(std::cout << intvar << std::endl) << std::endl; // "endl"
 
   return 0;
 }
