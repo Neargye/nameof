@@ -203,20 +203,39 @@ TEST_CASE("NAMEOF_FULL") {
   }
 }
 
-TEST_CASE("Spaces are ignored") {
-  // variable
-  REQUIRE(std::strcmp(NAMEOF(   (&somevar)->somefield   ), "somefield") == 0);
-  REQUIRE(std::strcmp(NAMEOF_FULL(   (&somevar)->somefield   ), "(&somevar)->somefield") == 0);
-  // type
-  REQUIRE(std::strcmp(NAMEOF(   std::string   ), "string") == 0);
-  REQUIRE(std::strcmp(NAMEOF_FULL(   std::string   ), "std::string") == 0);
-  // function
-  REQUIRE(std::strcmp(NAMEOF(   &SomeStruct::SomeMethod2   ), "SomeMethod2") == 0);
-  REQUIRE(std::strcmp(NAMEOF_FULL(   &SomeStruct::SomeMethod2   ), "&SomeStruct::SomeMethod2") == 0);
-  // enum
-  REQUIRE(std::strcmp(NAMEOF(   Color::RED   ), "RED") == 0);
-  REQUIRE(std::strcmp(NAMEOF_FULL(   Color::RED   ), "Color::RED") == 0);
-  // macros
-  REQUIRE(std::strcmp(NAMEOF(   __cplusplus   ), "__cplusplus") == 0);
-  REQUIRE(std::strcmp(NAMEOF_FULL(   __cplusplus   ), "__cplusplus") == 0);
+TEST_CASE("Spaces and Tabs are ignored") {
+  SECTION("Spaces") {
+    // variable
+    REQUIRE(std::strcmp(NAMEOF(   (&somevar)->somefield   ), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(   (&somevar)->somefield   ), "(&somevar)->somefield") == 0);
+    // type
+    REQUIRE(std::strcmp(NAMEOF(   std::string   ), "string") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(   std::string   ), "std::string") == 0);
+    // function
+    REQUIRE(std::strcmp(NAMEOF(   &SomeStruct::SomeMethod2   ), "SomeMethod2") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(   &SomeStruct::SomeMethod2   ), "&SomeStruct::SomeMethod2") == 0);
+    // enum
+    REQUIRE(std::strcmp(NAMEOF(   Color::RED   ), "RED") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(   Color::RED   ), "Color::RED") == 0);
+    // macros
+    REQUIRE(std::strcmp(NAMEOF(   __cplusplus   ), "__cplusplus") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(   __cplusplus   ), "__cplusplus") == 0);
+  }
+  SECTION("Tabs") {
+    // variable
+    REQUIRE(std::strcmp(NAMEOF(	(&somevar)->somefield	), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(	(&somevar)->somefield	), "(&somevar)->somefield") == 0);
+    // type
+    REQUIRE(std::strcmp(NAMEOF(	std::string	), "string") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(	std::string	), "std::string") == 0);
+    // function
+    REQUIRE(std::strcmp(NAMEOF(	&SomeStruct::SomeMethod2	), "SomeMethod2") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(	&SomeStruct::SomeMethod2	), "&SomeStruct::SomeMethod2") == 0);
+    // enum
+    REQUIRE(std::strcmp(NAMEOF(	Color::RED	), "RED") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(	Color::RED	), "Color::RED") == 0);
+    // macros
+    REQUIRE(std::strcmp(NAMEOF(	__cplusplus	), "__cplusplus") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(	__cplusplus	), "__cplusplus") == 0);
+  }
 }
