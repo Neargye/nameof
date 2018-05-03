@@ -53,13 +53,15 @@ struct Long {
   LL ll;
 };
 
-int somevar;
-
 enum class Color { RED, GREEN, BLUE };
 
-TEST_CASE("constexpr") {
-  SomeStruct somevar;
+SomeStruct somevar;
+Long othervar;
+int intvar;
+SomeStruct* ptrvar;
+SomeStruct** ptrptrvar;
 
+TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
     // variable
     constexpr auto cx1 = NAMEOF((&somevar)->somefield);
@@ -98,12 +100,6 @@ TEST_CASE("constexpr") {
 }
 
 TEST_CASE("NAMEOF") {
-  SomeStruct somevar;
-  Long othervar;
-  int intvar;
-  SomeStruct* ptrvar;
-  SomeStruct** ptrptrvar;
-
   SECTION("variable") {
     REQUIRE(std::strcmp(NAMEOF(somevar), "somevar") == 0);
     REQUIRE(std::strcmp(NAMEOF(&somevar), "somevar") == 0);
@@ -156,12 +152,6 @@ TEST_CASE("NAMEOF") {
 }
 
 TEST_CASE("NAMEOF_FULL") {
-  SomeStruct somevar;
-  Long othervar;
-  int intvar;
-  SomeStruct* ptrvar;
-  SomeStruct** ptrptrvar;
-
   SECTION("variable") {
     REQUIRE(std::strcmp(NAMEOF_FULL(somevar), "somevar") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(&somevar), "&somevar") == 0);

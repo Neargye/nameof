@@ -49,17 +49,15 @@ struct Long {
   LL ll;
 };
 
-int somevar;
-
 enum class Color { RED, GREEN, BLUE };
 
-int main() {
-  SomeStruct somevar;
-  Long othervar;
-  int intvar;
-  SomeStruct* ptrvar;
-  SomeStruct** ptrptrvar;
+SomeStruct somevar;
+Long othervar;
+int intvar;
+SomeStruct* ptrvar;
+SomeStruct** ptrptrvar;
 
+int main() {
   // constexpr
   constexpr auto constexpr_work_fine = NAMEOF(intvar);
   std::cout << constexpr_work_fine << std::endl; // intvar
