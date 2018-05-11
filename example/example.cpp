@@ -27,6 +27,14 @@
 #include <string>
 #include <stdexcept>
 
+constexpr long double operator"" _deg(long double deg) {
+  return deg * 3.141592 / 180.0;
+}
+
+std::string operator"" _string(const char* str, std::size_t) {
+  return std::string{str};
+}
+
 struct SomeStruct {
   int somefield;
 
@@ -126,11 +134,12 @@ int main() {
 
   // Bad case
   std::cout << NAMEOF("Bad case") << std::endl; // '"Bad case"'
-  using namespace std::string_literals;
-  std::cout << NAMEOF("Bad case"s) << std::endl; // '"Bad case"s'
+  std::cout << NAMEOF("Bad case"_string) << std::endl; // '"Bad case"_string'
+  std::cout << NAMEOF("somevar.somefield") << std::endl; // 'somefield"'
   std::cout << NAMEOF(42.0) << std::endl; // '0'
   std::cout << NAMEOF(42.f) << std::endl; // 'f'
   std::cout << NAMEOF(42) << std::endl; // '42'
+  std::cout << NAMEOF(42.0_deg) << std::endl; // '0_deg'
   std::cout << NAMEOF(std::string()) << std::endl; // 'string()'
   std::cout << NAMEOF(std::string{}) << std::endl; // "string{}'
   std::cout << NAMEOF(std::string{"test"}) << std::endl; // 'string{"test"}'
