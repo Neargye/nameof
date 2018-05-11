@@ -24,6 +24,7 @@
 #include <nameof.hpp>
 
 #include <iostream>
+#include <string>
 #include <stdexcept>
 
 struct SomeStruct {
@@ -124,13 +125,19 @@ int main() {
   std::cout << NAMEOF(	std::string	) << std::endl; // string
 
   // Bad case
-  std::cout << NAMEOF(std::string()) << std::endl; // "string()"
-  std::cout << NAMEOF(std::string{}) << std::endl; // "string{}"
-  std::cout << NAMEOF(std::string{"test"}) << std::endl; // "string{"test"}"
-  std::cout << NAMEOF(ptrvar[0]) << std::endl; // "ptrvar[0]"
-  std::cout << NAMEOF(intvar + intvar) << std::endl; // " intvar"
-  std::cout << NAMEOF(NAMEOF(intvar)) << std::endl; // "NAMEOF(intvar)"
-  std::cout << NAMEOF(std::cout << intvar << std::endl) << std::endl; // "endl"
+  std::cout << NAMEOF("Bad case") << std::endl; // '"Bad case"'
+  using namespace std::string_literals;
+  std::cout << NAMEOF("Bad case"s) << std::endl; // '"Bad case"s'
+  std::cout << NAMEOF(42.0) << std::endl; // '0'
+  std::cout << NAMEOF(42.f) << std::endl; // 'f'
+  std::cout << NAMEOF(42) << std::endl; // '42'
+  std::cout << NAMEOF(std::string()) << std::endl; // 'string()'
+  std::cout << NAMEOF(std::string{}) << std::endl; // "string{}'
+  std::cout << NAMEOF(std::string{"test"}) << std::endl; // 'string{"test"}'
+  std::cout << NAMEOF(ptrvar[0]) << std::endl; // 'ptrvar[0]'
+  std::cout << NAMEOF(intvar + intvar) << std::endl; // ' intvar'
+  std::cout << NAMEOF(NAMEOF(intvar)) << std::endl; // 'NAMEOF(intvar)'
+  std::cout << NAMEOF(std::cout << intvar << std::endl) << std::endl; // 'endl'
 
   return 0;
 }
