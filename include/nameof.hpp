@@ -5,7 +5,7 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// vesion 0.2.4
+// vesion 0.2.5
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // Copyright (c) 2016, 2018 Daniil Goncharov <neargye@gmail.com>.
@@ -44,9 +44,9 @@ inline constexpr bool IsLexeme(const char s) noexcept {
 } // namespace detail
 
 inline constexpr const char* Nameof(const char* name, const ::std::size_t length) noexcept {
-  return length == 0 ? name : detail::IsLexeme(name[length - 1])
-                                  ? &name[length]
-                                  : Nameof(name, length - 1);
+  return ((length == 0) ? name : (detail::IsLexeme(name[length - 1])
+                                      ? &name[length]
+                                      : Nameof(name, length - 1)));
 }
 
 } // namespace nameof
