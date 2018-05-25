@@ -8,6 +8,7 @@ platform:
 
 configuration:
   - Debug
+  - Release
 
 shallow_clone: true
 

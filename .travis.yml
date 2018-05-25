@@ -1,3 +1,4 @@
+os: linux
 dist: trusty
 
 sudo: required
@@ -60,6 +61,65 @@ matrix:
         - CXX_COMPILER=g++-7 CC_COMPILER=gcc-7 CONFIGURATION=Debug
 
     - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+      env:
+        - CXX_COMPILER=g++-8 CC_COMPILER=gcc-8 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+      env:
+        - CXX_COMPILER=clang++-3.6 CC_COMPILER=clang-3.6 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.7
+          packages:
+            - clang-3.7
+      env:
+        - CXX_COMPILER=clang++-3.7 CC_COMPILER=clang-3.7 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.8
+          packages:
+            - clang-3.8
+      env:
+        - CXX_COMPILER=clang++-3.8 CC_COMPILER=clang-3.8 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-3.9
+          packages:
+            - clang-3.9
+      env:
+        - CXX_COMPILER=clang++-3.9 CC_COMPILER=clang-3.9 CONFIGURATION=Debug
+
+    - os: linux
       compiler: clang++
       addons:
         apt:
@@ -97,6 +157,48 @@ matrix:
 
     - os: osx
       compiler: clang++
+      osx_image: xcode7.0
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode7.1
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode7.2
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode7.3
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode8.0
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode8.1
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode8.2
+      env:
+        - CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
       osx_image: xcode8.3
       env:
         - CONFIGURATION=Debug
@@ -126,19 +228,19 @@ matrix:
         - CONFIGURATION=Debug
 
 install:
-  - |
-      if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-        export CXX=${CXX_COMPILER}
-        export CC=${CC_COMPILER}
-      fi
+  - export CC=${CC_COMPILER}
+  - export CXX=${CXX_COMPILER}
+  - JOBS=2 # Travis machines have 2 cores.
 
-script:
+before_script:
   - rm -rf build
   - mkdir -p build
   - cd build
   - cmake .. -DCMAKE_BUILD_TYPE=${CONFIGURATION}
-  - cmake --build . --config ${CONFIGURATION}
-  - ctest -V --output-on-failure -С ${CONFIGURATION}
+
+script:
+  - cmake --build . --config ${CONFIGURATION} -- -j${JOBS}
+  - ctest -V --output-on-failure -С ${CONFIGURATION} -j${JOBS}
 
 notifications:
   email: false
