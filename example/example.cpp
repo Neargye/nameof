@@ -40,16 +40,16 @@ struct SomeStruct {
 
   void SomeMethod1(const int i) {
     somefield = i;
-    std::cout << "No called!" << std::endl;
   }
 
   int SomeMethod2() const {
-    std::cout << "No called!" << std::endl;
     return somefield;
   }
 };
 
-void SomeMethod3() { std::cout << "No called!" << std::endl; }
+void SomeMethod3() {
+  std::cout << NAMEOF(SomeMethod3) << " no called!" << std::endl;
+}
 
 struct Long {
   struct LL {
@@ -123,8 +123,6 @@ int main() {
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl; // y should not be zero!
   }
-
-  std::cout << NAMEOF(main) << " method entry" << std::endl; // main method entry
 
   /* Remarks */
 
