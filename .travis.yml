@@ -83,6 +83,18 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.5
+          packages:
+            - clang-3.5
+      env:
+        - CXX_COMPILER=clang++-3.5 CC_COMPILER=clang-3.5 CONFIGURATION=Debug
+
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
           packages:
             - clang-3.6
@@ -160,6 +172,36 @@ matrix:
             - clang-6.0
       env:
         - CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0 CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode6.0
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode6.1
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode6.2
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode6.3
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode6.4
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
 
     - os: osx
       compiler: clang++
