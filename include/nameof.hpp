@@ -37,14 +37,14 @@ namespace nameof {
 
 namespace detail {
 
-inline constexpr bool IsLexeme(const char s) noexcept {
+inline constexpr bool IsLexeme(char s) noexcept {
   return (s == '.' || s == '>' || s == ':' || s == '&' || s == '*' ||
           s == '+' || s == '~' || s == '-' || s == '!');
 }
 
 } // namespace detail
 
-inline constexpr const char* Nameof(const char* name, const std::size_t length) noexcept {
+inline constexpr const char* Nameof(const char* name, std::size_t length) noexcept {
   return ((length == 0) ? name : (detail::IsLexeme(name[length - 1])
                                       ? &name[length]
                                       : Nameof(name, length - 1)));

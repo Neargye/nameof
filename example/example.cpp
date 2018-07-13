@@ -70,7 +70,6 @@ SomeStruct somevar;
 Long othervar;
 int intvar = 0;
 SomeStruct* ptrvar = &somevar;
-SomeStruct** ptrptrvar = &ptrvar;
 
 int main() {
   // constexpr
@@ -90,13 +89,6 @@ int main() {
   std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
 
-  // variable
-  std::cout << NAMEOF(ptrvar) << std::endl; // ptrvar
-  std::cout << NAMEOF(*ptrvar) << std::endl; // ptrvar
-  std::cout << NAMEOF(ptrptrvar) << std::endl; // ptrptrvar
-  std::cout << NAMEOF(*ptrptrvar) << std::endl; // ptrptrvar
-  std::cout << NAMEOF(**ptrptrvar) << std::endl; // ptrptrvar
-
   // function
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
@@ -115,7 +107,6 @@ int main() {
   std::cout << NAMEOF_FULL(somevar.somefield) << std::endl; // somevar.somefield
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
   std::cout << NAMEOF_FULL(Long::LL) << std::endl; // Long::LL
-  std::cout << NAMEOF_FULL(std::string) << std::endl; // std::string
 
   const auto div = [](int x, int y) -> int {
     if (y == 0) {
@@ -156,6 +147,7 @@ int main() {
   std::cout << NAMEOF(std::cout << intvar << std::endl) << std::endl; // 'endl'
   std::cout << NAMEOF(decltype(intvar)) << std::endl; // 'decltype(intvar)'
   std::cout << NAMEOF(typeid(intvar)) << std::endl; // 'typeid(intvar)'
+  std::cout << NAMEOF((intvar)) << std::endl; // '(intvar)'
 
   return 0;
 }
