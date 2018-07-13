@@ -31,7 +31,7 @@
 #include <stdexcept>
 
 struct SomeStruct {
-  int somefield;
+  int somefield = 0;
 
   void SomeMethod1(const int i) {
     somefield = i;
@@ -48,7 +48,7 @@ void SomeMethod3() { throw std::exception{}; }
 
 struct Long {
   struct LL {
-    int field;
+    int field = 0;
   };
   LL ll;
 };
@@ -57,9 +57,9 @@ enum class Color { RED, GREEN, BLUE };
 
 SomeStruct somevar;
 Long othervar;
-int intvar;
-SomeStruct* ptrvar;
-SomeStruct** ptrptrvar;
+int intvar = 0;
+SomeStruct* ptrvar = &somevar;
+SomeStruct** ptrptrvar = &ptrvar;
 
 TEST_CASE("constexpr") {
   SECTION("NAMEOF") {

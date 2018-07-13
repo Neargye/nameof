@@ -26,6 +26,7 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <typeinfo>
 
 constexpr long double operator"" _deg(long double deg) {
   return deg * 3.141592 / 180.0;
@@ -36,7 +37,7 @@ std::string operator"" _string(const char* str, std::size_t) {
 }
 
 struct SomeStruct {
-  int somefield;
+  int somefield = 0;
 
   void SomeMethod1(const int i) {
     somefield = i;
@@ -52,11 +53,13 @@ void SomeMethod3() {
 }
 
 template <typename T>
-void SomeMethod4() {}
+T SomeMethod4() {
+  return T{};
+}
 
 struct Long {
   struct LL {
-    int field;
+    int field = 0;
   };
   LL ll;
 };
@@ -65,9 +68,9 @@ enum class Color { RED, GREEN, BLUE };
 
 SomeStruct somevar;
 Long othervar;
-int intvar;
-SomeStruct* ptrvar;
-SomeStruct** ptrptrvar;
+int intvar = 0;
+SomeStruct* ptrvar = &somevar;
+SomeStruct** ptrptrvar = &ptrvar;
 
 int main() {
   // constexpr
@@ -145,7 +148,8 @@ int main() {
   std::cout << NAMEOF(std::string()) << std::endl; // 'string()'
   std::cout << NAMEOF(std::string{}) << std::endl; // "string{}'
   std::cout << NAMEOF(std::string{"test"}) << std::endl; // 'string{"test"}'
-  std::cout << NAMEOF(SomeMethod4<int>) << std::endl; // ''
+  std::cout << NAMEOF(SomeMethod4<int>()) << std::endl; // '()'
+  std::cout << NAMEOF(std::basic_string<char>) << std::endl; // ''
   std::cout << NAMEOF(ptrvar[0]) << std::endl; // 'ptrvar[0]'
   std::cout << NAMEOF(intvar + intvar) << std::endl; // ' intvar'
   std::cout << NAMEOF(NAMEOF(intvar)) << std::endl; // 'NAMEOF(intvar)'
