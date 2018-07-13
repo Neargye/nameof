@@ -150,6 +150,8 @@ int main() {
   std::cout << NAMEOF(intvar + intvar) << std::endl; // ' intvar'
   std::cout << NAMEOF(NAMEOF(intvar)) << std::endl; // 'NAMEOF(intvar)'
   std::cout << NAMEOF(std::cout << intvar << std::endl) << std::endl; // 'endl'
+  std::cout << NAMEOF(decltype(intvar)) << std::endl; // 'decltype(intvar)'
+  std::cout << NAMEOF(typeid(intvar)) << std::endl; // 'typeid(intvar)'
 
   return 0;
 }
