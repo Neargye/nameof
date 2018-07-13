@@ -97,6 +97,7 @@ TEST_CASE("constexpr") {
     constexpr auto cx5 = NAMEOF_FULL(__cplusplus);
     REQUIRE(std::strcmp(cx5, "__cplusplus") == 0);
   }
+#if !defined(_MSC_VER) || _MSC_VER > 1910
 
   SECTION("NAMEOF_VARIABLE") {
     constexpr auto cx1 = NAMEOF_VARIABLE((&somevar)->somefield);
@@ -107,6 +108,8 @@ TEST_CASE("constexpr") {
     constexpr auto cx1 = NAMEOF_VARIABLE_FULL((&somevar)->somefield);
     REQUIRE(std::strcmp(cx1, "(&somevar)->somefield") == 0);
   }
+
+#endif
 }
 
 TEST_CASE("simple name") {
