@@ -51,6 +51,9 @@ void SomeMethod3() {
   std::cout << NAMEOF(SomeMethod3) << " no called!" << std::endl;
 }
 
+template <typename T>
+void SomeMethod4() {}
+
 struct Long {
   struct LL {
     int field;
@@ -104,6 +107,7 @@ int main() {
   // macros
   std::cout << NAMEOF(__LINE__) << std::endl; // __LINE__
   std::cout << NAMEOF(__FILE__) << std::endl; // __FILE__
+
   // full name
   std::cout << NAMEOF_FULL(somevar.somefield) << std::endl; // somevar.somefield
   std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
@@ -141,6 +145,7 @@ int main() {
   std::cout << NAMEOF(std::string()) << std::endl; // 'string()'
   std::cout << NAMEOF(std::string{}) << std::endl; // "string{}'
   std::cout << NAMEOF(std::string{"test"}) << std::endl; // 'string{"test"}'
+  std::cout << NAMEOF(SomeMethod4<int>) << std::endl; // ''
   std::cout << NAMEOF(ptrvar[0]) << std::endl; // 'ptrvar[0]'
   std::cout << NAMEOF(intvar + intvar) << std::endl; // ' intvar'
   std::cout << NAMEOF(NAMEOF(intvar)) << std::endl; // 'NAMEOF(intvar)'
