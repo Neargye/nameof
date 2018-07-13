@@ -97,9 +97,19 @@ TEST_CASE("constexpr") {
     constexpr auto cx5 = NAMEOF_FULL(__cplusplus);
     REQUIRE(std::strcmp(cx5, "__cplusplus") == 0);
   }
+
+  SECTION("NAMEOF_VARIABLE") {
+    constexpr auto cx1 = NAMEOF_VARIABLE((&somevar)->somefield);
+    REQUIRE(std::strcmp(cx1, "somefield") == 0);
+  }
+
+  SECTION("NAMEOF_VARIABLE_FULL") {
+    constexpr auto cx1 = NAMEOF_VARIABLE_FULL((&somevar)->somefield);
+    REQUIRE(std::strcmp(cx1, "(&somevar)->somefield") == 0);
+  }
 }
 
-TEST_CASE("NAMEOF") {
+TEST_CASE("simple name") {
   SECTION("variable") {
     REQUIRE(std::strcmp(NAMEOF(somevar), "somevar") == 0);
     REQUIRE(std::strcmp(NAMEOF(&somevar), "somevar") == 0);
@@ -151,13 +161,14 @@ TEST_CASE("NAMEOF") {
   }
 }
 
-TEST_CASE("NAMEOF_FULL") {
+TEST_CASE("full name") {
   SECTION("variable") {
     REQUIRE(std::strcmp(NAMEOF_FULL(somevar), "somevar") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(&somevar), "&somevar") == 0);
+    REQUIRE(std::strcmp(NAMEOF_FULL(::somevar), "::somevar") == 0);
+
     REQUIRE(std::strcmp(NAMEOF_FULL(somevar.somefield), "somevar.somefield") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL((&somevar)->somefield), "(&somevar)->somefield") == 0);
-    REQUIRE(std::strcmp(NAMEOF_FULL(::somevar), "::somevar") == 0);
 
     REQUIRE(std::strcmp(NAMEOF_FULL(othervar.ll.field), "othervar.ll.field") == 0);
 
@@ -206,8 +217,11 @@ TEST_CASE("NAMEOF_FULL") {
 TEST_CASE("Spaces and Tabs ignored") {
   SECTION("Spaces") {
     // variable
-    REQUIRE(std::strcmp(NAMEOF(   (&somevar)->somefield   ), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(   (&somevar)->somefield   ), "somefield") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(   (&somevar)->somefield   ), "(&somevar)->somefield") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(   (&somevar)->somefield   ), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(   (&somevar)->somefield   ), "(&somevar)->somefield") == 0);
     // type
     REQUIRE(std::strcmp(NAMEOF(   std::string   ), "string") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(   std::string   ), "std::string") == 0);
@@ -221,10 +235,14 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(std::strcmp(NAMEOF(   __cplusplus   ), "__cplusplus") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(   __cplusplus   ), "__cplusplus") == 0);
   }
+
   SECTION("Tabs") {
     // variable
-    REQUIRE(std::strcmp(NAMEOF(	(&somevar)->somefield	), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(	(&somevar)->somefield	), "somefield") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(	(&somevar)->somefield	), "(&somevar)->somefield") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(	(&somevar)->somefield	), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(	(&somevar)->somefield	), "(&somevar)->somefield") == 0);
     // type
     REQUIRE(std::strcmp(NAMEOF(	std::string	), "string") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(	std::string	), "std::string") == 0);
@@ -237,5 +255,35 @@ TEST_CASE("Spaces and Tabs ignored") {
     // macros
     REQUIRE(std::strcmp(NAMEOF(	__cplusplus	), "__cplusplus") == 0);
     REQUIRE(std::strcmp(NAMEOF_FULL(	__cplusplus	), "__cplusplus") == 0);
+  }
+}
+
+TEST_CASE("variable name") {
+  SECTION("simple") {
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(somevar), "somevar") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(::somevar), "somevar") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(somevar.somefield), "somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE((&somevar)->somefield), "somefield") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(othervar.ll.field), "field") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(ptrvar), "ptrvar") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE(ptrptrvar), "ptrptrvar") == 0);
+  }
+
+  SECTION("full name") {
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(somevar), "somevar") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(::somevar), "::somevar") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(somevar.somefield), "somevar.somefield") == 0);
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL((&somevar)->somefield), "(&somevar)->somefield") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(othervar.ll.field), "othervar.ll.field") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(ptrvar), "ptrvar") == 0);
+
+    REQUIRE(std::strcmp(NAMEOF_VARIABLE_FULL(ptrptrvar), "ptrptrvar") == 0);
   }
 }
