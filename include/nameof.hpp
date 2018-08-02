@@ -46,7 +46,7 @@ struct identity {
 
 template <typename T>
 struct remove_all_pointers
-    : std::conditional_t<std::is_pointer<T>::value,
+    : std::conditional<std::is_pointer<T>::value,
                              remove_all_pointers<typename std::remove_pointer<T>::type>,
                              identity<T>> {};
 class cstring final {
