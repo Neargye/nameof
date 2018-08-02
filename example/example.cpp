@@ -39,13 +39,9 @@ std::string operator"" _string(const char* str, std::size_t) {
 struct SomeStruct {
   int somefield = 0;
 
-  void SomeMethod1(const int i) {
-    somefield = i;
-  }
+  void SomeMethod1(const int i) { somefield = i; }
 
-  int SomeMethod2() const {
-    return somefield;
-  }
+  int SomeMethod2() const { return somefield; }
 };
 
 void SomeMethod3() {
@@ -56,6 +52,15 @@ template <typename T>
 T SomeMethod4() {
   return T{};
 }
+
+template <typename T>
+class SomeClass {
+public:
+  void SomeMethod5() const {}
+
+  template <typename C>
+  C SomeMethod6() const { return C{}; }
+};
 
 struct Long {
   struct LL {
@@ -68,12 +73,12 @@ enum class Color { RED, GREEN, BLUE };
 
 SomeStruct somevar;
 Long othervar;
-int intvar = 0;
+SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
 int main() {
   // constexpr
-  constexpr auto constexpr_work_fine = NAMEOF(intvar);
+  constexpr auto constexpr_work_fine = NAMEOF(somevar);
   std::cout << constexpr_work_fine << std::endl; // intvar
 
   // enum
@@ -82,7 +87,6 @@ int main() {
   // variable
   std::cout << NAMEOF(somevar) << std::endl; // somevar
   std::cout << NAMEOF(::somevar) << std::endl; // somevar
-  std::cout << NAMEOF(&somevar) << std::endl; // somevar
 
   // member
   std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
@@ -90,23 +94,37 @@ int main() {
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
 
   // function
+  std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // SomeMethod1
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
+  std::cout << NAMEOF(SomeMethod4<int>) << std::endl; // SomeMethod4
+  std::cout << NAMEOF(&SomeClass<int>::SomeMethod5) << std::endl; // SomeMethod5
+  std::cout << NAMEOF(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6
+
+  // function with template prefix
+  std::cout << NAMEOF_T(SomeMethod4<int>) << std::endl; // SomeMethod4<int>
+  std::cout << NAMEOF_T(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6<long int>
 
   // type
-  std::cout << NAMEOF(int[]) << std::endl; // int[]
-  std::cout << NAMEOF(SomeStruct) << std::endl; // SomeStruct
-  std::cout << NAMEOF(Long::LL) << std::endl; // LL
-  std::cout << NAMEOF(volatile const int) << std::endl; // volatile const int
+  std::cout << NAMEOF_TYPE(std::string{}) << std::endl; // basic_string
+  std::cout << NAMEOF_TYPE(somevar) << std::endl; // SomeStruct
+  std::cout << NAMEOF_TYPE(refvar) << std::endl; // basic_string
+  std::cout << NAMEOF_TYPE(ptrvar) << std::endl; // basic_string
+  std::cout << NAMEOF_TYPE(Color::RED) << std::endl; // Color
+
+  std::cout << NAMEOF_RAW(int[]) << std::endl; // int[]
+  std::cout << NAMEOF_RAW(SomeStruct) << std::endl; // SomeStruct
+  std::cout << NAMEOF_RAW(Long::LL) << std::endl; // LL
+  std::cout << NAMEOF_RAW(volatile const int) << std::endl; // volatile const int
 
   // macros
-  std::cout << NAMEOF(__LINE__) << std::endl; // __LINE__
-  std::cout << NAMEOF(__FILE__) << std::endl; // __FILE__
+  std::cout << NAMEOF_RAW(__LINE__) << std::endl; // __LINE__
+  std::cout << NAMEOF_RAW(__FILE__) << std::endl; // __FILE__
 
   // full name
-  std::cout << NAMEOF_FULL(somevar.somefield) << std::endl; // somevar.somefield
-  std::cout << NAMEOF_FULL(&SomeStruct::SomeMethod2) << std::endl; // &SomeStruct::SomeMethod2
-  std::cout << NAMEOF_FULL(Long::LL) << std::endl; // Long::LL
+  std::cout << NAMEOF_RAW(somevar.somefield) << std::endl; // somevar.somefield
+  std::cout << NAMEOF_RAW(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // &SomeStruct::SomeMethod2
+  std::cout << NAMEOF_RAW(Long::LL) << std::endl; // Long::LL
 
   const auto div = [](int x, int y) -> int {
     if (y == 0) {
@@ -125,10 +143,11 @@ int main() {
   /* Remarks */
 
   // Spaces and Tabs ignored
-  std::cout << NAMEOF(   std::string   ) << std::endl; // string
-  std::cout << NAMEOF(	std::string	) << std::endl; // string
+  std::cout << NAMEOF(   somevar   ) << std::endl; // string
+  std::cout << NAMEOF(	somevar	) << std::endl; // string
 
-  // Bad case
+#if 0
+  // This expression does not have a name.
   std::cout << NAMEOF("Bad case") << std::endl; // '"Bad case"'
   std::cout << NAMEOF("Bad case"_string) << std::endl; // '"Bad case"_string'
   std::cout << NAMEOF("somevar.somefield") << std::endl; // 'somefield"'
@@ -148,6 +167,7 @@ int main() {
   std::cout << NAMEOF(decltype(intvar)) << std::endl; // 'decltype(intvar)'
   std::cout << NAMEOF(typeid(intvar)) << std::endl; // 'typeid(intvar)'
   std::cout << NAMEOF((intvar)) << std::endl; // '(intvar)'
+#endif
 
   return 0;
 }
