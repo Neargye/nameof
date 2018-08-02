@@ -32,6 +32,7 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <limits>
 #include <ostream>
 
 namespace nameof {
@@ -152,7 +153,7 @@ inline constexpr cstring NameofBase(const char* name, std::size_t length) noexce
   return {name, length};
 }
 
-inline constexpr cstring NameofFunction(const char* name, std::size_t length, bool with_template_prefix) noexcept {
+inline constexpr cstring NameofFunction(const char* name, std::size_t length, bool with_prefix) noexcept {
   if (length == 0)
     return {name, length};
 
@@ -177,43 +178,48 @@ inline constexpr cstring NameofFunction(const char* name, std::size_t length, bo
     }
 
     if (IsLexeme(name[i - 1]) && h == 0) {
-      return {&name[i], length - i - (with_template_prefix ? 0 : p)};
+      return {&name[i], length - i - (with_prefix ? 0 : p)};
     }
   }
 
-  return {name, length - (with_template_prefix ? 0 : p)};
+  return {name, length - (with_prefix ? 0 : p)};
 }
 
-inline constexpr cstring NameofType(const char* name, std::size_t length) noexcept {
+inline constexpr cstring NameofType(const char* name, std::size_t length, bool with_prefix) noexcept {
   if (length == 0)
     return {name, length};
 
   std::size_t h = 0;
+  std::size_t p = 0;
   for (std::size_t i = length; i > 0; --i) {
     if (h == 0 && (name[i - 1] == '&' || name[i - 1] == '*')) {
+      ++p;
       continue;
     }
 
     if (name[i - 1] == '>') {
       ++h;
+      ++p;
       continue;
     }
 
     if (name[i - 1] == '<') {
       --h;
+      ++p;
       continue;
     }
 
     if (h != 0) {
+      ++p;
       continue;
     }
 
     if (IsLexeme(name[i - 1]) && h == 0) {
-      return {&name[i], length - i};
+      return {&name[i], length - i - (with_prefix ? 0 : p)};
     }
   }
 
-  return {name, length};
+  return {name, length - (with_prefix ? 0 : p)};
 }
 
 inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcept {
@@ -225,10 +231,10 @@ inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcep
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value &&
                                              !std::is_void<T>::value>::type>
-inline constexpr detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_template_prefix) noexcept {
+inline constexpr detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_prefix) noexcept {
   // TODO: conditional expression is constant
   if (std::is_function<T>::value || std::is_member_function_pointer<T>::value)
-    return detail::NameofFunction(name, length, with_template_prefix);
+    return detail::NameofFunction(name, length, with_prefix);
 
   return detail::NameofBase(name, length);
 }
@@ -240,7 +246,7 @@ template <typename T,
 inline constexpr detail::cstring Nameof(T&&, const char*, std::size_t) = delete;
 
 template <typename T>
-inline constexpr detail::cstring NameofType() {
+inline constexpr detail::cstring NameofType(bool full) noexcept {
 #if defined(__GNUC__) || defined(__clang__)
   constexpr auto function_name = __PRETTY_FUNCTION__;
   constexpr auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
@@ -250,11 +256,12 @@ inline constexpr detail::cstring NameofType() {
   constexpr auto function_name = __FUNCSIG__;
   constexpr auto total_length = sizeof(__FUNCSIG__) - 1;
   constexpr auto prefix_length = sizeof("class nameof::detail::cstring __cdecl nameof::NameofType<") - 1;
-  constexpr auto suffix_length = sizeof(">(void)") - 1;
+  constexpr auto suffix_length = sizeof(">(bool) noexcept") - 1;
 #endif
-  constexpr auto type_name = detail::cstring{function_name + prefix_length, total_length - prefix_length - suffix_length};
+  auto type_name = detail::cstring{function_name + prefix_length, total_length - prefix_length - suffix_length};
 
 #if defined(_MSC_VER)
+
   constexpr auto class_length = sizeof("class") - 1;
   constexpr auto struct_length = sizeof("struct") - 1;
   constexpr auto enum_length = sizeof("enum") - 1;
@@ -262,30 +269,29 @@ inline constexpr detail::cstring NameofType() {
   if (std::is_class<typename detail::remove_all_pointers<typename std::remove_reference<T>::type>::type>::value) {
     if (type_name[0] == 'c') {
       if (type_name[class_length] == ' ') {
-        return detail::cstring{type_name.begin() + class_length + 1, type_name.length() - class_length - 1};
+        type_name = detail::cstring{type_name.begin() + class_length + 1, type_name.length() - class_length - 1};
+      } else {
+        type_name = detail::cstring{type_name.begin() + class_length, type_name.length() - class_length};
       }
-      return detail::cstring{type_name.begin() + class_length, type_name.length() - class_length};
-    }
-
-    if (type_name[0] == 's') {
+    } else if (type_name[0] == 's') {
       if (type_name[struct_length] == ' ') {
-        return detail::cstring{type_name.begin() + struct_length + 1, type_name.length() - struct_length - 1};
+        type_name = detail::cstring{type_name.begin() + struct_length + 1, type_name.length() - struct_length - 1};
+      } else {
+        type_name = detail::cstring{type_name.begin() + struct_length, type_name.length() - struct_length};
       }
-      return detail::cstring{type_name.begin() + struct_length, type_name.length() - struct_length};
     }
-  }
-
-  if (std::is_enum<typename detail::remove_all_pointers<typename std::remove_reference<T>::type>::type>::value) {
+  } else if (std::is_enum<typename detail::remove_all_pointers<typename std::remove_reference<T>::type>::type>::value) {
     if (type_name[0] == 'e') {
       if (type_name[enum_length] == ' ') {
-        return detail::cstring{type_name.begin() + enum_length + 1, type_name.length() - enum_length - 1};
+        type_name = detail::cstring{type_name.begin() + enum_length + 1, type_name.length() - enum_length - 1};
+      } else {
+        type_name = detail::cstring{type_name.begin() + enum_length, type_name.length() - enum_length};
       }
-      return detail::cstring{type_name.begin() + enum_length, type_name.length() - enum_length};
     }
   }
 #endif
 
-  return type_name;
+  return full ? type_name : detail::NameofType(type_name.begin(), type_name.length(), false);
 }
 
 } // namespace nameof
@@ -301,7 +307,13 @@ inline constexpr detail::cstring NameofType() {
 // Used to obtain the simple (unqualified) string name of a variable, member, function.
 #define NAMEOF(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, false)
 
+// Used to obtain the simple (unqualified) string name of a variable, member, function with template prefix.
 #define NAMEOF_T(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, true)
 
+#define NAMEOF_FULL 0
+
 // Used to obtain the simple (unqualified) string name of a type.
-#define NAMEOF_TYPE(name) ::nameof::NameofType<decltype(name)>()
+#define NAMEOF_TYPE(name) ::nameof::NameofType<decltype(name)>(false)
+
+// Used to obtain the full string name of a type.
+#define NAMEOF_TYPE_FULL(name) ::nameof::NameofType<decltype(name)>(true)

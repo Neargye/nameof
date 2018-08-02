@@ -77,9 +77,10 @@ SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
 int main() {
+  std::cout << typeid(std::string).name() << std::endl;
   // constexpr
   constexpr auto constexpr_work_fine = NAMEOF(somevar);
-  std::cout << constexpr_work_fine << std::endl; // intvar
+  std::cout << constexpr_work_fine << std::endl; // somevar
 
   // enum
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
@@ -108,13 +109,13 @@ int main() {
   // type
   std::cout << NAMEOF_TYPE(std::string{}) << std::endl; // basic_string
   std::cout << NAMEOF_TYPE(somevar) << std::endl; // SomeStruct
-  std::cout << NAMEOF_TYPE(refvar) << std::endl; // basic_string
-  std::cout << NAMEOF_TYPE(ptrvar) << std::endl; // basic_string
+  std::cout << NAMEOF_TYPE(refvar) << std::endl; // SomeStruct&
+  std::cout << NAMEOF_TYPE(ptrvar) << std::endl; // SomeStruct*
   std::cout << NAMEOF_TYPE(Color::RED) << std::endl; // Color
 
   std::cout << NAMEOF_RAW(int[]) << std::endl; // int[]
   std::cout << NAMEOF_RAW(SomeStruct) << std::endl; // SomeStruct
-  std::cout << NAMEOF_RAW(Long::LL) << std::endl; // LL
+  std::cout << NAMEOF_RAW(Long::LL) << std::endl; // Long::LL
   std::cout << NAMEOF_RAW(volatile const int) << std::endl; // volatile const int
 
   // macros
@@ -123,7 +124,7 @@ int main() {
 
   // full name
   std::cout << NAMEOF_RAW(somevar.somefield) << std::endl; // somevar.somefield
-  std::cout << NAMEOF_RAW(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // &SomeStruct::SomeMethod2
+  std::cout << NAMEOF_RAW(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // &SomeClass<int>::SomeMethod6<long int>
   std::cout << NAMEOF_RAW(Long::LL) << std::endl; // Long::LL
 
   const auto div = [](int x, int y) -> int {
@@ -143,8 +144,8 @@ int main() {
   /* Remarks */
 
   // Spaces and Tabs ignored
-  std::cout << NAMEOF(   somevar   ) << std::endl; // string
-  std::cout << NAMEOF(	somevar	) << std::endl; // string
+  std::cout << NAMEOF(   somevar   ) << std::endl; // somevar
+  std::cout << NAMEOF(	somevar	) << std::endl; // somevar
 
 #if 0
   // This expression does not have a name.
