@@ -26,7 +26,6 @@
 
 #include <nameof.hpp>
 
-#include <cstring>
 #include <string>
 #include <stdexcept>
 
@@ -50,10 +49,16 @@ T SomeMethod4() {
 template <typename T>
 class SomeClass {
 public:
-  void SomeMethod5() const {}
+  void SomeMethod5() const {
+    std::cout << nameof::NameofType<T>(false) << std::endl;
+  }
 
   template <typename C>
-  C SomeMethod6() const { return C{}; }
+  C SomeMethod6() const {
+    C t{};
+    std::cout << NAMEOF_TYPE(t) << std::endl;
+    return t;
+  }
 };
 
 struct Long {
@@ -67,8 +72,11 @@ enum class Color { RED, GREEN, BLUE };
 
 SomeStruct somevar;
 Long othervar;
+SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
+#if __cplusplus >= 201402L || (defined(_MSVC_LANG ) && _MSVC_LANG  >= 201402L )
+// Compile-time supported by C++14.
 TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
     // variable
@@ -105,7 +113,39 @@ TEST_CASE("constexpr") {
     constexpr auto cx6 = NAMEOF_RAW(__cplusplus);
     static_assert(cx6 == "__cplusplus", "");
   }
+
+  SECTION("NAMEOF_TYPE") {
+    SomeClass<int> a;
+
+    constexpr auto cx1 = NAMEOF_TYPE(a);
+    static_assert(cx1 == "SomeClass", "");
+
+    constexpr auto cx2 = nameof::NameofType<SomeClass<int>>(false);
+    static_assert(cx2 == "SomeClass", "");
+
+    constexpr auto cx3 = nameof::NameofType<decltype(a)>(false);
+    static_assert(cx3 == "SomeClass", "");
+  }
+
+  SECTION("NAMEOF_TYPE_RAW") {
+    SomeClass<int> a;
+
+    constexpr auto cx1 = NAMEOF_TYPE_RAW(a);
+    constexpr auto cx2 = nameof::NameofType<SomeClass<int>>(true);
+    constexpr auto cx3 = nameof::NameofType<decltype(a)>(true);
+
+#if defined(_MSC_VER)
+    static_assert(cx1 == "class SomeClass<int>", "");
+    static_assert(cx2 == "class SomeClass<int>", "");
+    static_assert(cx3 == "class SomeClass<int>", "");
+#else
+    static_assert(cx1 == "SomeClass<int>", "");
+    static_assert(cx2 == "SomeClass<int>", "");
+    static_assert(cx3 == "SomeClass<int>", "");
+#endif
+  }
 }
+#endif
 
 TEST_CASE("simple name") {
   SECTION("variable") {
@@ -134,6 +174,7 @@ TEST_CASE("simple name") {
     REQUIRE(NAMEOF(Color::BLUE) == "BLUE");
   }
 }
+
 TEST_CASE("raw name") {
   SECTION("variable") {
     REQUIRE(NAMEOF_RAW(somevar) == "somevar");
@@ -184,42 +225,63 @@ TEST_CASE("raw name") {
   }
 }
 
+TEST_CASE("type name") {
+  REQUIRE(NAMEOF_TYPE(somevar) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE(ptrvar) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE(refvar) == "SomeStruct");
+
+  REQUIRE(NAMEOF_TYPE(othervar) == "Long");
+  REQUIRE(NAMEOF_TYPE(othervar.ll) == "LL");
+  REQUIRE(NAMEOF_TYPE(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_TYPE(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_TYPE(std::string{}) == "basic_string");
+
+  REQUIRE(NAMEOF_TYPE(std::declval<const SomeClass<int>>()) == "SomeClass");
+}
+
+TEST_CASE("type raw name") {
+#if defined(_MSC_VER)
+  REQUIRE(NAMEOF_TYPE_RAW(somevar) == "struct SomeStruct");
+  REQUIRE(NAMEOF_TYPE_RAW(ptrvar) == "structSomeStruct*");
+  REQUIRE(NAMEOF_TYPE_RAW(refvar) == "structSomeStruct&");
+
+  REQUIRE(NAMEOF_TYPE_RAW(othervar) == "struct Long");
+  REQUIRE(NAMEOF_TYPE_RAW(othervar.ll) == "struct Long::LL");
+  REQUIRE(NAMEOF_TYPE_RAW(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_TYPE_RAW(Color::RED) == "enum Color");
+
+  REQUIRE(NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) == "const classSomeClass<int>&&");
+#else
+  REQUIRE(NAMEOF_TYPE_RAW(somevar) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE_RAW(ptrvar) == "SomeStruct*");
+  REQUIRE(NAMEOF_TYPE_RAW(refvar) == "SomeStruct&");
+
+  REQUIRE(NAMEOF_TYPE_RAW(othervar) == "Long");
+  REQUIRE(NAMEOF_TYPE_RAW(othervar.ll) == "Long::LL");
+  REQUIRE(NAMEOF_TYPE_RAW(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_TYPE_RAW(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) == "const SomeClass<int>&&");
+#endif
+
+}
+
 TEST_CASE("Spaces and Tabs ignored") {
   SECTION("Spaces") {
-    // variable
     REQUIRE(NAMEOF(   somevar   ) ==  "somevar");
     REQUIRE(NAMEOF_RAW(   somevar   ) ==  "somevar");
-    // member
-    REQUIRE(NAMEOF(   (&somevar)->somefield   ) ==  "somefield");
-    REQUIRE(NAMEOF_RAW(   (&somevar)->somefield   ) ==  "(&somevar)->somefield");
-    // type
-    REQUIRE(NAMEOF_RAW(   std::string   ) ==  "std::string");
-    // function
-    REQUIRE(NAMEOF(   &SomeStruct::SomeMethod2   ) ==  "SomeMethod2");
-    REQUIRE(NAMEOF_RAW(   &SomeStruct::SomeMethod2   ) ==  "&SomeStruct::SomeMethod2");
-    // enum
-    REQUIRE(NAMEOF(   Color::RED   ) ==  "RED");
-    REQUIRE(NAMEOF_RAW(   Color::RED   ) ==  "Color::RED");
-    // macros
-    REQUIRE(NAMEOF_RAW(   __cplusplus   ) ==  "__cplusplus");
+    REQUIRE(NAMEOF_TYPE(   int{}   ) ==  "int");
+    REQUIRE(NAMEOF_TYPE_RAW(   int{}   ) ==  "int");
   }
 
   SECTION("Tabs") {
-    // variable
     REQUIRE(NAMEOF(	somevar	) ==  "somevar");
     REQUIRE(NAMEOF_RAW(	somevar	) ==  "somevar");
-    // member
-    REQUIRE(NAMEOF(	(&somevar)->somefield	) ==  "somefield");
-    REQUIRE(NAMEOF_RAW(	(&somevar)->somefield	) ==  "(&somevar)->somefield");
-    // type
-    REQUIRE(NAMEOF_RAW(	std::string	) ==  "std::string");
-    // function
-    REQUIRE(NAMEOF(	&SomeStruct::SomeMethod2	) ==  "SomeMethod2");
-    REQUIRE(NAMEOF_RAW(	&SomeStruct::SomeMethod2	) ==  "&SomeStruct::SomeMethod2");
-    // enum
-    REQUIRE(NAMEOF(	Color::RED	) ==  "RED");
-    REQUIRE(NAMEOF_RAW(	Color::RED	) ==  "Color::RED");
-    // macros
-    REQUIRE(NAMEOF_RAW(	__cplusplus	) ==  "__cplusplus");
+    REQUIRE(NAMEOF_TYPE(	int{}	) ==  "int");
+    REQUIRE(NAMEOF_TYPE_RAW(	int{}	) ==  "int");
   }
 }

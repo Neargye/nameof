@@ -56,10 +56,16 @@ T SomeMethod4() {
 template <typename T>
 class SomeClass {
 public:
-  void SomeMethod5() const {}
+  void SomeMethod5() const {
+    std::cout << nameof::NameofType<T>(false) << std::endl;
+  }
 
   template <typename C>
-  C SomeMethod6() const { return C{}; }
+  C SomeMethod6() const {
+    C t{};
+    std::cout << NAMEOF_TYPE(t) << std::endl;
+    return t;
+  }
 };
 
 struct Long {
@@ -77,24 +83,25 @@ SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
 int main() {
-  std::cout << typeid(std::string).name() << std::endl;
-  // constexpr
+#if __cplusplus >= 201402L || (defined(_MSVC_LANG ) && _MSVC_LANG  >= 201402L )
+  // Compile-time supported by C++14.
   constexpr auto constexpr_work_fine = NAMEOF(somevar);
   std::cout << constexpr_work_fine << std::endl; // somevar
+#endif
 
-  // enum
+  // Enum name.
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
 
-  // variable
+  // Variable name.
   std::cout << NAMEOF(somevar) << std::endl; // somevar
   std::cout << NAMEOF(::somevar) << std::endl; // somevar
 
-  // member
+  // Member name.
   std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
   std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
 
-  // function
+  // Function name.
   std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // SomeMethod1
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
@@ -102,29 +109,25 @@ int main() {
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod5) << std::endl; // SomeMethod5
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6
 
-  // function with template prefix
-  std::cout << NAMEOF_T(SomeMethod4<int>) << std::endl; // SomeMethod4<int>
-  std::cout << NAMEOF_T(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6<long int>
-
-  // type
-  std::cout << NAMEOF_TYPE(std::string{}) << std::endl; // basic_string
+  // Type name.
   std::cout << NAMEOF_TYPE(somevar) << std::endl; // SomeStruct
-  std::cout << NAMEOF_TYPE(refvar) << std::endl; // SomeStruct&
-  std::cout << NAMEOF_TYPE(ptrvar) << std::endl; // SomeStruct*
+  std::cout << NAMEOF_TYPE(refvar) << std::endl; // SomeStruct
+  std::cout << NAMEOF_TYPE(ptrvar) << std::endl; // SomeStruct
+  std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
+  std::cout << NAMEOF_TYPE(othervar.ll.field) << std::endl; // int
   std::cout << NAMEOF_TYPE(Color::RED) << std::endl; // Color
 
-  std::cout << NAMEOF_RAW(int[]) << std::endl; // int[]
-  std::cout << NAMEOF_RAW(SomeStruct) << std::endl; // SomeStruct
-  std::cout << NAMEOF_RAW(Long::LL) << std::endl; // Long::LL
+  std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
+
+  // Type full name.
+  std::cout << NAMEOF_TYPE_RAW(othervar.ll) << std::endl; // Long::LL
+  std::cout << NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) << std::endl; // SomeClass<int>&&
+
+  // Raw name.
   std::cout << NAMEOF_RAW(volatile const int) << std::endl; // volatile const int
-
-  // macros
   std::cout << NAMEOF_RAW(__LINE__) << std::endl; // __LINE__
-  std::cout << NAMEOF_RAW(__FILE__) << std::endl; // __FILE__
-
-  // full name
   std::cout << NAMEOF_RAW(somevar.somefield) << std::endl; // somevar.somefield
-  std::cout << NAMEOF_RAW(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // &SomeClass<int>::SomeMethod6<long int>
+  std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
   std::cout << NAMEOF_RAW(Long::LL) << std::endl; // Long::LL
 
   const auto div = [](int x, int y) -> int {
@@ -143,7 +146,7 @@ int main() {
 
   /* Remarks */
 
-  // Spaces and Tabs ignored
+  // Spaces and Tabs ignored.
   std::cout << NAMEOF(   somevar   ) << std::endl; // somevar
   std::cout << NAMEOF(	somevar	) << std::endl; // somevar
 
