@@ -57,7 +57,7 @@ template <typename T>
 class SomeClass {
 public:
   void SomeMethod5() const {
-    std::cout << nameof::NameofType<T>(false) << std::endl;
+    std::cout << nameof::NameofType<T>() << std::endl;
   }
 
   template <typename C>
@@ -83,7 +83,7 @@ SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
 int main() {
-#if __cplusplus >= 201402L || (defined(_MSVC_LANG ) && _MSVC_LANG  >= 201402L )
+#if (__cplusplus >= 201402L || (defined(_MSVC_LANG ) && _MSVC_LANG  >= 201402L))
   // Compile-time supported by C++14.
   constexpr auto constexpr_work_fine = NAMEOF(somevar);
   std::cout << constexpr_work_fine << std::endl; // somevar

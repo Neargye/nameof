@@ -35,6 +35,10 @@
 #include <limits>
 #include <ostream>
 
+#if !(__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L))
+#error "Request C++14."
+#endif
+
 namespace nameof {
 
 namespace detail {
@@ -49,6 +53,8 @@ struct remove_all_pointers
     : std::conditional<std::is_pointer<T>::value,
                              remove_all_pointers<typename std::remove_pointer<T>::type>,
                              identity<T>>::type {};
+
+// STD like compile-time string.
 class cstring final {
   const char* str_;
   std::size_t size_;
@@ -95,66 +101,53 @@ class cstring final {
 
   inline constexpr const char* data() const noexcept { return str_; }
 
-  inline constexpr void remove_prefix(std::size_t n) {
-    str_ += n;
-    size_ -= n;
+  inline constexpr cstring remove_prefix(std::size_t n) const {
+    return {str_ + n, size_ - n};
   }
 
-  inline constexpr void remove_suffix(std::size_t n) {
-    size_ -= n;
+  inline constexpr cstring remove_suffix(std::size_t n) const {
+    return {str_, size_ - n};
   }
 
   inline constexpr cstring substr(std::size_t pos, std::size_t n) const {
     return {str_ + pos, n};
   }
 
-  inline friend constexpr bool operator==(const cstring& lhs, const cstring& rhs) noexcept;
-
-  inline friend constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept;
-
-  template <std::size_t N>
-  inline friend constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept;
-
-  template <std::size_t N>
-  inline friend constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept;
-
-  inline friend std::ostream& operator<<(std::ostream& os, const cstring& str);
-
-  inline operator std::string() const { return std::string(begin(), end()); }
-};
-
-inline constexpr bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
-  if (lhs.size_ != rhs.size_) {
-    return false;
-  }
-
-  for (std::size_t i = 0; i < lhs.size_; ++i) {
-    if (lhs.str_[i] != rhs.str_[i]) {
+  inline friend constexpr bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
+    if (lhs.size_ != rhs.size_) {
       return false;
     }
+
+    for (std::size_t i = 0; i < lhs.size_; ++i) {
+      if (lhs.str_[i] != rhs.str_[i]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  return true;
-}
+  inline friend constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
+    return !(lhs == rhs);
+  }
 
-inline constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
-  return !(lhs == rhs);
-}
+  template <std::size_t N>
+  inline friend constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
+    return lhs == cstring{str, N - 1};
+  }
 
-template <std::size_t N>
-inline constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
-  return lhs == cstring{str, N - 1};
-}
+  template <std::size_t N>
+  inline friend constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
+    return !(lhs == cstring{str, N - 1});
+  }
 
-template <std::size_t N>
-constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
-  return !(lhs == cstring{str, N - 1});
-}
+  inline friend std::ostream& operator<<(std::ostream& os, const cstring& str) {
+    os.write(str.begin(), str.size());
+    return os;
+  }
 
-inline std::ostream& operator<<(std::ostream& os, const cstring& str) {
-  os.write(str.begin(), str.size());
-  return os;
-}
+  inline operator std::string() const { return std::string(begin(), size()); }
+};
 
 inline constexpr bool IsLexeme(char s) noexcept {
   return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') ||
@@ -162,10 +155,6 @@ inline constexpr bool IsLexeme(char s) noexcept {
 }
 
 inline constexpr cstring NameofBase(const char* name, std::size_t length) noexcept {
-  if (length == 0) {
-    return {name, length};
-  }
-
   for (std::size_t i = length; i > 0; --i) {
     if (IsLexeme(name[i - 1])) {
       return {&name[i], length - i};
@@ -175,47 +164,9 @@ inline constexpr cstring NameofBase(const char* name, std::size_t length) noexce
   return {name, length};
 }
 
-inline constexpr cstring NameofFunction(const char* name, std::size_t length) noexcept {
-  if (length == 0) {
-    return {name, length};
-  }
-
-  std::size_t h = 0;
+inline constexpr cstring NameofTemplate(const char* name, std::size_t length, bool with_suffix) noexcept {
   std::size_t p = 0;
-  for (std::size_t i = length; i > 0; --i) {
-    if (name[i - 1] == '>') {
-      ++h;
-      ++p;
-      continue;
-    }
-
-    if (name[i - 1] == '<') {
-      --h;
-      ++p;
-      continue;
-    }
-
-    if (h != 0) {
-      ++p;
-      continue;
-    }
-
-    if (IsLexeme(name[i - 1]) && h == 0) {
-      return {&name[i], length - i - p};
-    }
-  }
-
-  return {name, length - p};
-}
-
-inline constexpr cstring NameofType(const char* name, std::size_t length) noexcept {
-  if (length == 0) {
-    return {name, length};
-  }
-
-  std::size_t h = 0;
-  std::size_t p = 0;
-  for (std::size_t i = length; i > 0; --i) {
+  for (std::size_t i = length, h = 0; i > 0; --i) {
     if (h == 0 && (name[i - 1] == '&' || name[i - 1] == '*')) {
       ++p;
       continue;
@@ -239,11 +190,11 @@ inline constexpr cstring NameofType(const char* name, std::size_t length) noexce
     }
 
     if (IsLexeme(name[i - 1]) && h == 0) {
-      return {&name[i], length - i - p};
+      return {&name[i], length - i - (with_suffix ? 0 : p)};
     }
   }
 
-  return {name, length -  p};
+  return NameofBase(name, length - (with_suffix ? 0 : p));
 }
 
 inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcept {
@@ -257,11 +208,9 @@ template <typename T,
                                              !std::is_void<T>::value>::type>
 inline constexpr detail::cstring Nameof(const T&, const char* name, std::size_t length) noexcept {
   // TODO: conditional expression is constant
-  if (std::is_function<T>::value || std::is_member_function_pointer<T>::value) {
-    return detail::NameofFunction(name, length);
-  }
-
-  return detail::NameofBase(name, length);
+  return (std::is_function<T>::value || std::is_member_function_pointer<T>::value)
+             ? detail::NameofTemplate(name, length, false)
+             : detail::NameofBase(name, length);
 }
 
 template <typename T,
@@ -271,22 +220,27 @@ template <typename T,
 inline constexpr detail::cstring Nameof(T&&, const char*, std::size_t) = delete;
 
 template <typename T>
-inline constexpr detail::cstring NameofType(bool full) noexcept {
-#if defined(__GNUC__) || defined(__clang__)
-  constexpr auto function_name = __PRETTY_FUNCTION__;
-  constexpr auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
-  constexpr auto prefix_length = sizeof("nameof::detail::cstring nameof::NameofType() [T = ") - 1;
+inline constexpr detail::cstring NameofType(bool full = false) noexcept {
+#if defined(__clang__)
+  const auto function_name = __PRETTY_FUNCTION__;
+  const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
+  constexpr auto prefix_length = sizeof("nameof::detail::cstring nameof::NameofType(bool) [T = ") - 1;
+  constexpr auto suffix_length = sizeof("]") - 1;
+#elif defined(__GNUC__)
+  const auto function_name = __PRETTY_FUNCTION__;
+  const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
+  constexpr auto prefix_length = sizeof("constexpr nameof::detail::cstring nameof::NameofType(bool) [T = ") - 1;
   constexpr auto suffix_length = sizeof("]") - 1;
 #elif defined(_MSC_VER)
-  constexpr auto function_name = __FUNCSIG__;
-  constexpr auto total_length = sizeof(__FUNCSIG__) - 1;
+  const auto function_name = __FUNCSIG__;
+  const auto total_length = sizeof(__FUNCSIG__) - 1;
   constexpr auto prefix_length = sizeof("class nameof::detail::cstring __cdecl nameof::NameofType<") - 1;
   constexpr auto suffix_length = sizeof(">(bool) noexcept") - 1;
 #endif
 
-  auto type_name = detail::cstring{function_name + prefix_length, total_length - prefix_length - suffix_length};
+  const auto raw_type_name = detail::cstring{function_name + prefix_length, total_length - prefix_length - suffix_length};
 
-  type_name =  full ? type_name : detail::NameofType(type_name.begin(), type_name.length());
+  const auto type_name =  full ? raw_type_name : detail::NameofTemplate(raw_type_name.begin(), raw_type_name.length(), false);
 
 #if defined(_MSC_VER)
 
@@ -298,13 +252,12 @@ inline constexpr detail::cstring NameofType(bool full) noexcept {
 
   if (!full && (std::is_class<D>::value || std::is_enum<D>::value) && (std::is_reference<T>::value || std::is_pointer<T>::value)) {
     if (std::is_class<D>::value && type_name[0] == 'c' && type_name[1] == 'l' && type_name[2] == 'a' && type_name[3] == 's' && type_name[4] == 's') {
-      type_name.remove_prefix(class_length);
+      return type_name.remove_prefix(class_length);
     } else if (std::is_class<D>::value && type_name[0] == 's' && type_name[1] == 't' && type_name[2] == 'r' && type_name[3] == 'u' && type_name[4] == 'c' && type_name[5] == 't') {
-      type_name.remove_prefix(struct_length);
+      return type_name.remove_prefix(struct_length);
     } else if(std::is_enum<D>::value && type_name[0] == 'e' && type_name[1] == 'n' && type_name[2] == 'u' && type_name[3] == 'm') {
-      type_name.remove_prefix(enum_length);
+      return type_name.remove_prefix(enum_length);
     }
-    //type_name.remove_prefix(type_name[0] == ' ' ? 1 : 0);
   }
 
 #endif
