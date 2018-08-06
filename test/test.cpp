@@ -113,7 +113,7 @@ TEST_CASE("constexpr") {
     constexpr auto cx6 = NAMEOF_RAW(__cplusplus);
     static_assert(cx6 == "__cplusplus", "");
   }
-
+#if 0
   SECTION("NAMEOF_TYPE") {
     SomeClass<int> a;
 
@@ -144,6 +144,7 @@ TEST_CASE("constexpr") {
     static_assert(cx3 == "SomeClass<int>", "");
 #endif
   }
+#endif
 }
 #endif
 
