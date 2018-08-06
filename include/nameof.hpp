@@ -51,8 +51,11 @@ struct identity {
 template <typename T>
 struct remove_all_pointers
     : std::conditional<std::is_pointer<T>::value,
-                             remove_all_pointers<typename std::remove_pointer<T>::type>,
+                             remove_all_pointers<typename std::remove_cv<typename std::remove_pointer<T>::type>::type>,
                              identity<T>>::type {};
+
+template <typename T>
+using Decay = std::remove_reference<typename std::remove_cv<typename remove_all_pointers<T>::type>::type>;
 
 // STD like compile-time string.
 class cstring final {
@@ -150,51 +153,48 @@ class cstring final {
 };
 
 inline constexpr bool IsLexeme(char s) noexcept {
-  return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') ||
-           (s >= 'A' && s <= 'Z') || s == '_');
+  return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_');
 }
 
-inline constexpr cstring NameofBase(const char* name, std::size_t length) noexcept {
-  for (std::size_t i = length; i > 0; --i) {
-    if (IsLexeme(name[i - 1])) {
-      return {&name[i], length - i};
-    }
-  }
-
-  return {name, length};
-}
-
-inline constexpr cstring NameofTemplate(const char* name, std::size_t length, bool with_suffix) noexcept {
+inline constexpr cstring NameofBase(const char* name, std::size_t length, bool with_suffix) noexcept {
   std::size_t p = 0;
-  for (std::size_t i = length, h = 0; i > 0; --i) {
-    if (h == 0 && (name[i - 1] == '&' || name[i - 1] == '*')) {
-      ++p;
-      continue;
-    }
+  if(IsLexeme(name[length - 1])) {
+    for (std::size_t i = length, h = 0; i > 0; --i) {
+      if (h == 0 && (IsLexeme(name[i - 1]) && name[i - 1] != '>')) {
+        ++p;
+        continue;
+      }
 
-    if (name[i - 1] == '>') {
-      ++h;
-      ++p;
-      continue;
-    }
+      if (name[i - 1] == '>') {
+        ++h;
+        ++p;
+        continue;
+      }
 
-    if (name[i - 1] == '<') {
-      --h;
-      ++p;
-      continue;
-    }
+      if (name[i - 1] == '<') {
+        --h;
+        ++p;
+        continue;
+      }
 
-    if (h != 0) {
-      ++p;
-      continue;
-    }
+      if (h != 0) {
+        ++p;
+        continue;
+      }
 
-    if (IsLexeme(name[i - 1]) && h == 0) {
-      return {&name[i], length - i - (with_suffix ? 0 : p)};
+      if (h == 0) {
+        break;
+      }
     }
   }
 
-  return NameofBase(name, length - (with_suffix ? 0 : p));
+  for (std::size_t i = length - p; i > 0; --i) {
+      if (IsLexeme(name[i - 1])) {
+        return {&name[i], length - i - (with_suffix ? 0 : p)};
+      }
+    }
+
+  return {name, length - (with_suffix ? 0 : p)};
 }
 
 inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcept {
@@ -206,11 +206,8 @@ inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcep
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value &&
                                              !std::is_void<T>::value>::type>
-inline constexpr detail::cstring Nameof(const T&, const char* name, std::size_t length) noexcept {
-  // TODO: conditional expression is constant
-  return (std::is_function<T>::value || std::is_member_function_pointer<T>::value)
-             ? detail::NameofTemplate(name, length, false)
-             : detail::NameofBase(name, length);
+inline constexpr detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_suffix = false) noexcept {
+  return detail::NameofBase(name, length, with_suffix);
 }
 
 template <typename T,
@@ -220,49 +217,31 @@ template <typename T,
 inline constexpr detail::cstring Nameof(T&&, const char*, std::size_t) = delete;
 
 template <typename T>
-inline constexpr detail::cstring NameofType(bool full = false) noexcept {
+inline constexpr detail::cstring NameofTypeRaw() noexcept {
 #if defined(__clang__)
   const auto function_name = __PRETTY_FUNCTION__;
   const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
-  constexpr auto prefix_length = sizeof("nameof::detail::cstring nameof::NameofType(bool) [T = ") - 1;
+  constexpr auto prefix_length = sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1;
   constexpr auto suffix_length = sizeof("]") - 1;
 #elif defined(__GNUC__)
   const auto function_name = __PRETTY_FUNCTION__;
   const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
-  constexpr auto prefix_length = sizeof("constexpr nameof::detail::cstring nameof::NameofType(bool) [T = ") - 1;
+  constexpr auto prefix_length = sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1;
   constexpr auto suffix_length = sizeof("]") - 1;
 #elif defined(_MSC_VER)
   const auto function_name = __FUNCSIG__;
   const auto total_length = sizeof(__FUNCSIG__) - 1;
-  constexpr auto prefix_length = sizeof("class nameof::detail::cstring __cdecl nameof::NameofType<") - 1;
-  constexpr auto suffix_length = sizeof(">(bool) noexcept") - 1;
+  constexpr auto prefix_length = sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1;
+  constexpr auto suffix_length = sizeof(">(void) noexcept") - 1;
 #endif
 
-  const auto raw_type_name = detail::cstring{function_name + prefix_length, total_length - prefix_length - suffix_length};
+  return {function_name + prefix_length, total_length - prefix_length - suffix_length};
+}
 
-  const auto type_name =  full ? raw_type_name : detail::NameofTemplate(raw_type_name.begin(), raw_type_name.length(), false);
-
-#if defined(_MSC_VER)
-
-  constexpr auto class_length = sizeof("class") - 1;
-  constexpr auto struct_length = sizeof("struct") - 1;
-  constexpr auto enum_length = sizeof("enum") - 1;
-
-  using D = typename detail::remove_all_pointers<typename std::remove_reference<T>::type>::type;
-
-  if (!full && (std::is_class<D>::value || std::is_enum<D>::value) && (std::is_reference<T>::value || std::is_pointer<T>::value)) {
-    if (std::is_class<D>::value && type_name[0] == 'c' && type_name[1] == 'l' && type_name[2] == 'a' && type_name[3] == 's' && type_name[4] == 's') {
-      return type_name.remove_prefix(class_length);
-    } else if (std::is_class<D>::value && type_name[0] == 's' && type_name[1] == 't' && type_name[2] == 'r' && type_name[3] == 'u' && type_name[4] == 'c' && type_name[5] == 't') {
-      return type_name.remove_prefix(struct_length);
-    } else if(std::is_enum<D>::value && type_name[0] == 'e' && type_name[1] == 'n' && type_name[2] == 'u' && type_name[3] == 'm') {
-      return type_name.remove_prefix(enum_length);
-    }
-  }
-
-#endif
-
-  return type_name;
+template <typename T, typename D = typename detail::Decay<T>::type>
+inline constexpr detail::cstring NameofType() noexcept {
+  const auto raw_type_name = NameofTypeRaw<D>();
+  return detail::NameofBase(raw_type_name.begin(), raw_type_name.length(), false);
 }
 
 } // namespace nameof
@@ -278,8 +257,11 @@ inline constexpr detail::cstring NameofType(bool full = false) noexcept {
 // Used to obtain the simple (unqualified) string name of a variable, member, function.
 #define NAMEOF(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1)
 
+// Used to obtain the full string name of a variable, member, function.
+#define NAMEOF_FULL(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, true)
+
 // Used to obtain the simple (unqualified) string name of a type.
-#define NAMEOF_TYPE(name) ::nameof::NameofType<decltype(name)>(false)
+#define NAMEOF_TYPE(name) ::nameof::NameofType<decltype(name)>()
 
 // Used to obtain the raw string name of a type.
-#define NAMEOF_TYPE_RAW(name) ::nameof::NameofType<decltype(name)>(true)
+#define NAMEOF_TYPE_RAW(name) ::nameof::NameofTypeRaw<decltype(name)>()

@@ -121,7 +121,7 @@ int main() {
 
   // Type full name.
   std::cout << NAMEOF_TYPE_RAW(othervar.ll) << std::endl; // Long::LL
-  std::cout << NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) << std::endl; // SomeClass<int>&&
+  std::cout << NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int>&&
 
   // Raw name.
   std::cout << NAMEOF_RAW(volatile const int) << std::endl; // volatile const int
