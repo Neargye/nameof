@@ -75,7 +75,7 @@ Long othervar;
 SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
-#if 0 && (__cplusplus >= 201402L || (defined(_MSVC_LANG ) && _MSVC_LANG  >= 201402L))
+#if (__cplusplus >= 201402L || (defined(_MSVC_LANG ) && _MSVC_LANG  >= 201402L))
 // Compile-time supported by C++14.
 TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
@@ -138,7 +138,7 @@ TEST_CASE("constexpr") {
     static_assert(cx1 == "class SomeClass<int>", "");
     static_assert(cx2 == "class SomeClass<int>", "");
     static_assert(cx3 == "class SomeClass<int>", "");
-#else
+#elif defined(__GNUC__) || defined(__clang__)
     static_assert(cx1 == "SomeClass<int>", "");
     static_assert(cx2 == "SomeClass<int>", "");
     static_assert(cx3 == "SomeClass<int>", "");
@@ -262,7 +262,7 @@ TEST_CASE("type raw name") {
 
   REQUIRE(NAMEOF_TYPE_RAW(Color::RED) == "Color");
 
-  REQUIRE(NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) == "const SomeClass<int>&&");
+  REQUIRE(NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) == "const SomeClass<int> &&");
 #elif defined(__GNUC__)
   REQUIRE(NAMEOF_TYPE_RAW(somevar) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_RAW(ptrvar) == "SomeStruct*");
@@ -274,7 +274,7 @@ TEST_CASE("type raw name") {
 
   REQUIRE(NAMEOF_TYPE_RAW(Color::RED) == "Color");
 
-  REQUIRE(NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) == "const SomeClass<int> &&");
+  REQUIRE(NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) == "const SomeClass<int>&&");
 #endif
 }
 
@@ -285,7 +285,7 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF_TYPE(   somevar   ) ==  "SomeStruct");
 #if defined(_MSC_VER)
     REQUIRE(NAMEOF_TYPE_RAW(   somevar   ) ==  "struct SomeStruct");
-#else
+#elif defined(__GNUC__) || defined(__clang__)
     REQUIRE(NAMEOF_TYPE_RAW(   somevar   ) ==  "SomeStruct");
 #endif
   }
@@ -296,7 +296,7 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF_TYPE(	somevar	) ==  "SomeStruct");
 #if defined(_MSC_VER)
     REQUIRE(NAMEOF_TYPE_RAW(	somevar	) ==  "struct SomeStruct");
-#else
+#elif defined(__GNUC__) || defined(__clang__)
     REQUIRE(NAMEOF_TYPE_RAW(	somevar	) ==  "SomeStruct");
 #endif
   }

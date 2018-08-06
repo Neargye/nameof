@@ -35,8 +35,10 @@
 #include <limits>
 #include <ostream>
 
-#if !(__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L))
-#error "Request C++14."
+#if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L))
+#  define NAMEOF_CONSTEXPR14 constexpr
+#else
+#  define NAMEOF_CONSTEXPR14
 #endif
 
 namespace nameof {
@@ -116,7 +118,7 @@ class cstring final {
     return {str_ + pos, n};
   }
 
-  inline friend constexpr bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
+  inline friend NAMEOF_CONSTEXPR14 bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
     if (lhs.size_ != rhs.size_) {
       return false;
     }
@@ -130,17 +132,17 @@ class cstring final {
     return true;
   }
 
-  inline friend constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
+  inline friend NAMEOF_CONSTEXPR14 bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
     return !(lhs == rhs);
   }
 
   template <std::size_t N>
-  inline friend constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
+  inline friend NAMEOF_CONSTEXPR14 bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
     return lhs == cstring{str, N - 1};
   }
 
   template <std::size_t N>
-  inline friend constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
+  inline friend NAMEOF_CONSTEXPR14 bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
     return !(lhs == cstring{str, N - 1});
   }
 
@@ -156,7 +158,7 @@ inline constexpr bool IsLexeme(char s) noexcept {
   return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_');
 }
 
-inline constexpr cstring NameofBase(const char* name, std::size_t length, bool with_suffix) noexcept {
+inline NAMEOF_CONSTEXPR14 cstring NameofBase(const char* name, std::size_t length, bool with_suffix) noexcept {
   std::size_t p = 0;
   if(IsLexeme(name[length - 1])) {
     for (std::size_t i = length, h = 0; i > 0; --i) {
@@ -206,7 +208,7 @@ inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcep
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value &&
                                              !std::is_void<T>::value>::type>
-inline constexpr detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_suffix = false) noexcept {
+inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_suffix = false) noexcept {
   return detail::NameofBase(name, length, with_suffix);
 }
 
@@ -214,10 +216,10 @@ template <typename T,
           typename = typename std::enable_if<!std::is_enum<T>::value &&
                                              !std::is_function<T>::value &&
                                              !std::is_member_function_pointer<T>::value>::type>
-inline constexpr detail::cstring Nameof(T&&, const char*, std::size_t) = delete;
+inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(T&&, const char*, std::size_t, bool) = delete;
 
 template <typename T>
-inline constexpr detail::cstring NameofTypeRaw() noexcept {
+inline NAMEOF_CONSTEXPR14 detail::cstring NameofTypeRaw() noexcept {
 #if defined(__clang__)
   const auto function_name = __PRETTY_FUNCTION__;
   const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
@@ -239,7 +241,7 @@ inline constexpr detail::cstring NameofTypeRaw() noexcept {
 }
 
 template <typename T, typename D = typename detail::Decay<T>::type>
-inline constexpr detail::cstring NameofType() noexcept {
+inline NAMEOF_CONSTEXPR14 detail::cstring NameofType() noexcept {
   const auto raw_type_name = NameofTypeRaw<D>();
   return detail::NameofBase(raw_type_name.begin(), raw_type_name.length(), false);
 }
@@ -255,7 +257,7 @@ inline constexpr detail::cstring NameofType() noexcept {
 #endif
 
 // Used to obtain the simple (unqualified) string name of a variable, member, function.
-#define NAMEOF(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1)
+#define NAMEOF(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, false)
 
 // Used to obtain the full string name of a variable, member, function.
 #define NAMEOF_FULL(name) ::nameof::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, true)
