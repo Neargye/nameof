@@ -35,7 +35,7 @@
 #include <limits>
 #include <ostream>
 
-#if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L))
+#if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSC_VER >= 1910 && _MSVC_LANG >= 201402L))
 #  define NAMEOF_CONSTEXPR14 constexpr
 #else
 #  define NAMEOF_CONSTEXPR14
@@ -67,10 +67,7 @@ class cstring final {
  public:
   constexpr cstring(const char* str, std::size_t size) noexcept : str_(str), size_(size) {}
 
-  template <std::size_t N>
-  constexpr cstring(const char(&str)[N]) noexcept : str_(str), size_(N - 1) {}
-
-  cstring() = delete;
+  cstring() noexcept : str_(nullptr), size_(0) {}
 
   cstring(const cstring&) = default;
 
@@ -118,32 +115,22 @@ class cstring final {
     return {str_ + pos, n};
   }
 
-  inline friend NAMEOF_CONSTEXPR14 bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
-    if (lhs.size_ != rhs.size_) {
-      return false;
-    }
-
-    for (std::size_t i = 0; i < lhs.size_; ++i) {
-      if (lhs.str_[i] != rhs.str_[i]) {
-        return false;
-      }
-    }
-
-    return true;
+  inline friend constexpr bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
+    return (lhs.size_ == rhs.size_) && equals(lhs.begin(), rhs.begin(), lhs.size());
   }
 
-  inline friend NAMEOF_CONSTEXPR14 bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
+  inline friend constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
     return !(lhs == rhs);
   }
 
   template <std::size_t N>
-  inline friend NAMEOF_CONSTEXPR14 bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
+  inline friend constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
     return lhs == cstring{str, N - 1};
   }
 
   template <std::size_t N>
-  inline friend NAMEOF_CONSTEXPR14 bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
-    return !(lhs == cstring{str, N - 1});
+  inline friend constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
+    return lhs != cstring{str, N - 1};
   }
 
   inline friend std::ostream& operator<<(std::ostream& os, const cstring& str) {
@@ -152,6 +139,11 @@ class cstring final {
   }
 
   inline operator std::string() const { return std::string(begin(), size()); }
+
+ private:
+  static inline constexpr bool equals(const char* lhs, const char* rhs, std::size_t size) {
+     return size == 0 ? (lhs[0] == rhs[0]) : ((lhs[size - 1] == rhs[size - 1]) && equals(lhs, rhs, size - 1));
+   }
 };
 
 inline constexpr bool IsLexeme(char s) noexcept {
@@ -219,25 +211,19 @@ template <typename T,
 inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(T&&, const char*, std::size_t, bool) = delete;
 
 template <typename T>
-inline NAMEOF_CONSTEXPR14 detail::cstring NameofTypeRaw() noexcept {
+inline constexpr detail::cstring NameofTypeRaw() noexcept {
 #if defined(__clang__)
-  const auto function_name = __PRETTY_FUNCTION__;
-  const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
-  constexpr auto prefix_length = sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1;
-  constexpr auto suffix_length = sizeof("]") - 1;
+  return {__PRETTY_FUNCTION__ + (sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1),
+          (sizeof(__PRETTY_FUNCTION__) - 1) - (sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1) - (sizeof("]") - 1)};
 #elif defined(__GNUC__)
-  const auto function_name = __PRETTY_FUNCTION__;
-  const auto total_length = sizeof(__PRETTY_FUNCTION__) - 1;
-  constexpr auto prefix_length = sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1;
-  constexpr auto suffix_length = sizeof("]") - 1;
+  return {__PRETTY_FUNCTION__ + (sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1),
+          (sizeof(__PRETTY_FUNCTION__) - 1) - (sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1) - (sizeof("]") - 1)};
 #elif defined(_MSC_VER)
-  const auto function_name = __FUNCSIG__;
-  const auto total_length = sizeof(__FUNCSIG__) - 1;
-  constexpr auto prefix_length = sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1;
-  constexpr auto suffix_length = sizeof(">(void) noexcept") - 1;
+  return {__FUNCSIG__ + (sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1),
+          (sizeof(__FUNCSIG__) - 1) - (sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1) - (sizeof(">(void) noexcept") - 1)};
+#else
+  return {};
 #endif
-
-  return {function_name + prefix_length, total_length - prefix_length - suffix_length};
 }
 
 template <typename T, typename D = typename detail::Decay<T>::type>
