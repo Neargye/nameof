@@ -86,7 +86,7 @@ int main() {
 #if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSC_VER >= 1910 && _MSVC_LANG >= 201402L))
   // Compile-time supported by C++14.
   constexpr auto constexpr_work_fine = NAMEOF(somevar);
-  std::cout << constexpr_work_fine << std::endl; // somevar
+  static_assert(constexpr_work_fine == "somevar", "");
 #endif
 
   // Enum name.

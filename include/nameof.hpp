@@ -32,7 +32,7 @@
 
 #include <cstddef>
 #include <type_traits>
-#include <limits>
+#include <string>
 #include <ostream>
 
 #if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSC_VER >= 1910 && _MSVC_LANG >= 201402L))
@@ -59,6 +59,10 @@ struct remove_all_pointers
 template <typename T>
 using Decay = std::remove_reference<typename std::remove_cv<typename remove_all_pointers<T>::type>::type>;
 
+inline constexpr bool StrEquals(const char* lhs, const char* rhs, std::size_t size) {
+  return size == 0 ? (lhs[0] == rhs[0]) : ((lhs[size - 1] == rhs[size - 1]) && StrEquals(lhs, rhs, size - 1));
+}
+
 // STD like compile-time string.
 class cstring final {
   const char* str_;
@@ -82,8 +86,6 @@ class cstring final {
   inline constexpr std::size_t size() const noexcept { return size_; }
 
   inline constexpr std::size_t length() const noexcept { return size_; }
-
-  inline constexpr std::size_t max_size() const noexcept { return std::numeric_limits<decltype(size_)>::max(); }
 
   inline constexpr bool empty() const noexcept { return size_ == 0; }
 
@@ -116,7 +118,7 @@ class cstring final {
   }
 
   inline friend constexpr bool operator==(const cstring& lhs, const cstring& rhs) noexcept {
-    return (lhs.size_ == rhs.size_) && equals(lhs.begin(), rhs.begin(), lhs.size());
+    return (lhs.size_ == rhs.size_) && StrEquals(lhs.begin(), rhs.begin(), lhs.size());
   }
 
   inline friend constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
@@ -125,12 +127,12 @@ class cstring final {
 
   template <std::size_t N>
   inline friend constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
-    return lhs == cstring{str, N - 1};
+    return (lhs.size_ == N - 1) && StrEquals(lhs.begin(), str, lhs.size());
   }
 
   template <std::size_t N>
   inline friend constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
-    return lhs != cstring{str, N - 1};
+    return !(lhs == str);
   }
 
   inline friend std::ostream& operator<<(std::ostream& os, const cstring& str) {
@@ -139,11 +141,6 @@ class cstring final {
   }
 
   inline operator std::string() const { return std::string(begin(), size()); }
-
- private:
-  static inline constexpr bool equals(const char* lhs, const char* rhs, std::size_t size) {
-     return size == 0 ? (lhs[0] == rhs[0]) : ((lhs[size - 1] == rhs[size - 1]) && equals(lhs, rhs, size - 1));
-   }
 };
 
 inline constexpr bool IsLexeme(char s) noexcept {
