@@ -208,14 +208,20 @@ inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(T&&, const char*, std::size_t, 
 template <typename T>
 inline detail::cstring NameofTypeRaw() noexcept {
 #if defined(__clang__)
-  return {__PRETTY_FUNCTION__ + (sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1),
-          (sizeof(__PRETTY_FUNCTION__) - 1) - (sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1) - (sizeof("]") - 1)};
+    return {__PRETTY_FUNCTION__,
+          sizeof(__PRETTY_FUNCTION__) - 1,
+          sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1,
+          sizeof("]") - 1};
 #elif defined(__GNUC__)
-  return {__PRETTY_FUNCTION__ + (sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1),
-          (sizeof(__PRETTY_FUNCTION__) - 1) - (sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1) - (sizeof("]") - 1)};
+  return {__PRETTY_FUNCTION__,
+          sizeof(__PRETTY_FUNCTION__) - 1,
+          sizeof("nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1,
+          sizeof("]") - 1};
 #elif defined(_MSC_VER)
-  return {__FUNCSIG__ + (sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1),
-          (sizeof(__FUNCSIG__) - 1) - (sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1) - (sizeof(">(void) noexcept") - 1)};
+  return {__FUNCSIG__,
+          sizeof(__FUNCSIG__) - 1,
+          sizeof("class nameof::detail::cstring __cdecl nameof::NameofTypeRaw<") - 1,
+          sizeof(">(void) noexcept") - 1};
 #else
   return {};
 #endif
