@@ -206,7 +206,7 @@ template <typename T,
 inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(T&&, const char*, std::size_t, bool) = delete;
 
 template <typename T>
-inline detail::cstring NameofTypeRaw() noexcept {
+inline constexpr detail::cstring NameofTypeRaw() noexcept {
 #if defined(__clang__)
     return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
@@ -215,7 +215,7 @@ inline detail::cstring NameofTypeRaw() noexcept {
 #elif defined(__GNUC__)
   return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
-          sizeof("nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1,
+          sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1,
           sizeof("]") - 1};
 #elif defined(_MSC_VER)
   return {__FUNCSIG__,
@@ -228,7 +228,7 @@ inline detail::cstring NameofTypeRaw() noexcept {
 }
 
 template <typename T, typename D = typename detail::Decay<T>::type>
-inline detail::cstring NameofType() noexcept {
+inline constexpr detail::cstring NameofType() noexcept {
   const auto raw_type_name = NameofTypeRaw<D>();
   return detail::NameofBase(raw_type_name.begin(), raw_type_name.length(), false);
 }

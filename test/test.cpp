@@ -114,7 +114,8 @@ TEST_CASE("constexpr") {
     static_assert(cx6 == "__cplusplus", "");
   }
 
-#if 0
+  //TODO: constexpr NameofType gcc.
+#if (defined(__clang__) || (defined(_MSC_VER) && _MSC_VER >= 1910))
   SECTION("NAMEOF_TYPE") {
     SomeClass<int> a;
 
