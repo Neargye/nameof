@@ -60,18 +60,26 @@ template <typename T>
 using Decay = std::remove_reference<typename std::remove_cv<typename remove_all_pointers<T>::type>::type>;
 
 inline constexpr bool StrEquals(const char* lhs, const char* rhs, std::size_t size) {
-  return size == 0 ? (lhs[0] == rhs[0]) : ((lhs[size - 1] == rhs[size - 1]) && StrEquals(lhs, rhs, size - 1));
+  return (size == 0) ? (lhs[0] == rhs[0]) : ((lhs[size - 1] == rhs[size - 1]) && StrEquals(lhs, rhs, size - 1));
 }
 
-// STD like compile-time string.
+inline constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
+  return (str == nullptr) ? 0 : ((str[size] == '\0') ? size : StrLen(str, size + 1));
+}
+
+// STD like compile-time const char* string.
 class cstring final {
   const char* str_;
   std::size_t size_;
 
  public:
-  constexpr cstring(const char* str, std::size_t size) noexcept : str_(str), size_(size) {}
+  constexpr cstring(const char* str, std::size_t length, std::size_t prefix = 0, std::size_t suffix = 0) noexcept
+      : str_{str + prefix},
+        size_(length - prefix - suffix) {}
 
-  cstring() noexcept : str_(nullptr), size_(0) {}
+  constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
+
+  constexpr cstring(const char* str) noexcept : cstring{str, StrLen(str), 0, 0} {}
 
   cstring(const cstring&) = default;
 
@@ -123,16 +131,6 @@ class cstring final {
 
   inline friend constexpr bool operator!=(const cstring& lhs, const cstring& rhs) noexcept {
     return !(lhs == rhs);
-  }
-
-  template <std::size_t N>
-  inline friend constexpr bool operator==(const cstring& lhs, const char(&str)[N]) noexcept {
-    return (lhs.size_ == N - 1) && StrEquals(lhs.begin(), str, lhs.size());
-  }
-
-  template <std::size_t N>
-  inline friend constexpr bool operator!=(const cstring& lhs, const char(&str)[N]) noexcept {
-    return !(lhs == str);
   }
 
   inline friend std::ostream& operator<<(std::ostream& os, const cstring& str) {
