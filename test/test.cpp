@@ -75,8 +75,8 @@ Long othervar;
 SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
-#if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSC_VER >= 1910 && _MSVC_LANG >= 201402L))
-// Compile-time supported by C++14.
+#if NAMEOF_HAS_CONSTEXPR
+// Compile-time nameof supported by C++14.
 TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
     // variable
@@ -114,20 +114,20 @@ TEST_CASE("constexpr") {
     static_assert(cx6 == "__cplusplus", "");
   }
 
-  //TODO: constexpr NameofType gcc.
-#if (defined(__clang__) || (defined(_MSC_VER) && _MSC_VER >= 1910))
+#  if defined(_MSC_VER) || defined(__clang__)
   SECTION("NAMEOF_TYPE") {
     SomeClass<int> a;
 
     constexpr auto cx1 = NAMEOF_TYPE(a);
-    static_assert(cx1 == "SomeClass", "");
-
     constexpr auto cx2 = nameof::NameofType<SomeClass<int>>();
-    static_assert(cx2 == "SomeClass", "");
-
     constexpr auto cx3 = nameof::NameofType<decltype(a)>();
+
+
+    static_assert(cx1 == "SomeClass", "");
+    static_assert(cx2 == "SomeClass", "");
     static_assert(cx3 == "SomeClass", "");
   }
+#  endif
 
   SECTION("NAMEOF_TYPE_RAW") {
     SomeClass<int> a;
@@ -136,17 +136,16 @@ TEST_CASE("constexpr") {
     constexpr auto cx2 = nameof::NameofTypeRaw<SomeClass<int>>();
     constexpr auto cx3 = nameof::NameofTypeRaw<decltype(a)>();
 
-#if defined(_MSC_VER)
+#  if defined(_MSC_VER)
     static_assert(cx1 == "class SomeClass<int>", "");
     static_assert(cx2 == "class SomeClass<int>", "");
     static_assert(cx3 == "class SomeClass<int>", "");
-#elif defined(__GNUC__) || defined(__clang__)
+#  elif defined(__clang__)
     static_assert(cx1 == "SomeClass<int>", "");
     static_assert(cx2 == "SomeClass<int>", "");
     static_assert(cx3 == "SomeClass<int>", "");
-#endif
+#  endif
   }
-#endif
 }
 #endif
 

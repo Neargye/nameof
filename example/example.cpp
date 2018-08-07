@@ -79,12 +79,11 @@ enum class Color { RED, GREEN, BLUE };
 
 SomeStruct somevar;
 Long othervar;
-SomeStruct& refvar = somevar;
 SomeStruct* ptrvar = &somevar;
 
 int main() {
-#if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSC_VER >= 1910 && _MSVC_LANG >= 201402L))
-  // Compile-time supported by C++14.
+#if NAMEOF_HAS_CONSTEXPR
+  // Compile-time nameof supported by C++14.
   constexpr auto constexpr_work_fine = NAMEOF(somevar);
   static_assert("somevar" == constexpr_work_fine, "");
 #endif
@@ -111,12 +110,7 @@ int main() {
 
   // Type name.
   std::cout << NAMEOF_TYPE(somevar) << std::endl; // SomeStruct
-  std::cout << NAMEOF_TYPE(refvar) << std::endl; // SomeStruct
-  std::cout << NAMEOF_TYPE(ptrvar) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
-  std::cout << NAMEOF_TYPE(othervar.ll.field) << std::endl; // int
-  std::cout << NAMEOF_TYPE(Color::RED) << std::endl; // Color
-
   std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
 
   // Type full name.

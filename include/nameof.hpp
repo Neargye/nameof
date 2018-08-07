@@ -35,10 +35,12 @@
 #include <string>
 #include <ostream>
 
-#if (__cplusplus >= 201402L || (defined(_MSVC_LANG) && _MSC_VER >= 1910 && _MSVC_LANG >= 201402L))
-#  define NAMEOF_CONSTEXPR14 constexpr
+#if (defined(__cpp_constexpr) && __cpp_constexpr >= 201304L) || (defined(_MSC_VER) && _MSC_VER >= 1910)
+#  define NAMEOF_CONSTEXPR constexpr
+#  define NAMEOF_HAS_CONSTEXPR 1
 #else
-#  define NAMEOF_CONSTEXPR14
+#  define NAMEOF_CONSTEXPR
+#  define NAMEOF_HAS_CONSTEXPR 0
 #endif
 
 namespace nameof {
@@ -70,16 +72,16 @@ inline constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
 // STD like compile-time const char* string.
 class cstring final {
   const char* str_;
-  std::size_t size_;
+  const std::size_t size_;
 
  public:
-  constexpr cstring(const char* str, std::size_t length, std::size_t prefix = 0, std::size_t suffix = 0) noexcept
+  inline constexpr cstring(const char* str, std::size_t length, std::size_t prefix = 0, std::size_t suffix = 0) noexcept
       : str_{str + prefix},
         size_{length - prefix - suffix} {}
 
-  constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
+  inline constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
 
-  constexpr cstring(const char* str) noexcept : cstring{str, StrLen(str), 0, 0} {}
+  inline constexpr cstring(const char* str) noexcept : cstring{str, StrLen(str), 0, 0} {}
 
   cstring(const cstring&) = default;
 
@@ -145,7 +147,7 @@ inline constexpr bool IsLexeme(char s) noexcept {
   return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_');
 }
 
-inline NAMEOF_CONSTEXPR14 cstring NameofBase(const char* name, std::size_t length, bool with_suffix) noexcept {
+inline NAMEOF_CONSTEXPR cstring NameofBase(const char* name, std::size_t length, bool with_suffix) noexcept {
   std::size_t p = 0;
   if(IsLexeme(name[length - 1])) {
     for (std::size_t i = length, h = 0; i > 0; --i) {
@@ -195,7 +197,7 @@ inline constexpr cstring NameofRaw(const char* name, std::size_t length) noexcep
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value &&
                                              !std::is_void<T>::value>::type>
-inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_suffix = false) noexcept {
+inline NAMEOF_CONSTEXPR detail::cstring Nameof(const T&, const char* name, std::size_t length, bool with_suffix = false) noexcept {
   return detail::NameofBase(name, length, with_suffix);
 }
 
@@ -203,19 +205,23 @@ template <typename T,
           typename = typename std::enable_if<!std::is_enum<T>::value &&
                                              !std::is_function<T>::value &&
                                              !std::is_member_function_pointer<T>::value>::type>
-inline NAMEOF_CONSTEXPR14 detail::cstring Nameof(T&&, const char*, std::size_t, bool) = delete;
+inline NAMEOF_CONSTEXPR detail::cstring Nameof(T&&, const char*, std::size_t, bool) = delete;
 
 template <typename T>
-inline constexpr detail::cstring NameofTypeRaw() noexcept {
+inline NAMEOF_CONSTEXPR detail::cstring NameofTypeRaw() noexcept {
 #if defined(__clang__)
-    return {__PRETTY_FUNCTION__,
+  return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
           sizeof("detail::cstring nameof::NameofTypeRaw() [T = ") - 1,
           sizeof("]") - 1};
 #elif defined(__GNUC__)
   return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
+#  if NAMEOF_HAS_CONSTEXPR
           sizeof("constexpr nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1,
+#  else
+          sizeof("nameof::detail::cstring nameof::NameofTypeRaw() [with T = ") - 1,
+#  endif
           sizeof("]") - 1};
 #elif defined(_MSC_VER)
   return {__FUNCSIG__,
@@ -228,14 +234,14 @@ inline constexpr detail::cstring NameofTypeRaw() noexcept {
 }
 
 template <typename T, typename D = typename detail::Decay<T>::type>
-inline constexpr detail::cstring NameofType() noexcept {
+inline NAMEOF_CONSTEXPR detail::cstring NameofType() noexcept {
   const auto raw_type_name = NameofTypeRaw<D>();
   return detail::NameofBase(raw_type_name.begin(), raw_type_name.length(), false);
 }
 
 } // namespace nameof
 
-#if defined(__GNUC__) || defined(__clang__)
+#if  defined(__GNUC__) || defined(__clang__)
 // Used to obtain the raw string name of a variable, type, member, function, macros.
 #  define NAMEOF_RAW(name) ::nameof::detail::NameofRaw(#name, ((sizeof(#name) / sizeof(char)) - 1) + (0 * sizeof(void (*)(__typeof__(name)))))
 #elif defined(_MSC_VER)
