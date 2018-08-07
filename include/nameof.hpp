@@ -53,7 +53,7 @@ struct identity {
 template <typename T>
 struct remove_all_pointers
     : std::conditional<std::is_pointer<T>::value,
-                             remove_all_pointers<typename std::remove_cv<typename std::remove_pointer<T>::type>::type>,
+                             remove_all_pointers<typename std::remove_pointer<T>::type>,
                              identity<T>>::type {};
 
 template <typename T>
@@ -75,7 +75,7 @@ class cstring final {
  public:
   constexpr cstring(const char* str, std::size_t length, std::size_t prefix = 0, std::size_t suffix = 0) noexcept
       : str_{str + prefix},
-        size_(length - prefix - suffix) {}
+        size_{length - prefix - suffix} {}
 
   constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
 
