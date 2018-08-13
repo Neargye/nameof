@@ -1,5 +1,7 @@
 version: "{branch} #{build}"
 
+shallow_clone: true
+
 image:
   - Visual Studio 2017
 
@@ -11,10 +13,8 @@ configuration:
   - Debug
   - Release
 
-shallow_clone: true
-
-matrix:
-  fast_finish: false
+build:
+  parallel: true
 
 environment:
   matrix:
@@ -25,10 +25,10 @@ before_build:
   - if exist build RMDIR /S /Q build
   - if not exist build mkdir build
   - cd build
-  - cmake .. -G "%GENERATOR%" -A %PLATFORM% -DCMAKE_BUILD_TYPE=${CONFIGURATION}
+  - cmake -G "%GENERATOR%" -A %PLATFORM% -DCMAKE_BUILD_TYPE=${CONFIGURATION} ..
 
 build_script:
   - cmake --build . --config %CONFIGURATION%
 
 test_script:
-  - ctest -V --output-on-failure -C %CONFIGURATION%
+  - ctest --output-on-failure -C %CONFIGURATION%
