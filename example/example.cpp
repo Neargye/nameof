@@ -57,7 +57,7 @@ template <typename T>
 class SomeClass {
 public:
   void SomeMethod5() const {
-    std::cout << nameof::NameofType<T>() << std::endl;
+    std::cout << NAMEOF_TYPE_T(T) << std::endl;
   }
 
   template <typename C>
@@ -77,27 +77,25 @@ struct Long {
 
 enum class Color { RED, GREEN, BLUE };
 
-SomeStruct somevar;
+SomeStruct structvar;
 Long othervar;
-SomeStruct* ptrvar = &somevar;
+SomeStruct* ptrvar = &structvar;
 
 int main() {
-#if NAMEOF_HAS_CONSTEXPR
-  // Compile-time nameof supported by C++14.
-  constexpr auto constexpr_work_fine = NAMEOF(somevar);
-  static_assert("somevar" == constexpr_work_fine, "");
-#endif
+  // Compile-time nameof.
+  constexpr auto constexpr_work_fine = NAMEOF(structvar);
+  static_assert("structvar" == constexpr_work_fine, "");
 
   // Enum name.
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
 
   // Variable name.
-  std::cout << NAMEOF(somevar) << std::endl; // somevar
-  std::cout << NAMEOF(::somevar) << std::endl; // somevar
+  std::cout << NAMEOF(structvar) << std::endl; // structvar
+  std::cout << NAMEOF(::structvar) << std::endl; // structvar
 
   // Member name.
-  std::cout << NAMEOF(somevar.somefield) << std::endl; // somefield
-  std::cout << NAMEOF((&somevar)->somefield) << std::endl; // somefield
+  std::cout << NAMEOF(structvar.somefield) << std::endl; // somefield
+  std::cout << NAMEOF((&structvar)->somefield) << std::endl; // somefield
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
 
   // Function name.
@@ -109,18 +107,20 @@ int main() {
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6
 
   // Type name.
-  std::cout << NAMEOF_TYPE(somevar) << std::endl; // SomeStruct
+  std::cout << NAMEOF_TYPE(structvar) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
   std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
+  std::cout << NAMEOF_TYPE_T(std::string) << std::endl; // basic_string
 
   // Type full name.
   std::cout << NAMEOF_TYPE_RAW(othervar.ll) << std::endl; // Long::LL
-  std::cout << NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int>&&
+  std::cout << NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int> &&
+  std::cout << NAMEOF_TYPE_RAW_T(const SomeClass<int> volatile *) << std::endl; // const volatile SomeClass<int> *
 
   // Raw name.
   std::cout << NAMEOF_RAW(volatile const int) << std::endl; // volatile const int
   std::cout << NAMEOF_RAW(__LINE__) << std::endl; // __LINE__
-  std::cout << NAMEOF_RAW(somevar.somefield) << std::endl; // somevar.somefield
+  std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // structvar.somefield
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
   std::cout << NAMEOF_RAW(Long::LL) << std::endl; // Long::LL
 
@@ -139,11 +139,6 @@ int main() {
   }
 
   /* Remarks */
-
-  // Spaces and Tabs ignored.
-  std::cout << NAMEOF(   somevar   ) << std::endl; // somevar
-  std::cout << NAMEOF(	somevar	) << std::endl; // somevar
-
 #if 0
   // This expression does not have a name.
   std::cout << NAMEOF("Bad case") << std::endl; // '"Bad case"'
