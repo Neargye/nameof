@@ -102,20 +102,24 @@ int main() {
   std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // SomeMethod1
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
+
   std::cout << NAMEOF(SomeMethod4<int>) << std::endl; // SomeMethod4
+  std::cout << NAMEOF_FULL(SomeMethod4<int>) << std::endl; // SomeMethod4<int>
+
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod5) << std::endl; // SomeMethod5
+
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6
+  std::cout << NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6<long int>
 
   // Type name.
   std::cout << NAMEOF_TYPE(structvar) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
   std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
-  std::cout << NAMEOF_TYPE_T(std::string) << std::endl; // basic_string
+  std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // Long::LL
+  std::cout << NAMEOF_TYPE(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int> &&
 
-  // Type full name.
-  std::cout << NAMEOF_TYPE_RAW(othervar.ll) << std::endl; // Long::LL
-  std::cout << NAMEOF_TYPE_RAW(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int> &&
-  std::cout << NAMEOF_TYPE_RAW_T(const SomeClass<int> volatile *) << std::endl; // const volatile SomeClass<int> *
+  std::cout << NAMEOF_TYPE_T(const SomeClass<int> volatile *) << std::endl; // const volatile SomeClass<int> *
+  std::cout << NAMEOF_TYPE_T(SomeClass<int>) << std::endl; // SomeClass<int>
 
   // Raw name.
   std::cout << NAMEOF_RAW(volatile const int) << std::endl; // volatile const int
