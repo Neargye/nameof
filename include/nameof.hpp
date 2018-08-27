@@ -39,7 +39,7 @@
 #  define NAMEOF_HAS_CONSTEXPR14 1
 #endif
 
-#if defined(__clang__) || defined(_MSC_VER)
+#if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
 #  define NAMEOF_TYPE_CONSTEXPR constexpr
 #  define NAMEOF_TYPE_HAS_CONSTEXPR 1
 #else
@@ -56,49 +56,6 @@ template <typename T>
 struct identity {
   using type = T;
 };
-
-template <typename T>
-using identity_t = typename identity<T>::type;
-
-// Removes all pointer from the given type.
-template <typename T>
-struct remove_all_p
-    : std::conditional<std::is_pointer<T>::value,
-          remove_all_p<typename std::remove_pointer<T>::type>,
-          identity<T>
-              >::type {};
-
-template <typename T>
-using remove_all_p_t = typename remove_all_p<T>::type;
-
-// Removes const, volatile, reference specifiers from the given type.
-template <typename T>
-struct remove_cvr {
-  using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
-};
-
-template <typename T>
-using remove_cvr_t = typename remove_cvr<T>::type;
-
-// Removes all const, volatile, reference, pointer specifiers from the given type.
-template <typename T>
-struct remove_all_cvrp {
-  using type = typename remove_cvr<typename remove_all_p<typename remove_cvr<T>::type>::type>::type;
-};
-
-template <typename T>
-using remove_all_cvrp_t = typename remove_all_cvrp<T>::type;
-
-// Removes all const, volatile, reference, pointer, array extents specifiers from the given type.
-template <typename T, typename U = typename remove_all_cvrp<T>::type>
-struct remove_all_cvrpe
-    : std::conditional<std::is_array<U>::value,
-          remove_all_cvrpe<typename std::remove_all_extents<U>::type>,
-          identity<U>
-              >::type {};
-
-template <typename T>
-using remove_all_cvrpe_t = typename remove_all_cvrpe<T>::type;
 
 } // namespace nstd
 
@@ -220,13 +177,11 @@ constexpr bool IsLexeme(char s) noexcept {
 constexpr cstring NameofPretty(cstring name, bool with_suffix) noexcept {
   std::size_t s = 0;
   for (std::size_t i = name.size(), h = 0; i > 0; --i) {
-    if (name[i - 1] == '>') {
+    if (name[i - 1] == '>' || name[i - 1] == ')' || name[i - 1] == '}') {
       ++h;
       ++s;
       continue;
-    }
-
-    if (name[i - 1] == '<') {
+    } else if (name[i - 1] == '<' || name[i - 1] == '(' || name[i - 1] == '{') {
       --h;
       ++s;
       continue;
@@ -249,31 +204,32 @@ constexpr cstring NameofPretty(cstring name, bool with_suffix) noexcept {
   return name.remove_suffix(with_suffix ? 0 : s);
 }
 #else
-constexpr std::size_t NameofBaseImpl1(cstring name, std::size_t h = 0, std::size_t s = 0) noexcept {
-  return name[name.size() - 1 - s] == '>'
-             ? NameofBaseImpl1(name, h + 1, s + 1)
-             : name[name.size() - 1 - s] == '<'
-                   ? NameofBaseImpl1(name, h - 1, s + 1)
-                   : h == 0 ? s : NameofBaseImpl1(name, h, s + 1);
+constexpr std::size_t FindSuffix(cstring name, std::size_t h = 0, std::size_t s = 0) noexcept {
+  return (name[name.size() - 1 - s] == '>' || name[name.size() - 1 - s] == ')' || name[name.size() - 1 - s] == '}')
+             ? FindSuffix(name, h + 1, s + 1)
+             : (name[name.size() - 1 - s] == '<' || name[name.size() - 1 - s] == ')' || name[name.size() - 1 - s] == '{')
+                   ? FindSuffix(name, h - 1, s + 1)
+                   : h == 0 ? s : FindSuffix(name, h, s + 1);
 }
 
-constexpr cstring NameofBaseImpl2(cstring name, const std::size_t p = 0) noexcept {
+constexpr cstring RemovePrefix(cstring name, const std::size_t p = 0) noexcept {
   return p == name.size() ? name : IsLexeme(name[name.size() - 1 - p])
                                        ? name.remove_prefix(name.size() - p)
-                                       : NameofBaseImpl2(name, p + 1);
+                                       : RemovePrefix(name, p + 1);
 }
 
-constexpr cstring NameofBaseImpl3(cstring name, std::size_t s, bool with_suffix) noexcept {
-  return NameofBaseImpl2(name.remove_suffix(s)).add_suffix(with_suffix ? s : 0);
+constexpr cstring NameofPrettyImpl(cstring name, std::size_t s, bool with_suffix) noexcept {
+  return RemovePrefix(name.remove_suffix(s)).add_suffix(with_suffix ? s : 0);
 }
 
 constexpr cstring NameofPretty(cstring name, bool with_suffix) noexcept {
-  return NameofBaseImpl3(name, NameofBaseImpl1(name), with_suffix);
+  return NameofPrettyImpl(name, FindSuffix(name), with_suffix);
 }
 #endif
 
-constexpr cstring RemoveSpace(cstring name) noexcept {
-  return name.back() == ' ' ? RemoveSpace(name.remove_suffix(1)) : name;
+#if defined(_MSC_VER)
+constexpr cstring RemoveSpaceSuffix(cstring name) noexcept {
+  return name.back() == ' ' ? RemoveSpaceSuffix(name.remove_suffix(1)) : name;
 }
 
 constexpr cstring RemoveClassPrefix(cstring name) noexcept {
@@ -297,27 +253,39 @@ constexpr cstring RemoveStructPrefix(cstring name) noexcept {
              : name;
 }
 
-constexpr cstring NameofTypeRawPretty(cstring name) noexcept {
-  return RemoveClassPrefix(RemoveStructPrefix(RemoveEnumPrefix(RemoveSpace(name))));
+constexpr cstring NameofTypePretty(cstring name) noexcept {
+  return RemoveClassPrefix(RemoveStructPrefix(RemoveEnumPrefix(RemoveSpaceSuffix(name))));
 }
+#elif defined(__clang__) || defined(__GNUC__)
+constexpr cstring NameofTypePretty(const char* str, std::size_t size, std::size_t prefix, std::size_t suffix) noexcept {
+  return {str, size, prefix, suffix + (str[size - suffix - 1] == ' ' ? 1 : 0)};
+}
+#endif
 
 template <typename T>
-NAMEOF_TYPE_CONSTEXPR cstring NameofTypeRaw() noexcept {
+NAMEOF_TYPE_CONSTEXPR cstring NameofType() noexcept {
 #if defined(__clang__)
-  return {__PRETTY_FUNCTION__,
-          sizeof(__PRETTY_FUNCTION__) - 1,
-          sizeof("nameof::detail::cstring nameof::detail::NameofTypeRaw() [T = nameof::detail::nstd::identity<") - 1,
-          sizeof(">]") - 1};
+  return NameofTypePretty(
+      __PRETTY_FUNCTION__,
+      sizeof(__PRETTY_FUNCTION__) - 1,
+      sizeof("nameof::detail::cstring nameof::detail::NameofType() [T = nameof::detail::nstd::identity<") - 1,
+      sizeof(">]") - 1);
 #elif defined(__GNUC__)
-  return {__PRETTY_FUNCTION__,
-          sizeof(__PRETTY_FUNCTION__) - 1,
-          sizeof("nameof::detail::cstring nameof::detail::NameofTypeRaw() [with T = nameof::detail::nstd::identity<") - 1,
-          sizeof(">]") - 1};
+  return NameofTypePretty(
+      __PRETTY_FUNCTION__,
+      sizeof(__PRETTY_FUNCTION__) - 1,
+#  if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
+      sizeof("constexpr nameof::detail::cstring nameof::detail::NameofType() [with T = nameof::detail::nstd::identity<") - 1,
+#  else
+      sizeof("nameof::detail::cstring nameof::detail::NameofType() [with T = nameof::detail::nstd::identity<") - 1,
+#  endif
+      sizeof(">]") - 1);
 #elif defined(_MSC_VER)
-  return {__FUNCSIG__,
-          sizeof(__FUNCSIG__) - 1,
-          sizeof("class nameof::detail::cstring __cdecl nameof::detail::NameofTypeRaw<struct nameof::detail::nstd::identity<") - 1,
-          sizeof(">>(void) noexcept") - 1};
+  return NameofTypePretty(
+      {__FUNCSIG__,
+      sizeof(__FUNCSIG__) - 1,
+      sizeof("class nameof::detail::cstring __cdecl nameof::detail::NameofType<struct nameof::detail::nstd::identity<") - 1,
+      sizeof(">>(void) noexcept") - 1});
 #else
   return {};
 #endif
@@ -326,16 +294,11 @@ NAMEOF_TYPE_CONSTEXPR cstring NameofTypeRaw() noexcept {
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value &&
                                              !std::is_void<T>::value>::type>
-constexpr cstring Nameof(const T&, const char* name, std::size_t size, bool with_suffix) noexcept {
+constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix) noexcept {
   return NameofPretty({name, size}, with_suffix);
 }
 
-template <typename T,
-          typename = typename std::enable_if<!std::is_enum<T>::value &&
-                                             !std::is_function<T>::value &&
-                                             !std::is_member_function_pointer<T>::value>::type>
-constexpr cstring Nameof(T&&, const char*, std::size_t, bool) = delete;
-
+template <typename T>
 constexpr cstring NameofRaw(const char* name, std::size_t size) noexcept {
   return {name, size};
 }
@@ -343,42 +306,21 @@ constexpr cstring NameofRaw(const char* name, std::size_t size) noexcept {
 } // namespace detail
 
 template <typename T, typename H = detail::nstd::identity<T>>
-NAMEOF_TYPE_CONSTEXPR detail::cstring NameofType(bool pretty = true) noexcept {
-  return pretty ? detail::NameofTypeRawPretty(detail::NameofTypeRaw<H>()) : detail::NameofTypeRaw<H>();
+NAMEOF_TYPE_CONSTEXPR detail::cstring NameofType() noexcept {
+  return true ? detail::NameofType<H>() : detail::NameofType<H>();
 }
 
 } // namespace nameof
 
-#if defined(__clang__)
-#  if __has_feature(cxx_rtti)
-#    define NAMEOF_HAS_RTTI 1
-#  endif
-#elif defined(__GNUC__)
-#  if defined(__GXX_RTTI)
-#    define NAMEOF_HAS_RTTI 1
-#  endif
-#elif defined(_MSC_VER) && defined(_CPPRTTI)
-#  if defined(_CPPRTTI)
-#    define NAMEOF_HAS_RTTI 1
-#  endif
-#endif
+// Used to obtain the simple (unqualified) string name of a variable, member, function, macros.
+#define NAMEOF(name) ::nameof::detail::Nameof<decltype(name)>(#name, (sizeof(#name) / sizeof(char)) - 1, false)
 
-#if defined(NAMEOF_HAS_RTTI) || defined(_MSC_VER)
-#include <typeinfo>
+// Used to obtain the full string name of a variable, member, function, macros.
+#define NAMEOF_FULL(name) ::nameof::detail::Nameof<decltype(name)>(#name, (sizeof(#name) / sizeof(char)) - 1, true)
 
-// Used to obtain the raw string name of a variable, type, member, function, macros.
-#  define NAMEOF_RAW(name) ::nameof::detail::NameofRaw(#name, ((sizeof(#name) / sizeof(char)) - 1) + (0 * sizeof(typeid(name))))
-#elif defined(__clang__) || defined(__GNUC__)
-// Used to obtain the raw string name of a variable, type, member, function, macros.
-#  define NAMEOF_RAW(name) ::nameof::detail::NameofRaw(#name, ((sizeof(#name) / sizeof(char)) - 1) + (0 * sizeof(void(*)(__typeof__(name)))))
-#endif
-
-// Used to obtain the simple (unqualified) string name of a variable, member, function.
-#define NAMEOF(name) ::nameof::detail::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, false)
-
-// Used to obtain the full string name of a variable, member, function.
-#define NAMEOF_FULL(name) ::nameof::detail::Nameof<decltype(name)>(name, #name, (sizeof(#name) / sizeof(char)) - 1, true)
+// Used to obtain the raw string name of a variable, member, function, macros.
+#define NAMEOF_RAW(name) ::nameof::detail::NameofRaw<decltype(name)>(#name, (sizeof(#name) / sizeof(char)) - 1)
 
 // Used to obtain the string name of a type.
-#define NAMEOF_TYPE(var) ::nameof::NameofType<decltype(var)>(true)
-#define NAMEOF_TYPE_T(type) ::nameof::NameofType<type>(true)
+#define NAMEOF_TYPE(var) ::nameof::NameofType<decltype(var)>()
+#define NAMEOF_TYPE_T(type) ::nameof::NameofType<type>()

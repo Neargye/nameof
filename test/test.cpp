@@ -114,9 +114,6 @@ TEST_CASE("constexpr") {
     // member
     constexpr auto cx2 = NAMEOF_RAW((&structvar)->somefield);
     static_assert(cx2 == "(&structvar)->somefield", "");
-    // type
-    constexpr auto cx3 = NAMEOF_RAW(std::string);
-    static_assert(cx3 == "std::string", "");
     // function
     constexpr auto cx4 = NAMEOF_RAW(&SomeStruct::SomeMethod2);
     static_assert(cx4 == "&SomeStruct::SomeMethod2", "");
@@ -127,24 +124,23 @@ TEST_CASE("constexpr") {
     constexpr auto cx6 = NAMEOF_RAW(__cplusplus);
     static_assert(cx6 == "__cplusplus", "");
   }
-
-  // constexpr NAMEOF_TYPE not supported in GCC.
-#if defined(_MSC_VER) || defined(__clang__)
+#if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
   SECTION("NAMEOF_TYPE") {
     constexpr auto cx = NAMEOF_TYPE(classvar);
-#if defined(__clang__)
+#  if defined(__clang__)
     static_assert(cx == "const volatile SomeClass<int> *", "");
-#elif defined(_MSC_VER)
+#  elif defined(_MSC_VER)
     static_assert(cx == "SomeClass<int> const volatile *", "");
-#endif
+#  endif
   }
+
   SECTION("NAMEOF_TYPE_T") {
     constexpr auto cx = NAMEOF_TYPE_T(const SomeClass<int> volatile *);
-#if defined(__clang__)
+#  if defined(__clang__)
     static_assert(cx == "const volatile SomeClass<int> *", "");
-#elif defined(_MSC_VER)
+#  elif defined(_MSC_VER)
     static_assert(cx == "SomeClass<int> const volatile *", "");
-#endif
+#  endif
   }
 #endif
 }
@@ -223,16 +219,6 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(structvar.somefield) == "structvar.somefield");
     REQUIRE(NAMEOF_RAW((&structvar)->somefield) == "(&structvar)->somefield");
     REQUIRE(NAMEOF_RAW(othervar.ll.field) == "othervar.ll.field");
-  }
-
-  SECTION("type") {
-    REQUIRE(NAMEOF_RAW(int[]) == "int[]");
-    REQUIRE(NAMEOF_RAW(int) == "int");
-    REQUIRE(NAMEOF_RAW(const volatile int[]) == "const volatile int[]");
-    REQUIRE(NAMEOF_RAW(std::string) == "std::string");
-    REQUIRE(NAMEOF_RAW(SomeStruct) == "SomeStruct");
-    REQUIRE(NAMEOF_RAW(Long::LL) == "Long::LL");
-    REQUIRE(NAMEOF_RAW(Color) == "Color");
   }
 
   SECTION("function") {
