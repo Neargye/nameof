@@ -32,11 +32,15 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <limits>
 #include <string>
 #include <ostream>
 
 #if defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
 #  define NAMEOF_HAS_CONSTEXPR14 1
+#  define NAMEOF_CONSTEXPR14 constexpr
+#else
+#  define NAMEOF_CONSTEXPR14 inline
 #endif
 
 #if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
@@ -101,6 +105,8 @@ class cstring final {
 
   constexpr cstring(const char* str) noexcept : cstring{str, StrLen(str), 0, 0} {}
 
+  cstring(const std::string& str) noexcept : cstring{str.data(), str.size(), 0, 0} {}
+
   cstring(const cstring&) = default;
 
   cstring(cstring&&) = default;
@@ -115,6 +121,8 @@ class cstring final {
 
   constexpr std::size_t length() const noexcept { return size_; }
 
+  constexpr std::size_t max_size() const noexcept { return (std::numeric_limits<std::size_t>::max)(); }
+
   constexpr bool empty() const noexcept { return size_ == 0; }
 
   constexpr const char* begin() const noexcept { return str_; }
@@ -126,6 +134,13 @@ class cstring final {
   constexpr const char* cend() const noexcept { return end(); }
 
   constexpr const char& operator[](std::size_t i) const { return str_[i]; }
+
+  NAMEOF_CONSTEXPR14 const char& at(std::size_t i) const {
+    if (i < size_) {
+      return str_[i];
+    }
+    throw std::out_of_range("cstring::at()");
+  }
 
   constexpr const char& front() const { return str_[0]; }
 
@@ -153,12 +168,34 @@ class cstring final {
     return {str_ + pos, n};
   }
 
+  int compare(cstring s) const {
+    auto result = std::char_traits<char>::compare(str_, s.str_, s.size_ < size_ ? s.size_ : size_);
+    if (result != 0) {
+      return result;
+    }
+    if (size_ < s.size_) {
+      return -1;
+    }
+    if (size_ > s.size_) {
+      return 1;
+    }
+    return 0;
+  }
+
   friend constexpr bool operator==(cstring lhs, cstring rhs) noexcept {
     return (lhs.size_ == rhs.size_) && StrEquals(lhs.str_, rhs.str_, lhs.size_);
   }
 
   friend constexpr bool operator!=(cstring lhs, cstring rhs) noexcept {
     return !(lhs == rhs);
+  }
+
+  std::string append(cstring s) {
+    return std::string(str_, size_).append(s.str_, s.size_);
+  }
+
+  friend std::string operator+(cstring lhs, cstring rhs) {
+    return std::string(lhs) + std::string(rhs);
   }
 
   friend std::ostream& operator<<(std::ostream& os, cstring str) {

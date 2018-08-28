@@ -50,7 +50,7 @@ void SomeMethod3() {
 
 template <typename T, typename U>
 std::string SomeMethod4(U value) {
-  return std::string(NAMEOF(SomeMethod4<T, U>)).append("<").append(NAMEOF_TYPE_T(T)).append(", ").append(NAMEOF_TYPE_T(U)).append(">(").append(NAMEOF_TYPE_T(U)).append(" value)");
+  return NAMEOF(SomeMethod4<T, U>) + "<" + NAMEOF_TYPE_T(T) + ", " + NAMEOF_TYPE_T(U) + ">(" + NAMEOF_TYPE_T(U) + " " + NAMEOF(value) + ")";
 }
 
 template <typename T>
@@ -157,6 +157,7 @@ int main() {
   std::cout << NAMEOF(structvar.somefield + structvar.somefield) << std::endl; // ' somefield'
   std::cout << NAMEOF(42 + 42) << std::endl; // ' 42'
   std::cout << NAMEOF(NAMEOF(structvar)) << std::endl; // 'NAMEOF'
+  std::cout << NAMEOF((SomeMethod4<int, float>)(1.0f)) << std::endl; // ''
 #endif
 
 #if 0
