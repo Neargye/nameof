@@ -173,15 +173,44 @@ constexpr bool IsLexeme(char s) noexcept {
   return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_');
 }
 
+constexpr bool IsBracket(char s) noexcept {
+  return s == ')' || s == '}' || s == '>' || s == '(' || s == '{' || s == '<';
+}
+
 #if defined(NAMEOF_HAS_CONSTEXPR14)
 constexpr cstring NameofPretty(cstring name, bool with_suffix) noexcept {
-  std::size_t s = 0;
-  for (std::size_t i = name.size(), h = 0; i > 0; --i) {
-    if (name[i - 1] == '>' || name[i - 1] == ')' || name[i - 1] == '}') {
+  for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
+    if (h == 0 && IsLexeme(name[i - 1]) && !IsBracket(name[i - 1])) {
+      ++s;
+      continue;
+    }
+
+    if (name[i - 1] == ')' || name[i - 1] == '}') {
       ++h;
       ++s;
       continue;
-    } else if (name[i - 1] == '<' || name[i - 1] == '(' || name[i - 1] == '{') {
+    } else if (name[i - 1] == '(' || name[i - 1] == '{') {
+      --h;
+      ++s;
+      continue;
+    }
+
+    if (h == 0) {
+      name = name.remove_suffix(s);
+      break;
+    } else {
+      ++s;
+      continue;
+    }
+  }
+
+  std::size_t s = 0;
+  for (std::size_t i = name.size(), h = 0; i > 0; --i) {
+    if (name[i - 1] == '>') {
+      ++h;
+      ++s;
+      continue;
+    } else if (name[i - 1] == '<') {
       --h;
       ++s;
       continue;
@@ -204,10 +233,20 @@ constexpr cstring NameofPretty(cstring name, bool with_suffix) noexcept {
   return name.remove_suffix(with_suffix ? 0 : s);
 }
 #else
+constexpr cstring RemoveSuffix(cstring name, std::size_t h = 0) noexcept {
+  return (h == 0 && IsLexeme(name.back()) && !IsBracket(name.back()))
+             ? RemoveSuffix(name.remove_suffix(1), h)
+             : (name.back() == ')' || name.back() == '}')
+                   ? RemoveSuffix(name.remove_suffix(1), h + 1)
+                   : (name.back() == '(' || name.back() == '{')
+                         ? RemoveSuffix(name.remove_suffix(1), h - 1)
+                         : h == 0 ? name : RemoveSuffix(name.remove_suffix(1), h);
+}
+
 constexpr std::size_t FindSuffix(cstring name, std::size_t h = 0, std::size_t s = 0) noexcept {
-  return (name[name.size() - 1 - s] == '>' || name[name.size() - 1 - s] == ')' || name[name.size() - 1 - s] == '}')
+  return (name[name.size() - 1 - s] == '>')
              ? FindSuffix(name, h + 1, s + 1)
-             : (name[name.size() - 1 - s] == '<' || name[name.size() - 1 - s] == ')' || name[name.size() - 1 - s] == '{')
+             : (name[name.size() - 1 - s] == '<')
                    ? FindSuffix(name, h - 1, s + 1)
                    : h == 0 ? s : FindSuffix(name, h, s + 1);
 }
@@ -218,12 +257,16 @@ constexpr cstring RemovePrefix(cstring name, const std::size_t p = 0) noexcept {
                                        : RemovePrefix(name, p + 1);
 }
 
-constexpr cstring NameofPrettyImpl(cstring name, std::size_t s, bool with_suffix) noexcept {
+constexpr cstring NameofPrettyImpl_(cstring name, std::size_t s, bool with_suffix) noexcept {
   return RemovePrefix(name.remove_suffix(s)).add_suffix(with_suffix ? s : 0);
 }
 
+constexpr cstring NameofPrettyImpl(cstring name, bool with_suffix) noexcept {
+  return NameofPrettyImpl_(name, FindSuffix(name), with_suffix);
+}
+
 constexpr cstring NameofPretty(cstring name, bool with_suffix) noexcept {
-  return NameofPrettyImpl(name, FindSuffix(name), with_suffix);
+  return NameofPrettyImpl(RemoveSuffix(name), with_suffix);
 }
 #endif
 
@@ -292,8 +335,7 @@ NAMEOF_TYPE_CONSTEXPR cstring NameofType() noexcept {
 }
 
 template <typename T,
-          typename = typename std::enable_if<!std::is_reference<T>::value &&
-                                             !std::is_void<T>::value>::type>
+          typename = typename std::enable_if<!std::is_reference<T>::value>::type>
 constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix) noexcept {
   return NameofPretty({name, size}, with_suffix);
 }
@@ -313,14 +355,14 @@ NAMEOF_TYPE_CONSTEXPR detail::cstring NameofType() noexcept {
 } // namespace nameof
 
 // Used to obtain the simple (unqualified) string name of a variable, member, function, macros.
-#define NAMEOF(name) ::nameof::detail::Nameof<decltype(name)>(#name, (sizeof(#name) / sizeof(char)) - 1, false)
+#define NAMEOF(...) ::nameof::detail::Nameof<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1, false)
 
 // Used to obtain the full string name of a variable, member, function, macros.
-#define NAMEOF_FULL(name) ::nameof::detail::Nameof<decltype(name)>(#name, (sizeof(#name) / sizeof(char)) - 1, true)
+#define NAMEOF_FULL(...) ::nameof::detail::Nameof<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1, true)
 
 // Used to obtain the raw string name of a variable, member, function, macros.
-#define NAMEOF_RAW(name) ::nameof::detail::NameofRaw<decltype(name)>(#name, (sizeof(#name) / sizeof(char)) - 1)
+#define NAMEOF_RAW(...) ::nameof::detail::NameofRaw<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1)
 
 // Used to obtain the string name of a type.
-#define NAMEOF_TYPE(var) ::nameof::NameofType<decltype(var)>()
-#define NAMEOF_TYPE_T(type) ::nameof::NameofType<type>()
+#define NAMEOF_TYPE(...) ::nameof::NameofType<decltype(__VA_ARGS__)>()
+#define NAMEOF_TYPE_T(...) ::nameof::NameofType<__VA_ARGS__>()
