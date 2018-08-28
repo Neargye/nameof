@@ -41,8 +41,8 @@ void SomeMethod3() {
   std::cout << NAMEOF(SomeMethod3) << " no called!" << std::endl;
 }
 
-template <typename T>
-T SomeMethod4() {
+template <typename T, typename U>
+T SomeMethod4(U value) {
   return T{};
 }
 
@@ -70,19 +70,21 @@ struct Long {
 
 enum class Color { RED, GREEN, BLUE };
 
-SomeStruct structvar;
+SomeStruct struct_var;
 Long othervar;
-SomeStruct * ptrvar = &structvar;
-SomeStruct & refvar = structvar;
-const SomeClass<int> volatile * classvar;
+SomeStruct * ptr_s = &struct_var;
+SomeStruct & ref_s = struct_var;
+
+SomeClass<int> class_var;
+const SomeClass<int> volatile * ptr_c = nullptr;
 
 TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
     // variable
-    constexpr auto cx1 = NAMEOF(structvar);
-    static_assert(cx1 == "structvar", "");
+    constexpr auto cx1 = NAMEOF(struct_var);
+    static_assert(cx1 == "struct_var", "");
     // member
-    constexpr auto cx2 = NAMEOF((&structvar)->somefield);
+    constexpr auto cx2 = NAMEOF((&struct_var)->somefield);
     static_assert(cx2 == "somefield", "");
     // function
     constexpr auto cx3 = NAMEOF(&SomeClass<int>::SomeMethod6<long int>);
@@ -94,10 +96,10 @@ TEST_CASE("constexpr") {
 
   SECTION("NAMEOF_FULL") {
     // variable
-    constexpr auto cx1 = NAMEOF_FULL(structvar);
-    static_assert(cx1 == "structvar", "");
+    constexpr auto cx1 = NAMEOF_FULL(struct_var);
+    static_assert(cx1 == "struct_var", "");
     // member
-    constexpr auto cx2 = NAMEOF_FULL((&structvar)->somefield);
+    constexpr auto cx2 = NAMEOF_FULL((&struct_var)->somefield);
     static_assert(cx2 == "somefield", "");
     // function
     constexpr auto cx3 = NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>);
@@ -109,11 +111,11 @@ TEST_CASE("constexpr") {
 
   SECTION("NAMEOF_RAW") {
     // variable
-    constexpr auto cx1 = NAMEOF_RAW(structvar);
-    static_assert(cx1 == "structvar", "");
+    constexpr auto cx1 = NAMEOF_RAW(struct_var);
+    static_assert(cx1 == "struct_var", "");
     // member
-    constexpr auto cx2 = NAMEOF_RAW((&structvar)->somefield);
-    static_assert(cx2 == "(&structvar)->somefield", "");
+    constexpr auto cx2 = NAMEOF_RAW((&struct_var)->somefield);
+    static_assert(cx2 == "(&struct_var)->somefield", "");
     // function
     constexpr auto cx4 = NAMEOF_RAW(&SomeStruct::SomeMethod2);
     static_assert(cx4 == "&SomeStruct::SomeMethod2", "");
@@ -124,9 +126,10 @@ TEST_CASE("constexpr") {
     constexpr auto cx6 = NAMEOF_RAW(__cplusplus);
     static_assert(cx6 == "__cplusplus", "");
   }
+
 #if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
   SECTION("NAMEOF_TYPE") {
-    constexpr auto cx = NAMEOF_TYPE(classvar);
+    constexpr auto cx = NAMEOF_TYPE(ptr_c);
 #  if defined(__clang__)
     static_assert(cx == "const volatile SomeClass<int> *", "");
 #  elif defined(_MSC_VER)
@@ -147,24 +150,32 @@ TEST_CASE("constexpr") {
 
 TEST_CASE("NAMEOF") {
   SECTION("variable") {
-    REQUIRE(NAMEOF(structvar) == "structvar");
-    REQUIRE(NAMEOF(::structvar) == "structvar");
-    REQUIRE(NAMEOF(ptrvar) == "ptrvar");
+    REQUIRE(NAMEOF(othervar) == "othervar");
+    REQUIRE(NAMEOF(struct_var) == "struct_var");
+    REQUIRE(NAMEOF(::struct_var) == "struct_var");
+    REQUIRE(NAMEOF(ptr_s) == "ptr_s");
   }
 
   SECTION("member") {
-    REQUIRE(NAMEOF(structvar.somefield) == "somefield");
-    REQUIRE(NAMEOF((&structvar)->somefield) == "somefield");
+    REQUIRE(NAMEOF(struct_var.somefield) == "somefield");
+    REQUIRE(NAMEOF(struct_var.somefield++) == "somefield");
+    REQUIRE(NAMEOF((&struct_var)->somefield) == "somefield");
     REQUIRE(NAMEOF(othervar.ll.field) == "field");
   }
 
   SECTION("function") {
     REQUIRE(NAMEOF(&SomeStruct::SomeMethod1) == "SomeMethod1");
+    REQUIRE(NAMEOF(struct_var.SomeMethod1(1)) == "SomeMethod1");
     REQUIRE(NAMEOF(&SomeStruct::SomeMethod2) == "SomeMethod2");
+    REQUIRE(NAMEOF(struct_var.SomeMethod2()) == "SomeMethod2");
     REQUIRE(NAMEOF(SomeMethod3) == "SomeMethod3");
-    REQUIRE(NAMEOF(SomeMethod4<int>) == "SomeMethod4");
+    REQUIRE(NAMEOF(SomeMethod3()) == "SomeMethod3");
+    REQUIRE(NAMEOF(SomeMethod4<int, float>) == "SomeMethod4");
+    REQUIRE(NAMEOF(SomeMethod4<int, float>(1.0f)) == "SomeMethod4");
     REQUIRE(NAMEOF(&SomeClass<int>::SomeMethod5) == "SomeMethod5");
+    REQUIRE(NAMEOF(class_var.SomeMethod5()) == "SomeMethod5");
     REQUIRE(NAMEOF(&SomeClass<int>::SomeMethod6<long int>) == "SomeMethod6");
+    REQUIRE(NAMEOF(class_var.SomeMethod6<long int>()) == "SomeMethod6");
   }
 
   SECTION("enum") {
@@ -175,24 +186,32 @@ TEST_CASE("NAMEOF") {
 
 TEST_CASE("NAMEOF_FULL") {
   SECTION("variable") {
-    REQUIRE(NAMEOF_FULL(structvar) == "structvar");
-    REQUIRE(NAMEOF_FULL(::structvar) == "structvar");
-    REQUIRE(NAMEOF_FULL(ptrvar) == "ptrvar");
+    REQUIRE(NAMEOF_FULL(othervar) == "othervar");
+    REQUIRE(NAMEOF_FULL(struct_var) == "struct_var");
+    REQUIRE(NAMEOF_FULL(::struct_var) == "struct_var");
+    REQUIRE(NAMEOF_FULL(ptr_s) == "ptr_s");
   }
 
   SECTION("member") {
-    REQUIRE(NAMEOF_FULL(structvar.somefield) == "somefield");
-    REQUIRE(NAMEOF_FULL((&structvar)->somefield) == "somefield");
+    REQUIRE(NAMEOF_FULL(struct_var.somefield) == "somefield");
+    REQUIRE(NAMEOF_FULL(struct_var.somefield++) == "somefield");
+    REQUIRE(NAMEOF_FULL((&struct_var)->somefield) == "somefield");
     REQUIRE(NAMEOF_FULL(othervar.ll.field) == "field");
   }
 
   SECTION("function") {
     REQUIRE(NAMEOF_FULL(&SomeStruct::SomeMethod1) == "SomeMethod1");
+    REQUIRE(NAMEOF_FULL(struct_var.SomeMethod1(1)) == "SomeMethod1");
     REQUIRE(NAMEOF_FULL(&SomeStruct::SomeMethod2) == "SomeMethod2");
+    REQUIRE(NAMEOF_FULL(struct_var.SomeMethod2()) == "SomeMethod2");
     REQUIRE(NAMEOF_FULL(SomeMethod3) == "SomeMethod3");
-    REQUIRE(NAMEOF_FULL(SomeMethod4<int>) == "SomeMethod4<int>");
+    REQUIRE(NAMEOF_FULL(SomeMethod3()) == "SomeMethod3");
+    REQUIRE(NAMEOF_FULL(SomeMethod4<int, float>) == "SomeMethod4<int, float>");
+    REQUIRE(NAMEOF_FULL(SomeMethod4<int, float>(1.0f)) == "SomeMethod4<int, float>");
     REQUIRE(NAMEOF_FULL(&SomeClass<int>::SomeMethod5) == "SomeMethod5");
+    REQUIRE(NAMEOF_FULL(class_var.SomeMethod5()) == "SomeMethod5");
     REQUIRE(NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>) == "SomeMethod6<long int>");
+    REQUIRE(NAMEOF_FULL(class_var.SomeMethod6<long int>()) == "SomeMethod6<long int>");
   }
 
   SECTION("enum") {
@@ -203,28 +222,39 @@ TEST_CASE("NAMEOF_FULL") {
 
 TEST_CASE("NAMEOF_RAW") {
   SECTION("variable") {
-    REQUIRE(NAMEOF_RAW(structvar) == "structvar");
-    REQUIRE(NAMEOF_RAW(&structvar) == "&structvar");
-    REQUIRE(NAMEOF_RAW(::structvar) == "::structvar");
-    REQUIRE(NAMEOF_RAW(ptrvar) == "ptrvar");
-    REQUIRE(NAMEOF_RAW(*ptrvar) == "*ptrvar");
-    REQUIRE(NAMEOF_RAW(+structvar.somefield) == "+structvar.somefield");
-    REQUIRE(NAMEOF_RAW(-structvar.somefield) == "-structvar.somefield");
-    REQUIRE(NAMEOF_RAW(~structvar.somefield) == "~structvar.somefield");
-    REQUIRE(NAMEOF_RAW(!structvar.somefield) == "!structvar.somefield");
-    REQUIRE(NAMEOF_RAW(structvar.somefield + refvar.somefield) == "structvar.somefield + refvar.somefield");
+    REQUIRE(NAMEOF_RAW(othervar) == "othervar");
+    REQUIRE(NAMEOF_RAW(struct_var) == "struct_var");
+    REQUIRE(NAMEOF_RAW(&struct_var) == "&struct_var");
+    REQUIRE(NAMEOF_RAW(::struct_var) == "::struct_var");
+    REQUIRE(NAMEOF_RAW(ptr_s) == "ptr_s");
+    REQUIRE(NAMEOF_RAW(*ptr_s) == "*ptr_s");
   }
 
   SECTION("member") {
-    REQUIRE(NAMEOF_RAW(structvar.somefield) == "structvar.somefield");
-    REQUIRE(NAMEOF_RAW((&structvar)->somefield) == "(&structvar)->somefield");
+    REQUIRE(NAMEOF_RAW(struct_var.somefield) == "struct_var.somefield");
+    REQUIRE(NAMEOF_RAW(struct_var.somefield++) == "struct_var.somefield++");
+    REQUIRE(NAMEOF_RAW((&struct_var)->somefield) == "(&struct_var)->somefield");
     REQUIRE(NAMEOF_RAW(othervar.ll.field) == "othervar.ll.field");
+    REQUIRE(NAMEOF_RAW(+struct_var.somefield) == "+struct_var.somefield");
+    REQUIRE(NAMEOF_RAW(-struct_var.somefield) == "-struct_var.somefield");
+    REQUIRE(NAMEOF_RAW(~struct_var.somefield) == "~struct_var.somefield");
+    REQUIRE(NAMEOF_RAW(!struct_var.somefield) == "!struct_var.somefield");
+    REQUIRE(NAMEOF_RAW(struct_var.somefield + ref_s.somefield) == "struct_var.somefield + ref_s.somefield");
   }
 
   SECTION("function") {
     REQUIRE(NAMEOF_RAW(&SomeStruct::SomeMethod1) == "&SomeStruct::SomeMethod1");
+    REQUIRE(NAMEOF_RAW(struct_var.SomeMethod1(1)) == "struct_var.SomeMethod1(1)");
     REQUIRE(NAMEOF_RAW(&SomeStruct::SomeMethod2) == "&SomeStruct::SomeMethod2");
+    REQUIRE(NAMEOF_RAW(struct_var.SomeMethod2()) == "struct_var.SomeMethod2()");
     REQUIRE(NAMEOF_RAW(SomeMethod3) == "SomeMethod3");
+    REQUIRE(NAMEOF_RAW(SomeMethod3()) == "SomeMethod3()");
+    REQUIRE(NAMEOF_RAW(SomeMethod4<int, float>) == "SomeMethod4<int, float>");
+    REQUIRE(NAMEOF_RAW(SomeMethod4<int, float>(1.0f)) == "SomeMethod4<int, float>(1.0f)");
+    REQUIRE(NAMEOF_RAW(&SomeClass<int>::SomeMethod5) == "&SomeClass<int>::SomeMethod5");
+    REQUIRE(NAMEOF_RAW(class_var.SomeMethod5()) == "class_var.SomeMethod5()");
+    REQUIRE(NAMEOF_RAW(&SomeClass<int>::SomeMethod6<long int>) == "&SomeClass<int>::SomeMethod6<long int>");
+    REQUIRE(NAMEOF_RAW(class_var.SomeMethod6<long int>()) == "class_var.SomeMethod6<long int>()");
   }
 
   SECTION("enum") {
@@ -241,8 +271,8 @@ TEST_CASE("NAMEOF_RAW") {
 
 TEST_CASE("NAMEOF_TYPE") {
 #if defined(__clang__)
-  REQUIRE(NAMEOF_TYPE(structvar) == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE(ptrvar) == "SomeStruct *");
+  REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE(ptr_s) == "SomeStruct *");
   REQUIRE(NAMEOF_TYPE(refvar) == "SomeStruct &");
 
   REQUIRE(NAMEOF_TYPE(classvar) == "const volatile SomeClass<int> *");
@@ -255,11 +285,11 @@ TEST_CASE("NAMEOF_TYPE") {
 
   REQUIRE(NAMEOF_TYPE(std::declval<const SomeClass<int>>()) == "const SomeClass<int> &&");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE(structvar) == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE(ptrvar) == "SomeStruct *");
-  REQUIRE(NAMEOF_TYPE(refvar) == "SomeStruct &");
+  REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE(ptr_s) == "SomeStruct *");
+  REQUIRE(NAMEOF_TYPE(ref_s) == "SomeStruct &");
 
-  REQUIRE(NAMEOF_TYPE(classvar) == "SomeClass<int> const volatile *");
+  REQUIRE(NAMEOF_TYPE(ptr_c) == "SomeClass<int> const volatile *");
 
   REQUIRE(NAMEOF_TYPE(othervar) == "Long");
   REQUIRE(NAMEOF_TYPE(othervar.ll) == "Long::LL");
@@ -269,8 +299,8 @@ TEST_CASE("NAMEOF_TYPE") {
 
   REQUIRE(NAMEOF_TYPE(std::declval<const SomeClass<int>>()) == "SomeClass<int> const &&");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_TYPE(structvar) == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE(ptrvar) == "SomeStruct*");
+  REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE(ptr_s) == "SomeStruct*");
   REQUIRE(NAMEOF_TYPE(refvar) == "SomeStruct&");
 
   REQUIRE(NAMEOF_TYPE(classvar) == "const volatile SomeClass<int>*");
@@ -287,8 +317,8 @@ TEST_CASE("NAMEOF_TYPE") {
 
 TEST_CASE("NAMEOF_TYPE_T") {
 #if defined(__clang__)
-  REQUIRE(NAMEOF_TYPE_T(decltype(structvar)) == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE_T(decltype(ptrvar)) == "SomeStruct *");
+  REQUIRE(NAMEOF_TYPE_T(decltype(struct_var)) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE_T(decltype(ptr_s)) == "SomeStruct *");
   REQUIRE(NAMEOF_TYPE_T(decltype(refvar)) == "SomeStruct &");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct *) == "SomeStruct *");
@@ -304,9 +334,9 @@ TEST_CASE("NAMEOF_TYPE_T") {
 
   REQUIRE(NAMEOF_TYPE_T(Color) == "Color");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE_T(decltype(structvar)) == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE_T(decltype(ptrvar)) == "SomeStruct *");
-  REQUIRE(NAMEOF_TYPE_T(decltype(refvar)) == "SomeStruct &");
+  REQUIRE(NAMEOF_TYPE_T(decltype(struct_var)) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE_T(decltype(ptr_s)) == "SomeStruct *");
+  REQUIRE(NAMEOF_TYPE_T(decltype(ref_s)) == "SomeStruct &");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct *) == "SomeStruct *");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct &) == "SomeStruct &");
@@ -321,8 +351,8 @@ TEST_CASE("NAMEOF_TYPE_T") {
 
   REQUIRE(NAMEOF_TYPE_T(Color) == "Color");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_TYPE_T(decltype(structvar)) == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE_T(decltype(ptrvar)) == "SomeStruct*");
+  REQUIRE(NAMEOF_TYPE_T(decltype(struct_var)) == "SomeStruct");
+  REQUIRE(NAMEOF_TYPE_T(decltype(ptr_s)) == "SomeStruct*");
   REQUIRE(NAMEOF_TYPE_T(decltype(refvar)) == "SomeStruct&");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct *) == "SomeStruct*");
@@ -342,20 +372,20 @@ TEST_CASE("NAMEOF_TYPE_T") {
 
 TEST_CASE("Spaces and Tabs ignored") {
   SECTION("Spaces") {
-    REQUIRE(NAMEOF(   structvar   ) == "structvar");
-    REQUIRE(NAMEOF_FULL(   structvar   ) == "structvar");
-    REQUIRE(NAMEOF_RAW(   structvar   ) == "structvar");
+    REQUIRE(NAMEOF(   struct_var   ) == "struct_var");
+    REQUIRE(NAMEOF_FULL(   struct_var   ) == "struct_var");
+    REQUIRE(NAMEOF_RAW(   struct_var   ) == "struct_var");
 
-    REQUIRE(NAMEOF_TYPE(   structvar   ) == "SomeStruct");
-    REQUIRE(NAMEOF_TYPE_T(   decltype(structvar)   ) == "SomeStruct");
+    REQUIRE(NAMEOF_TYPE(   struct_var   ) == "SomeStruct");
+    REQUIRE(NAMEOF_TYPE_T(   decltype(struct_var)   ) == "SomeStruct");
   }
 
   SECTION("Tabs") {
-    REQUIRE(NAMEOF(	structvar	) == "structvar");
-    REQUIRE(NAMEOF_FULL(	structvar	) == "structvar");
-    REQUIRE(NAMEOF_RAW(	structvar	) == "structvar");
+    REQUIRE(NAMEOF(	struct_var	) == "struct_var");
+    REQUIRE(NAMEOF_FULL(	struct_var	) == "struct_var");
+    REQUIRE(NAMEOF_RAW(	struct_var	) == "struct_var");
 
-    REQUIRE(NAMEOF_TYPE(	structvar	) == "SomeStruct");
-    REQUIRE(NAMEOF_TYPE_T(	decltype(structvar)	) == "SomeStruct");
+    REQUIRE(NAMEOF_TYPE(	struct_var	) == "SomeStruct");
+    REQUIRE(NAMEOF_TYPE_T(	decltype(struct_var)	) == "SomeStruct");
   }
 }
