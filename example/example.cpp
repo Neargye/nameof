@@ -158,6 +158,7 @@ int main() {
   std::cout << NAMEOF(42 + 42) << std::endl; // ' 42'
   std::cout << NAMEOF(NAMEOF(structvar)) << std::endl; // 'NAMEOF'
   std::cout << NAMEOF((SomeMethod4<int, float>)(1.0f)) << std::endl; // ''
+  std::cout << NAMEOF(42, 42, 42) << std::endl; // '42'
 #endif
 
 #if 0
