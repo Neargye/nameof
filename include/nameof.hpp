@@ -33,6 +33,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <ostream>
 
@@ -148,38 +149,21 @@ class cstring final {
 
   constexpr const char* data() const noexcept { return str_; }
 
-  constexpr cstring remove_prefix(std::size_t n) const {
-    return {str_ + n, size_ - n};
-  }
+  constexpr cstring remove_prefix(std::size_t n) const { return {str_ + n, size_ - n}; }
 
-  constexpr cstring add_prefix(std::size_t n) const {
-    return {str_ - n, size_ + n};
-  }
+  constexpr cstring add_prefix(std::size_t n) const { return {str_ - n, size_ + n}; }
 
-  constexpr cstring remove_suffix(std::size_t n) const {
-    return {str_, size_ - n};
-  }
+  constexpr cstring remove_suffix(std::size_t n) const { return {str_, size_ - n}; }
 
-  constexpr cstring add_suffix(std::size_t n) const {
-    return {str_, size_ + n};
-  }
+  constexpr cstring add_suffix(std::size_t n) const { return {str_, size_ + n}; }
 
-  constexpr cstring substr(std::size_t pos, std::size_t n) const {
-    return {str_ + pos, n};
-  }
+  constexpr cstring substr(std::size_t pos, std::size_t n) const { return {str_ + pos, n}; }
 
-  int compare(cstring s) const {
-    auto result = std::char_traits<char>::compare(str_, s.str_, s.size_ < size_ ? s.size_ : size_);
-    if (result != 0) {
+  int compare(cstring other) const {
+    if (const auto result = std::char_traits<char>::compare(str_, other.str_, other.size_ < size_ ? other.size_ : size_))
       return result;
-    }
-    if (size_ < s.size_) {
-      return -1;
-    }
-    if (size_ > s.size_) {
-      return 1;
-    }
-    return 0;
+
+    return size_ == other.size_ ? 0 : size_ < other.size_ ? -1 : 1;
   }
 
   friend constexpr bool operator==(cstring lhs, cstring rhs) noexcept {
