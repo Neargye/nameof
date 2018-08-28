@@ -42,8 +42,8 @@ void SomeMethod3() {
 }
 
 template <typename T, typename U>
-T SomeMethod4(U value) {
-  return T{};
+std::string SomeMethod4(U value) {
+  return std::string(NAMEOF(SomeMethod4<T, U>)).append("<").append(NAMEOF_TYPE_T(T)).append(", ").append(NAMEOF_TYPE_T(U)).append(">(").append(NAMEOF_TYPE_T(U)).append(" value)");
 }
 
 template <typename T>
@@ -273,9 +273,9 @@ TEST_CASE("NAMEOF_TYPE") {
 #if defined(__clang__)
   REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE(ptr_s) == "SomeStruct *");
-  REQUIRE(NAMEOF_TYPE(refvar) == "SomeStruct &");
+  REQUIRE(NAMEOF_TYPE(ref_s) == "SomeStruct &");
 
-  REQUIRE(NAMEOF_TYPE(classvar) == "const volatile SomeClass<int> *");
+  REQUIRE(NAMEOF_TYPE(ptr_c) == "const volatile SomeClass<int> *");
 
   REQUIRE(NAMEOF_TYPE(othervar) == "Long");
   REQUIRE(NAMEOF_TYPE(othervar.ll) == "Long::LL");
@@ -301,9 +301,9 @@ TEST_CASE("NAMEOF_TYPE") {
 #elif defined(__GNUC__)
   REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE(ptr_s) == "SomeStruct*");
-  REQUIRE(NAMEOF_TYPE(refvar) == "SomeStruct&");
+  REQUIRE(NAMEOF_TYPE(ref_s) == "SomeStruct&");
 
-  REQUIRE(NAMEOF_TYPE(classvar) == "const volatile SomeClass<int>*");
+  REQUIRE(NAMEOF_TYPE(ptr_c) == "const volatile SomeClass<int>*");
 
   REQUIRE(NAMEOF_TYPE(othervar) == "Long");
   REQUIRE(NAMEOF_TYPE(othervar.ll) == "Long::LL");
@@ -319,7 +319,7 @@ TEST_CASE("NAMEOF_TYPE_T") {
 #if defined(__clang__)
   REQUIRE(NAMEOF_TYPE_T(decltype(struct_var)) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(decltype(ptr_s)) == "SomeStruct *");
-  REQUIRE(NAMEOF_TYPE_T(decltype(refvar)) == "SomeStruct &");
+  REQUIRE(NAMEOF_TYPE_T(decltype(ref_s)) == "SomeStruct &");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct *) == "SomeStruct *");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct &) == "SomeStruct &");
@@ -353,7 +353,7 @@ TEST_CASE("NAMEOF_TYPE_T") {
 #elif defined(__GNUC__)
   REQUIRE(NAMEOF_TYPE_T(decltype(struct_var)) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(decltype(ptr_s)) == "SomeStruct*");
-  REQUIRE(NAMEOF_TYPE_T(decltype(refvar)) == "SomeStruct&");
+  REQUIRE(NAMEOF_TYPE_T(decltype(ref_s)) == "SomeStruct&");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct) == "SomeStruct");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct *) == "SomeStruct*");
   REQUIRE(NAMEOF_TYPE_T(SomeStruct &) == "SomeStruct&");
