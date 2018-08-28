@@ -48,10 +48,9 @@ void SomeMethod3() {
   std::cout << NAMEOF(SomeMethod3) << " no called!" << std::endl;
 }
 
-template <typename T>
-std::string SomeMethod4() {
-  std::cout << NAMEOF_TYPE_T(T) << std::endl;
-  return NAMEOF_FULL(SomeMethod4<T>);
+template <typename T, typename U>
+std::string SomeMethod4(U value) {
+  return std::string(NAMEOF(SomeMethod4<T, U>)).append("<").append(NAMEOF_TYPE_T(T)).append(", ").append(NAMEOF_TYPE_T(U)).append(">(").append(NAMEOF_TYPE_T(U)).append(" value)");
 }
 
 template <typename T>
@@ -87,6 +86,8 @@ int main() {
   constexpr auto constexpr_work_fine = NAMEOF(structvar);
   static_assert("structvar" == constexpr_work_fine, "");
 
+  std::cout << SomeMethod4<int>(structvar) << std::endl; // SomeMethod4<int>(SomeStruct value)
+
   // Enum name.
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
 
@@ -104,9 +105,9 @@ int main() {
   std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
 
-  std::cout << NAMEOF(SomeMethod4<int>()) << std::endl; // SomeMethod4
-  std::cout << NAMEOF(SomeMethod4<int>) << std::endl; // SomeMethod4
-  std::cout << NAMEOF_FULL(SomeMethod4<int>) << std::endl; // SomeMethod4<int>
+  std::cout << NAMEOF(SomeMethod4<int, float>(1.0f)) << std::endl; // SomeMethod4
+  std::cout << NAMEOF(SomeMethod4<int, float>) << std::endl; // SomeMethod4
+  std::cout << NAMEOF_FULL(SomeMethod4<int, float>) << std::endl; // SomeMethod4<int, float>
 
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod5) << std::endl; // SomeMethod5
 
@@ -143,7 +144,7 @@ int main() {
   }
 
   /* Remarks */
-#if 1
+#if 0
   // This expression does not have a name.
   std::cout << NAMEOF("Bad case"_string) << std::endl; // '_string'
   std::cout << NAMEOF(42.0) << std::endl; // '0'
