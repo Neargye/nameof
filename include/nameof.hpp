@@ -44,9 +44,16 @@
 #  define NAMEOF_CONSTEXPR14 inline
 #endif
 
+#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
+#  define NAMEOF_HAS_CONSTEXPR17 1
+#  define NAMEOF_CONSTEXPR17 constexpr
+#else
+#  define NAMEOF_CONSTEXPR17 inline
+#endif
+
 #if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
-#  define NAMEOF_TYPE_CONSTEXPR constexpr
 #  define NAMEOF_TYPE_HAS_CONSTEXPR 1
+#  define NAMEOF_TYPE_CONSTEXPR constexpr
 #else
 #  define NAMEOF_TYPE_CONSTEXPR inline
 #endif
@@ -64,21 +71,35 @@ struct identity {
 
 } // namespace nstd
 
-constexpr bool StrEquals(const char* lhs, const char* rhs, std::size_t size) {
-#if defined(NAMEOF_HAS_CONSTEXPR14)
+constexpr int CharCompare(char lhs, char rhs) {
+  return (lhs > rhs) ? 1 : ((lhs < rhs) ? -1 : 0);
+}
+
+constexpr int StrCompare(const char* lhs, const char* rhs, std::size_t size) {
+#if defined(NAMEOF_HAS_CONSTEXPR17)
+  return std::char_traits<char>::compare(lhs, rhs, size);
+#elif defined(NAMEOF_HAS_CONSTEXPR14)
   for (std::size_t i = 0; i < size; ++i) {
-    if (lhs[i] != rhs[i]) {
-      return false;
+    if (lhs[i] > rhs[i]) {
+      return 1;
+    }
+    if (lhs[i] < rhs[i]) {
+      return -1;
     }
   }
-  return true;
+  return 0;
 #else
-  return (size == 0) ? (lhs[0] == rhs[0]) : (lhs[size - 1] == rhs[size - 1] && StrEquals(lhs, rhs, size - 1));
+  return (size == 0) ? CharCompare(lhs[0], rhs[0])
+                    : (CharCompare(lhs[size - 1], rhs[size - 1]) == 0)
+                          ? StrCompare(lhs, rhs, size - 1)
+                          : CharCompare(lhs[size - 1], rhs[size - 1]);
 #endif
 }
 
 constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
-#if defined(NAMEOF_HAS_CONSTEXPR14)
+#if defined(NAMEOF_HAS_CONSTEXPR17)
+  return size, std::char_traits<char>::length(str);
+#elif defined(NAMEOF_HAS_CONSTEXPR14)
   for (; str != nullptr; ++size) {
     if (str[size] == '\0') {
       return size;
@@ -107,15 +128,9 @@ class cstring final {
 
   cstring(const std::string& str) noexcept : cstring{str.data(), str.size(), 0, 0} {}
 
-  cstring(const cstring&) = default;
-
-  cstring(cstring&&) = default;
+  constexpr cstring(const cstring&) = default;
 
   cstring& operator=(const cstring&) = default;
-
-  cstring& operator=(cstring&&) = default;
-
-  ~cstring() = default;
 
   constexpr std::size_t size() const noexcept { return size_; }
 
@@ -135,13 +150,6 @@ class cstring final {
 
   constexpr const char& operator[](std::size_t i) const { return str_[i]; }
 
-  NAMEOF_CONSTEXPR14 const char& at(std::size_t i) const {
-    if (i < size_) {
-      return str_[i];
-    }
-    throw std::out_of_range("cstring::at()");
-  }
-
   constexpr const char& front() const { return str_[0]; }
 
   constexpr const char& back() const { return str_[size_ - 1]; }
@@ -158,15 +166,14 @@ class cstring final {
 
   constexpr cstring substr(std::size_t pos, std::size_t n) const { return {str_ + pos, n}; }
 
-  int compare(cstring other) const {
-    if (const auto result = std::char_traits<char>::compare(str_, other.str_, other.size_ < size_ ? other.size_ : size_))
-      return result;
-
-    return (size_ == other.size_) ? 0 : ((size_ < other.size_) ? -1 : 1);
+  constexpr int compare(cstring other) const {
+    return (size_ == other.size_)
+              ? detail::StrCompare(str_, other.str_, size_)
+              : ((size_ > other.size_) ? 1 : -1);
   }
 
   friend constexpr bool operator==(cstring lhs, cstring rhs) {
-    return lhs.size_ == rhs.size_ && detail::StrEquals(lhs.str_, rhs.str_, lhs.size_);
+    return lhs.compare(rhs) == 0;
   }
 
   friend constexpr bool operator!=(cstring lhs, cstring rhs) {
