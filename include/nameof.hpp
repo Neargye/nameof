@@ -41,7 +41,7 @@
 #  define NAMEOF_HAS_CONSTEXPR14 1
 #  define NAMEOF_CONSTEXPR14 constexpr
 #else
-#  define NAMEOF_CONSTEXPR14 /*constexpr*/
+#  define NAMEOF_CONSTEXPR14 inline
 #endif
 
 #if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
@@ -49,13 +49,6 @@
 #  define NAMEOF_TYPE_HAS_CONSTEXPR 1
 #else
 #  define NAMEOF_TYPE_CONSTEXPR inline
-#endif
-
-#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
-#  define NAMEOF_HAS_CONSTEXPR17 1
-#  define NAMEOF_CONSTEXPR17 constexpr
-#else
-#  define NAMEOF_CONSTEXPR17 /*constexpr*/
 #endif
 
 namespace nameof {
@@ -72,15 +65,12 @@ struct identity {
 } // namespace nstd
 
 constexpr bool StrEquals(const char* lhs, const char* rhs, std::size_t size) {
-#if defined(NAMEOF_HAS_CONSTEXPR17)
-  return std::char_traits<char>::compare(lhs, rhs, size) == 0;
-#elif defined(NAMEOF_HAS_CONSTEXPR14)
+#if defined(NAMEOF_HAS_CONSTEXPR14)
   for (std::size_t i = 0; i < size; ++i) {
     if (lhs[i] != rhs[i]) {
       return false;
     }
   }
-
   return true;
 #else
   return (size == 0) ? (lhs[0] == rhs[0]) : (lhs[size - 1] == rhs[size - 1] && StrEquals(lhs, rhs, size - 1));
@@ -88,16 +78,12 @@ constexpr bool StrEquals(const char* lhs, const char* rhs, std::size_t size) {
 }
 
 constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
-#if defined(NAMEOF_HAS_CONSTEXPR17)
-  (void)size;
-  return std::char_traits<char>::length(str);
-#elif defined(NAMEOF_HAS_CONSTEXPR14)
+#if defined(NAMEOF_HAS_CONSTEXPR14)
   for (; str != nullptr; ++size) {
     if (str[size] == '\0') {
       return size;
     }
   }
-
   return size;
 #else
   return (str[size] == '\0') ? size : StrLen(str, size + 1);
@@ -172,7 +158,7 @@ class cstring final {
 
   constexpr cstring substr(std::size_t pos, std::size_t n) const { return {str_ + pos, n}; }
 
-  NAMEOF_CONSTEXPR17 int compare(cstring other) const {
+  int compare(cstring other) const {
     if (const auto result = std::char_traits<char>::compare(str_, other.str_, other.size_ < size_ ? other.size_ : size_))
       return result;
 
