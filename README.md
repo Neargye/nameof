@@ -16,62 +16,52 @@ master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)
 Used to obtain the simple name of a variable, type, member, function, macros.
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
 
-A nameof macros expression has this form:
-
-```cpp
-std::cout << NAMEOF(person.address.zip_code) << std::endl; // prints "zip_code"
-```
-
 ## Features
 
-* Simple name
 * C++11
 * Header-only
 * Dependency-free
 * Compile-time
 * Compilation check
+* Name of variable
+* Name of member
+* Name of function
+* Name of emum
+* Name of macrose
+* Name of type
 
 ## [Examples](example/example.cpp)
 
-* Name of a variable, member or function and etc
+* A nameof macros expression has this form
 
 ```cpp
+// Name of variable
 NAMEOF(somevar) -> "somevar"
-NAMEOF(somevar.somefield) -> "somefield"
-NAMEOF(SomeMethod) -> "SomeMethod"
-```
-
-* Name of enum
-
-```cpp
+// Name of member
+NAMEOF(person.address.zip_code) -> "zip_code"
+// Name of function
+NAMEOF(SomeMethod<int, float>) -> "SomeMethod"
+NAMEOF_FULL(SomeMethod<int, float>) -> "SomeMethod4<int, float>"
+// Name of enum
 NAMEOF(SomeEnum::RED) -> "RED"
-NAMEOF(SomeEnum::GREEN) -> "GREEN"
-```
-
-* Name of type
-
-```cpp
-NAMEOF(volatile const int) -> "volatile const int int"
-NAMEOF(std::string) -> "string"
-```
-
-* Name of macros
-
-```cpp
+// Name of type
+NAMEOF_TYPE(SomeEnum::RED) -> "SomeEnum"
+NAMEOF_TYPE_T(int) -> "int"
+// Name of macros
 NAMEOF(__LINE__) -> "__LINE__"
-NAMEOF(__FILE__) -> "__FILE__"
 ```
 
 * Constexpr
 
 ```cpp
-constexpr auto constexpr_work_fine = NAMEOF(somevar); -> "somevar"
+constexpr auto cx = NAMEOF(somevar); -> "somevar"
+static_assert(cx == "somevar", "Wrong name!");
 ```
 
 * Compilation check
 
 ```cpp
-NAMEOF(std::stringgg) -> error namespace "std" has no member "stringgg"
+NAMEOF_TYPE_T(std::stringgg) -> error namespace "std" has no member "stringgg"
 ```
 
 * Validate parameters
@@ -79,7 +69,7 @@ NAMEOF(std::stringgg) -> error namespace "std" has no member "stringgg"
 ```cpp
 void f(char* s) {
   if (s == nullptr)
-    throw std::invalid_argument(NAMEOF(s));
+    throw std::invalid_argument(NAMEOF(s).apend("with type = ").apend(NAMEOF_TYPE(s)));
 }
 ```
 
@@ -93,17 +83,18 @@ void to_json(json& j, const person& p) {
 }
 
 void from_json(const json& j, person& p) {
-  p.name = j.at(NAMEOF(p.name));
+  p.name =    j.at(NAMEOF(p.name));
   p.address = j.at(NAMEOF(p.address));
-  p.age = j.at(NAMEOF(p.age));
+  p.age =     j.at(NAMEOF(p.age));
 }
 ```
 
 * Logging
 
 ```cpp
+template <typename T>
 void f() {
-  Log(NAMEOF(f), " method entry");
+  Log(NAMEOF(f) + " method entry with T = " + NAMEOF_TYPE_T(T));
 }
 ```
 
@@ -111,19 +102,18 @@ void f() {
 
 * The argument expression identifies a code definition, but it is never evaluated.
 
-* If you need fully-qualified name, use NAMEOF_FULL().
+* If you need raw fully-qualified name, use NAMEOF_RAW.
 
 ```cpp
-NAMEOF_FULL(somevar.somefield) -> "somevar.somefield"
-NAMEOF_FULL(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
-NAMEOF_FULL(std::string) -> "std::string"
+NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
+NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
 ```
 
 * Spaces and Tabs ignored
 
 ```cpp
-NAMEOF(   std::string   ) -> "string"
-NAMEOF(	std::string	) -> "string"
+NAMEOF(   somevar   ) -> "somevar"
+NAMEOF(	somevar	) -> "somevar"
 ```
 
 ## Integration
