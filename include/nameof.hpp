@@ -39,16 +39,10 @@
 
 #if defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
 #  define NAMEOF_HAS_CONSTEXPR14 1
-#  define NAMEOF_CONSTEXPR14 constexpr
-#else
-#  define NAMEOF_CONSTEXPR14 inline
 #endif
 
 #if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 #  define NAMEOF_HAS_CONSTEXPR17 1
-#  define NAMEOF_CONSTEXPR17 constexpr
-#else
-#  define NAMEOF_CONSTEXPR17 inline
 #endif
 
 #if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
@@ -90,9 +84,9 @@ constexpr int StrCompare(const char* lhs, const char* rhs, std::size_t size) {
   return 0;
 #else
   return (size == 0) ? CharCompare(lhs[0], rhs[0])
-                    : (CharCompare(lhs[size - 1], rhs[size - 1]) == 0)
-                          ? StrCompare(lhs, rhs, size - 1)
-                          : CharCompare(lhs[size - 1], rhs[size - 1]);
+                     : (CharCompare(lhs[size - 1], rhs[size - 1]) == 0)
+                           ? StrCompare(lhs, rhs, size - 1)
+                           : CharCompare(lhs[size - 1], rhs[size - 1]);
 #endif
 }
 
@@ -113,6 +107,7 @@ constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
 
 } // namespace detail
 
+// std::string like compile-time const char* string.
 class cstring final {
   const char* str_;
   std::size_t size_;
@@ -136,7 +131,9 @@ class cstring final {
 
   constexpr std::size_t length() const noexcept { return size_; }
 
-  constexpr std::size_t max_size() const noexcept { return (std::numeric_limits<std::size_t>::max)(); }
+  constexpr std::size_t max_size() const noexcept {
+    return (std::numeric_limits<std::size_t>::max)();
+  }
 
   constexpr bool empty() const noexcept { return size_ == 0; }
 
@@ -156,20 +153,29 @@ class cstring final {
 
   constexpr const char* data() const noexcept { return str_; }
 
-  constexpr cstring remove_prefix(std::size_t n) const { return {str_ + n, size_ - n}; }
+  constexpr cstring remove_prefix(std::size_t n) const {
+    return {str_ + n, size_ - n};
+  }
 
-  constexpr cstring add_prefix(std::size_t n) const { return {str_ - n, size_ + n}; }
+  constexpr cstring add_prefix(std::size_t n) const {
+    return {str_ - n, size_ + n};
+  }
 
-  constexpr cstring remove_suffix(std::size_t n) const { return {str_, size_ - n}; }
+  constexpr cstring remove_suffix(std::size_t n) const {
+    return {str_, size_ - n};
+  }
 
-  constexpr cstring add_suffix(std::size_t n) const { return {str_, size_ + n}; }
+  constexpr cstring add_suffix(std::size_t n) const {
+    return {str_, size_ + n};
+  }
 
-  constexpr cstring substr(std::size_t pos, std::size_t n) const { return {str_ + pos, n}; }
+  constexpr cstring substr(std::size_t pos, std::size_t n) const {
+    return {str_ + pos, n};
+  }
 
   constexpr int compare(cstring other) const {
-    return (size_ == other.size_)
-              ? detail::StrCompare(str_, other.str_, size_)
-              : ((size_ > other.size_) ? 1 : -1);
+    return (size_ == other.size_) ? detail::StrCompare(str_, other.str_, size_)
+                                  : ((size_ > other.size_) ? 1 : -1);
   }
 
   friend constexpr bool operator==(cstring lhs, cstring rhs) {
@@ -269,7 +275,8 @@ constexpr cstring RemoveSuffix(cstring name, std::size_t h = 0) {
                    ? RemoveSuffix(name.remove_suffix(1), h + 1)
                    : (name.back() == '(' || name.back() == '{')
                          ? RemoveSuffix(name.remove_suffix(1), h - 1)
-                         : (h == 0) ? name : RemoveSuffix(name.remove_suffix(1), h);
+                         : (h == 0) ? name
+                                    : RemoveSuffix(name.remove_suffix(1), h);
 }
 
 constexpr std::size_t FindSuffix(cstring name, std::size_t h = 0, std::size_t s = 0) {
@@ -320,7 +327,8 @@ constexpr cstring RemoveEnumPrefix(cstring name) {
 
 constexpr cstring RemoveStructPrefix(cstring name) {
   return (name.size() > sizeof("struct") && name[0] == 's' && name[1] == 't' &&
-          name[2] == 'r' && name[3] == 'u' && name[4] == 'c' && name[5] == 't' && name[6] == ' ')
+          name[2] == 'r' && name[3] == 'u' && name[4] == 'c' &&
+          name[5] == 't' && name[6] == ' ')
              ? name.remove_prefix(sizeof("struct"))
              : name;
 }
