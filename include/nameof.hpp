@@ -41,10 +41,6 @@
 #  define NAMEOF_HAS_CONSTEXPR14 1
 #endif
 
-#if __cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
-#  define NAMEOF_HAS_CONSTEXPR17 1
-#endif
-
 #if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
 #  define NAMEOF_TYPE_HAS_CONSTEXPR 1
 #  define NAMEOF_TYPE_CONSTEXPR constexpr
@@ -65,12 +61,14 @@ struct identity {
 
 } // namespace nstd
 
+#if !defined(NAMEOF_HAS_CONSTEXPR14)
 constexpr int CharCompare(char lhs, char rhs) {
   return (lhs > rhs) ? 1 : ((lhs < rhs) ? -1 : 0);
 }
+#endif
 
 constexpr int StrCompare(const char* lhs, const char* rhs, std::size_t size) {
-#if defined(NAMEOF_HAS_CONSTEXPR17)
+#if !defined(_MSC_VER) && __cplusplus >= 201703L
   return std::char_traits<char>::compare(lhs, rhs, size);
 #elif defined(NAMEOF_HAS_CONSTEXPR14)
   for (std::size_t i = 0; i < size; ++i) {
@@ -91,7 +89,7 @@ constexpr int StrCompare(const char* lhs, const char* rhs, std::size_t size) {
 }
 
 constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
-#if defined(NAMEOF_HAS_CONSTEXPR17)
+#if !defined(_MSC_VER) && __cplusplus >= 201703L
   return size, std::char_traits<char>::length(str);
 #elif defined(NAMEOF_HAS_CONSTEXPR14)
   for (; str != nullptr; ++size) {
@@ -116,8 +114,6 @@ class cstring final {
   constexpr cstring(const char* str, std::size_t size, std::size_t prefix = 0, std::size_t suffix = 0) noexcept
       : str_{str + prefix},
         size_{size - prefix - suffix} {}
-
-  constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
 
   constexpr cstring(const char* str) noexcept : cstring{str, detail::StrLen(str), 0, 0} {}
 
