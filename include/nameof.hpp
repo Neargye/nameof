@@ -90,7 +90,8 @@ constexpr int StrCompare(const char* lhs, const char* rhs, std::size_t size) {
 
 constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
 #if !defined(_MSC_VER) && __cplusplus >= 201703L
-  return size, std::char_traits<char>::length(str);
+  static_cast<void>(size);
+  return std::char_traits<char>::length(str);
 #elif defined(NAMEOF_HAS_CONSTEXPR14)
   for (; str != nullptr; ++size) {
     if (str[size] == '\0') {
