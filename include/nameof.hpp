@@ -147,6 +147,11 @@ class cstring final {
 
   constexpr const char& operator[](std::size_t i) const { return str_[i]; }
 
+  constexpr const char& at(std::size_t i) const {
+    return (i < size_) ? str_[i]
+                       : (throw std::out_of_range("cstring::at"), str_[0]);
+  }
+
   constexpr const char& front() const { return str_[0]; }
 
   constexpr const char& back() const { return str_[size_ - 1]; }
