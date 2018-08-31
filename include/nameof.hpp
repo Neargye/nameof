@@ -118,6 +118,8 @@ class cstring final {
 
   constexpr cstring(const char* str) noexcept : cstring{str, detail::StrLen(str), 0, 0} {}
 
+  constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
+
   cstring(const std::string& str) noexcept : cstring{str.data(), str.size(), 0, 0} {}
 
   constexpr cstring(const cstring&) = default;
@@ -146,7 +148,7 @@ class cstring final {
 
   constexpr const char& at(std::size_t i) const {
     return (i < size_) ? str_[i]
-                       : (throw std::out_of_range("cstring::at"), str_[0]);
+                       : (throw std::out_of_range{"cstring::at"}, str_[0]);
   }
 
   constexpr const char& front() const { return str_[0]; }
@@ -189,11 +191,11 @@ class cstring final {
   }
 
   std::string append(cstring s) const {
-    return std::string(str_, size_).append(s.str_, s.size_);
+    return std::string{str_, size_}.append(s.str_, s.size_);
   }
 
   friend std::string operator+(cstring lhs, cstring rhs) {
-    return std::string(lhs) + std::string(rhs);
+    return std::string{lhs} +std::string{rhs};
   }
 
   friend std::ostream& operator<<(std::ostream& os, cstring str) {
@@ -201,7 +203,7 @@ class cstring final {
     return os;
   }
 
-  operator std::string() const { return std::string(str_, size_); }
+  operator std::string() const { return std::string{str_, size_}; }
 };
 
 namespace detail {
