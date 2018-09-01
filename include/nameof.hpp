@@ -42,10 +42,10 @@
 #endif
 
 #if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
-#  define NAMEOF_TYPE_HAS_CONSTEXPR 1
-#  define NAMEOF_TYPE_CONSTEXPR constexpr
+#  define NAMEOF_HAS_CONSTEXPR 1
+#  define NAMEOF_CONSTEXPR constexpr
 #else
-#  define NAMEOF_TYPE_CONSTEXPR inline
+#  define NAMEOF_CONSTEXPR inline
 #endif
 
 namespace nameof {
@@ -347,7 +347,7 @@ constexpr cstring NameofTypePretty(const char* str, std::size_t size, std::size_
 #endif
 
 template <typename T>
-constexpr int NameofEnumImpl1() {
+NAMEOF_CONSTEXPR int NameofEnumImpl1() {
 #if defined(__clang__)
   return sizeof(__PRETTY_FUNCTION__) - sizeof("int nameof::detail::NameofEnumImpl1() [T = ") - sizeof("]") + 1;
 #elif defined(__GNUC__)
@@ -360,7 +360,7 @@ constexpr int NameofEnumImpl1() {
 }
 
 template <typename T, T V>
-constexpr nameof::cstring NameofEnumImpl2() {
+NAMEOF_CONSTEXPR nameof::cstring NameofEnumImpl2() {
 #if defined(__clang__)
   return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
@@ -383,20 +383,27 @@ constexpr nameof::cstring NameofEnumImpl2() {
 
 template <typename T, int I = 0>
 struct NameofEnumImpl {
-  constexpr nameof::cstring operator()(T value) const noexcept {
+  NAMEOF_CONSTEXPR nameof::cstring operator()(T value) const {
     return (static_cast<int>(value) - I == 0)
-               ? NameofEnumImpl2<T, T(0 + I)>()
-               : NameofEnumImpl<T, I + 1>{}(value);
+               ? NameofEnumImpl2<T, T(I)>()
+               : (static_cast<int>(value) >= 0)
+                     ? NameofEnumImpl<T, I + 1>{}(value)
+                     : NameofEnumImpl<T, I - 1>{}(value);
   }
 };
 
 template <typename T>
 struct NameofEnumImpl<T, 128> {
-  constexpr nameof::cstring operator()(T) const noexcept { return {}; }
+  NAMEOF_CONSTEXPR nameof::cstring operator()(T) const { return {}; }
 };
 
 template <typename T>
-NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
+struct NameofEnumImpl<T, -128> {
+  NAMEOF_CONSTEXPR nameof::cstring operator()(T) const { return {}; }
+};
+
+template <typename T>
+NAMEOF_CONSTEXPR cstring NameofType() {
 #if defined(__clang__)
   return NameofTypePretty(
       __PRETTY_FUNCTION__,
@@ -407,7 +414,7 @@ NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
   return NameofTypePretty(
       __PRETTY_FUNCTION__,
       sizeof(__PRETTY_FUNCTION__) - 1,
-#  if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
+#  if defined(NAMEOF_HAS_CONSTEXPR)
       sizeof("constexpr nameof::cstring nameof::detail::NameofType() [with T = nameof::detail::nstd::identity<") - 1,
 #  else
       sizeof("nameof::cstring nameof::detail::NameofType() [with T = nameof::detail::nstd::identity<") - 1,
@@ -434,7 +441,7 @@ constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix = 
 
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value && std::is_enum<T>::value>::type>
-constexpr cstring NameofEnum(T value) {
+NAMEOF_CONSTEXPR cstring NameofEnum(T value) {
 #if defined(__clang__) || defined(_MSC_VER)
   return detail::NameofPretty(detail::NameofEnumImpl<T>{}(value), false);
 #elif defined(__GNUC__)
@@ -445,8 +452,8 @@ return {};
 }
 
 template <typename T>
-NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
-  return detail::NameofType<detail::nstd::identity<T>>();
+NAMEOF_CONSTEXPR cstring NameofType() {
+  return true ? detail::NameofType<detail::nstd::identity<T>>() : detail::NameofType<detail::nstd::identity<T>>();
 }
 
 template <typename T>
