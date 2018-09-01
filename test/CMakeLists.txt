@@ -52,15 +52,6 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     endif()
 endif()
 
-function(enable_msvs_guideline_checker target)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        set_target_properties(${target} PROPERTIES
-            VS_GLOBAL_EnableCppCoreCheck true
-            VS_GLOBAL_CodeAnalysisRuleSet CppCoreCheckRules.ruleset
-            VS_GLOBAL_RunCodeAnalysis true)
-    endif()
-endfunction()
-
 function(make_target target std)
     add_executable(${target} ${SOURCES})
     target_compile_options(${target} PRIVATE ${OPTIONS})
@@ -91,7 +82,6 @@ if(HAS_CPP17_FLAG)
         set(std17 c++1z)
     endif()
     make_target(nameof-cpp17.t ${std17})
-    enable_msvs_guideline_checker(nameof-cpp17.t)
     add_test(NAME test-cpp17 COMMAND nameof-cpp17.t)
 endif()
 
