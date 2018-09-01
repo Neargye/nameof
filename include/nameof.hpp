@@ -455,9 +455,15 @@ template <typename T,
                                              std::is_enum<T>::value>::type>
 NAMEOF_CONSTEXPR cstring NameofEnum(T value) {
 #if defined(__clang__) || defined(_MSC_VER)
-  return detail::NameofPretty(detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value)), false);
+  return detail::NameofPretty(
+      std::is_unsigned<std::underlying_type<T>::type>::value
+          ? detail::NameofEnumImpl<T, 0>{}(static_cast<int>(value))
+          : detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value)),
+      false);
 #elif defined(__GNUC__)
-  return detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value));
+  return std::is_unsigned<std::underlying_type<T>::type>::value
+             ? detail::NameofEnumImpl<T, 0>{}(static_cast<int>(value))
+             : detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value));
 #else
   return {};
 #endif
