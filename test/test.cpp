@@ -70,7 +70,7 @@ struct Long {
 
 enum class Color { RED = -1, GREEN, BLUE };
 
-enum Directions { Up, Down, Right, Left};
+enum Directions : int { Up, Down, Right, Left};
 
 SomeStruct struct_var;
 Long othervar;
@@ -145,17 +145,17 @@ TEST_CASE("constexpr") {
     REQUIRE(cx6 == "__cplusplus");
   }
 
+#if defined(NAMEOF_HAS_CONSTEXPR)
   SECTION("NAMEOF_ENUM") {
     constexpr auto cx = NAMEOF_ENUM(color);
-#if defined(__clang__) || defined(_MSC_VER)
+#  if defined(__clang__) || defined(_MSC_VER)
     static_assert(cx == "RED", "");
     REQUIRE(cx == "RED");
-#elif defined(__GNUC__)
+#  elif defined(__GNUC__)
     REQUIRE(cx == "(const Color)-1");
-#endif
+#  endif
   }
 
-#if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
   SECTION("NAMEOF_TYPE") {
     constexpr auto cx = NAMEOF_TYPE(ptr_c);
 #  if defined(__clang__)

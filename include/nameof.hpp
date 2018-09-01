@@ -385,7 +385,7 @@ template <typename T, int I = 0>
 struct NameofEnumImpl {
   NAMEOF_CONSTEXPR nameof::cstring operator()(T value) const {
     return (static_cast<int>(value) - I == 0)
-               ? NameofEnumImpl2<T, T(I)>()
+               ? NameofEnumImpl2<T, T(0 + I)>()
                : (static_cast<int>(value) >= 0)
                      ? NameofEnumImpl<T, I + 1>{}(value)
                      : NameofEnumImpl<T, I - 1>{}(value);
