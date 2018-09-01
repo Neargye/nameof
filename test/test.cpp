@@ -70,6 +70,8 @@ struct Long {
 
 enum class Color { RED, GREEN, BLUE };
 
+enum Directions { Up, Down, Right, Left};
+
 SomeStruct struct_var;
 Long othervar;
 SomeStruct * ptr_s = &struct_var;
@@ -77,6 +79,9 @@ SomeStruct & ref_s = struct_var;
 
 SomeClass<int> class_var;
 const SomeClass<int> volatile * ptr_c = nullptr;
+
+const Color color = Color::RED;
+const Directions directions = Directions::Right;
 
 TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
@@ -138,6 +143,17 @@ TEST_CASE("constexpr") {
     constexpr auto cx6 = NAMEOF_RAW(__cplusplus);
     static_assert(cx6 == "__cplusplus", "");
     REQUIRE(cx6 == "__cplusplus");
+  }
+
+  SECTION("NAMEOF_ENUM") {
+    constexpr auto cx = NAMEOF_ENUM(color);
+#  if defined(__clang__) || defined(_MSC_VER)
+    static_assert(cx == "RED", "");
+    REQUIRE(cx == "RED");
+#  elif defined(__GNUC__)
+    //static_assert(cx == "(Color)0", "");
+    REQUIRE(cx == "(Color)0");
+#  endif
   }
 
 #if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
@@ -290,6 +306,22 @@ TEST_CASE("NAMEOF_RAW") {
   }
 }
 
+TEST_CASE("NAMEOF_ENUM") {
+#  if defined(__clang__) || defined(_MSC_VER)
+  REQUIRE(NAMEOF_ENUM(Color::RED) == "RED");
+  REQUIRE(NAMEOF_ENUM(color) == "RED");
+
+  REQUIRE(NAMEOF_ENUM(Directions::Right) == "Right");
+  REQUIRE(NAMEOF_ENUM(directions) == "Right");
+#  elif defined(__GNUC__)
+  REQUIRE(NAMEOF_ENUM(Color::RED) == "(Color)0");
+  REQUIRE(NAMEOF_ENUM(color) == "0");
+
+  REQUIRE(NAMEOF_ENUM(Directions::Right) == "2");
+  REQUIRE(NAMEOF_ENUM(directions) == "2");
+#  endif
+}
+
 TEST_CASE("NAMEOF_TYPE") {
 #if defined(__clang__)
   REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
@@ -397,6 +429,8 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF_FULL(   struct_var   ) == "struct_var");
     REQUIRE(NAMEOF_RAW(   struct_var   ) == "struct_var");
 
+    REQUIRE(NAMEOF_ENUM(   color   ) == "RED");
+
     REQUIRE(NAMEOF_TYPE(   struct_var   ) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(   decltype(struct_var)   ) == "SomeStruct");
   }
@@ -405,6 +439,8 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF(	struct_var	) == "struct_var");
     REQUIRE(NAMEOF_FULL(	struct_var	) == "struct_var");
     REQUIRE(NAMEOF_RAW(	struct_var	) == "struct_var");
+
+    REQUIRE(NAMEOF_ENUM(	color	) == "RED");
 
     REQUIRE(NAMEOF_TYPE(	struct_var	) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(	decltype(struct_var)	) == "SomeStruct");

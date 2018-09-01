@@ -297,12 +297,12 @@ constexpr cstring RemovePrefix(cstring name, const std::size_t p = 0) {
                                        : RemovePrefix(name, p + 1);
 }
 
-constexpr cstring NameofPrettyImpl_(cstring name, std::size_t s, bool with_suffix) {
+constexpr cstring NameofPrettyImpl1(cstring name, std::size_t s, bool with_suffix) {
   return RemovePrefix(name.remove_suffix(s)).add_suffix(with_suffix ? s : 0);
 }
 
 constexpr cstring NameofPrettyImpl(cstring name, bool with_suffix) {
-  return NameofPrettyImpl_(name, FindSuffix(name), with_suffix);
+  return NameofPrettyImpl1(name, FindSuffix(name), with_suffix);
 }
 
 constexpr cstring NameofPretty(cstring name, bool with_suffix) {
@@ -347,6 +347,55 @@ constexpr cstring NameofTypePretty(const char* str, std::size_t size, std::size_
 #endif
 
 template <typename T>
+constexpr int NameofEnumImpl1() {
+#if defined(__clang__)
+  return sizeof(__PRETTY_FUNCTION__) - sizeof("int nameof::detail::NameofEnumImpl1() [T = ") - sizeof("]") + 1;
+#elif defined(__GNUC__)
+  return sizeof(__PRETTY_FUNCTION__) - sizeof("constexpr int nameof::detail::NameofEnumImpl1() [with T = ") - sizeof("]") + 1;
+#elif defined(_MSC_VER)
+  return sizeof(__FUNCSIG__) - sizeof("int __cdecl nameof::detail::NameofEnumImpl1<") - sizeof(">(void)") + 1;
+#else
+  return 0;
+#endif
+}
+
+template <typename T, T V>
+constexpr nameof::cstring NameofEnumImpl2() {
+#if defined(__clang__)
+  return {__PRETTY_FUNCTION__,
+          sizeof(__PRETTY_FUNCTION__) - 1,
+          sizeof("nameof::cstring nameof::detail::NameofEnumImpl2() [T = ") + NameofEnumImpl1<T>() + sizeof("; V = ") - 2,
+          sizeof("]") - 1};
+#elif defined(__GNUC__)
+  return {__PRETTY_FUNCTION__,
+          sizeof(__PRETTY_FUNCTION__) - 1,
+          sizeof("constexpr nameof::cstring nameof::detail::NameofEnumImpl2() [with T = ") + NameofEnumImpl1<T>() + sizeof("; T V = ") - 2,
+          sizeof("]") - 1};
+#elif defined(_MSC_VER)
+  return {__FUNCSIG__,
+          sizeof(__FUNCSIG__) - 1,
+          sizeof("class nameof::cstring __cdecl nameof::detail::NameofEnumImpl2<") + NameofEnumImpl1<T>(),
+          sizeof(">(void)") - 1};
+#else
+  return {};
+#endif
+}
+
+template <typename T, int I = 0>
+struct NameofEnumImpl {
+  constexpr nameof::cstring operator()(T value) const noexcept {
+    return (static_cast<int>(value) - I == 0)
+               ? NameofEnumImpl2<T, T(0 + I)>()
+               : NameofEnumImpl<T, I + 1>{}(value);
+  }
+};
+
+template <typename T>
+struct NameofEnumImpl<T, 128> {
+  constexpr nameof::cstring operator()(T) const noexcept { return {}; }
+};
+
+template <typename T>
 NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
 #if defined(__clang__)
   return NameofTypePretty(
@@ -383,6 +432,12 @@ constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix = 
   return detail::NameofPretty({name, size}, with_suffix);
 }
 
+template <typename T,
+          typename = typename std::enable_if<!std::is_reference<T>::value && std::is_enum<T>::value>::type>
+constexpr cstring NameofEnum(T value) {
+  return detail::NameofPretty(detail::NameofEnumImpl<T>{}(value), false);
+}
+
 template <typename T>
 NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
   return true ? detail::NameofType<detail::nstd::identity<T>>() : detail::NameofType<detail::nstd::identity<T>>();
@@ -395,14 +450,15 @@ constexpr cstring NameofRaw(const char* name, std::size_t size) {
 
 } // namespace nameof
 
-// Used to obtain the simple (unqualified) string name of a variable, member, function, macros.
+// Used to obtain the simple (unqualified) string name of a variable, member, function, enum, macros.
 #define NAMEOF(...) ::nameof::Nameof<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1, false)
-
-// Used to obtain the full string name of a variable, member, function, macros.
+// Used to obtain the full string name of a variable, member, function, enum, macros.
 #define NAMEOF_FULL(...) ::nameof::Nameof<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1, true)
-
-// Used to obtain the raw string name of a variable, member, function, macros.
+// Used to obtain the raw string name of a variable, member, function, enum, macros.
 #define NAMEOF_RAW(...) ::nameof::NameofRaw<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1)
+
+// Used to obtain the simple (unqualified) string name of a enum variable.
+#define NAMEOF_ENUM(...) ::nameof::NameofEnum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
 // Used to obtain the string name of a type.
 #define NAMEOF_TYPE(...) ::nameof::NameofType<decltype(__VA_ARGS__)>()

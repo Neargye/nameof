@@ -86,10 +86,12 @@ int main() {
   constexpr auto constexpr_work_fine = NAMEOF(structvar);
   static_assert("structvar" == constexpr_work_fine, "");
 
-  std::cout << SomeMethod4<int>(structvar) << std::endl; // SomeMethod4<int>(SomeStruct value)
-
   // Enum name.
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
+  std::cout << NAMEOF_ENUM(Color::RED) << std::endl; // RED
+  auto color = Color::RED;
+  std::cout << NAMEOF(color) << std::endl; // color
+  std::cout << NAMEOF_ENUM(color) << std::endl; // RED
 
   // Variable name.
   std::cout << NAMEOF(structvar) << std::endl; // structvar
@@ -128,6 +130,8 @@ int main() {
   std::cout << NAMEOF_RAW(__LINE__) << std::endl; // __LINE__
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // structvar.somefield
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
+
+  std::cout << SomeMethod4<int>(structvar) << std::endl; // SomeMethod4<int>(SomeStruct value)
 
   const auto div = [](int x, int y) -> int {
     if (y == 0) {

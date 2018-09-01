@@ -44,6 +44,8 @@ NAMEOF(SomeMethod<int, float>) -> "SomeMethod"
 NAMEOF_FULL(SomeMethod<int, float>) -> "SomeMethod4<int, float>"
 // Name of enum
 NAMEOF(SomeEnum::RED) -> "RED"
+SomeEnum e = SomeEnum::RED;
+NAMEOF_ENUM(e) -> "RED"
 // Name of type
 NAMEOF_TYPE(SomeEnum::RED) -> "SomeEnum"
 NAMEOF_TYPE_T(int) -> "int"
