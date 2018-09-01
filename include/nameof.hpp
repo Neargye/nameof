@@ -385,25 +385,32 @@ NAMEOF_CONSTEXPR nameof::cstring NameofEnumImpl2() {
 #endif
 }
 
-template <typename T, int I = 0>
+template <typename T, int I>
 struct NameofEnumImpl {
-  NAMEOF_CONSTEXPR nameof::cstring operator()(T value) const {
-    return (static_cast<int>(value) - I == 0)
-               ? NameofEnumImpl2<T, T(0 + I)>()
-               : (static_cast<int>(value) >= 0)
-                     ? NameofEnumImpl<T, I + 1>{}(value)
-                     : NameofEnumImpl<T, I - 1>{}(value);
+  NAMEOF_CONSTEXPR nameof::cstring operator()(int value) const {
+    return (value - I == 0)
+               ? NameofEnumImpl2<T, T(I)>()
+               : (value - I == 1)
+                     ? NameofEnumImpl2<T, T(I + 1)>()
+                     : (value - I == 2)
+                           ? NameofEnumImpl2<T, T(I + 2)>()
+                           : (value - I == 3)
+                                 ? NameofEnumImpl2<T, T(I + 3)>()
+                                 : (value - I == 4)
+                                       ? NameofEnumImpl2<T, T(I + 4)>()
+                                       : (value - I == 5)
+                                             ? NameofEnumImpl2<T, T(I + 5)>()
+                                             : (value - I == 6)
+                                                   ? NameofEnumImpl2<T, T(I + 6)>()
+                                                   : (value - I == 7)
+                                                         ? NameofEnumImpl2<T, T(I + 7)>()
+                                                         : NameofEnumImpl<T, I + 8>{}(value);
   }
 };
 
 template <typename T>
 struct NameofEnumImpl<T, NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
-  NAMEOF_CONSTEXPR nameof::cstring operator()(T) const { return {}; }
-};
-
-template <typename T>
-struct NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
-  NAMEOF_CONSTEXPR nameof::cstring operator()(T) const { return {}; }
+  NAMEOF_CONSTEXPR nameof::cstring operator()(int) const { return {}; }
 };
 
 template <typename T>
@@ -447,9 +454,9 @@ template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value && std::is_enum<T>::value>::type>
 NAMEOF_CONSTEXPR cstring NameofEnum(T value) {
 #if defined(__clang__) || defined(_MSC_VER)
-  return detail::NameofPretty(detail::NameofEnumImpl<T>{}(value), false);
+  return detail::NameofPretty(detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value)), false);
 #elif defined(__GNUC__)
-  return detail::NameofEnumImpl<T>{}(value);
+  return detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value));
 #else
 return {};
 #endif
