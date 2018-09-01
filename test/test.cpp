@@ -147,13 +147,12 @@ TEST_CASE("constexpr") {
 
   SECTION("NAMEOF_ENUM") {
     constexpr auto cx = NAMEOF_ENUM(color);
-#  if defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || defined(_MSC_VER)
     static_assert(cx == "RED", "");
     REQUIRE(cx == "RED");
-#  elif defined(__GNUC__)
-    //static_assert(cx == "(Color)0", "");
-    REQUIRE(cx == "(Color)0");
-#  endif
+#elif defined(__GNUC__)
+    REQUIRE(cx == "(const Color)0");
+#endif
   }
 
 #if defined(NAMEOF_TYPE_HAS_CONSTEXPR)
@@ -315,10 +314,10 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(NAMEOF_ENUM(directions) == "Right");
 #  elif defined(__GNUC__)
   REQUIRE(NAMEOF_ENUM(Color::RED) == "(Color)0");
-  REQUIRE(NAMEOF_ENUM(color) == "0");
+  REQUIRE(NAMEOF_ENUM(color) == "(const Color)0");
 
-  REQUIRE(NAMEOF_ENUM(Directions::Right) == "2");
-  REQUIRE(NAMEOF_ENUM(directions) == "2");
+  REQUIRE(NAMEOF_ENUM(Directions::Right) == "(Directions)2");
+  REQUIRE(NAMEOF_ENUM(directions) == "(const Directions)2");
 #  endif
 }
 
@@ -428,9 +427,11 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF(   struct_var   ) == "struct_var");
     REQUIRE(NAMEOF_FULL(   struct_var   ) == "struct_var");
     REQUIRE(NAMEOF_RAW(   struct_var   ) == "struct_var");
-
+#if defined(__clang__) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(   color   ) == "RED");
-
+#elif defined(__GNUC__)
+    REQUIRE(NAMEOF_ENUM(   color   ) == "(const Color)0");
+#endif
     REQUIRE(NAMEOF_TYPE(   struct_var   ) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(   decltype(struct_var)   ) == "SomeStruct");
   }
@@ -439,9 +440,11 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF(	struct_var	) == "struct_var");
     REQUIRE(NAMEOF_FULL(	struct_var	) == "struct_var");
     REQUIRE(NAMEOF_RAW(	struct_var	) == "struct_var");
-
+#if defined(__clang__) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(	color	) == "RED");
-
+#elif defined(__GNUC__)
+    REQUIRE(NAMEOF_ENUM(	color	) == "(const Color)0");
+#endif
     REQUIRE(NAMEOF_TYPE(	struct_var	) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(	decltype(struct_var)	) == "SomeStruct");
   }

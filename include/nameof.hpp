@@ -435,12 +435,18 @@ constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix = 
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value && std::is_enum<T>::value>::type>
 constexpr cstring NameofEnum(T value) {
+#if defined(__clang__) || defined(_MSC_VER)
   return detail::NameofPretty(detail::NameofEnumImpl<T>{}(value), false);
+#elif defined(__GNUC__)
+  return detail::NameofEnumImpl<T>{}(value);
+#else
+return {};
+#endif
 }
 
 template <typename T>
 NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
-  return true ? detail::NameofType<detail::nstd::identity<T>>() : detail::NameofType<detail::nstd::identity<T>>();
+  return detail::NameofType<detail::nstd::identity<T>>();
 }
 
 template <typename T>
