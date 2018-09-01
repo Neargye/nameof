@@ -379,18 +379,18 @@ NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
 
 template <typename T,
           typename = typename std::enable_if<!std::is_reference<T>::value>::type>
-constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix) {
+constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix = false) {
   return detail::NameofPretty({name, size}, with_suffix);
+}
+
+template <typename T>
+NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
+  return true ? detail::NameofType<detail::nstd::identity<T>>() : detail::NameofType<detail::nstd::identity<T>>();
 }
 
 template <typename T>
 constexpr cstring NameofRaw(const char* name, std::size_t size) {
   return {name, size};
-}
-
-template <typename T, typename H = detail::nstd::identity<T>>
-NAMEOF_TYPE_CONSTEXPR cstring NameofType() {
-  return true ? detail::NameofType<H>() : detail::NameofType<H>();
 }
 
 } // namespace nameof
