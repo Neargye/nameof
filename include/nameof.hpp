@@ -364,7 +364,7 @@ NAMEOF_CONSTEXPR int NameofEnumImpl1() {
 }
 
 template <typename T, T V>
-NAMEOF_CONSTEXPR nameof::cstring NameofEnumImpl2() {
+NAMEOF_CONSTEXPR cstring NameofEnumImpl2() {
 #if defined(__clang__)
   return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
@@ -387,7 +387,7 @@ NAMEOF_CONSTEXPR nameof::cstring NameofEnumImpl2() {
 
 template <typename T, int I>
 struct NameofEnumImpl {
-  NAMEOF_CONSTEXPR nameof::cstring operator()(int value) const {
+  NAMEOF_CONSTEXPR cstring operator()(int value) const {
     return (value - I == 0)
                ? NameofEnumImpl2<T, T(I)>()
                : (value - I == 1)
@@ -410,7 +410,7 @@ struct NameofEnumImpl {
 
 template <typename T>
 struct NameofEnumImpl<T, NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
-  NAMEOF_CONSTEXPR nameof::cstring operator()(int) const { return {}; }
+  NAMEOF_CONSTEXPR cstring operator()(int) const { return {}; }
 };
 
 template <typename T>
@@ -451,20 +451,22 @@ constexpr cstring Nameof(const char* name, std::size_t size, bool with_suffix = 
 }
 
 template <typename T,
-          typename = typename std::enable_if<!std::is_reference<T>::value && std::is_enum<T>::value>::type>
+          typename = typename std::enable_if<!std::is_reference<T>::value &&
+                                             std::is_enum<T>::value>::type>
 NAMEOF_CONSTEXPR cstring NameofEnum(T value) {
 #if defined(__clang__) || defined(_MSC_VER)
   return detail::NameofPretty(detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value)), false);
 #elif defined(__GNUC__)
   return detail::NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH>{}(static_cast<int>(value));
 #else
-return {};
+  return {};
 #endif
 }
 
 template <typename T>
 NAMEOF_CONSTEXPR cstring NameofType() {
-  return true ? detail::NameofType<detail::nstd::identity<T>>() : detail::NameofType<detail::nstd::identity<T>>();
+  return true ? detail::NameofType<detail::nstd::identity<T>>()
+              : detail::NameofType<detail::nstd::identity<T>>();
 }
 
 template <typename T>
