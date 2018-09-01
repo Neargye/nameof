@@ -195,7 +195,7 @@ class cstring final {
   }
 
   friend std::string operator+(cstring lhs, cstring rhs) {
-    return std::string{lhs} +std::string{rhs};
+    return std::string{lhs.str_, lhs.size_} + std::string{rhs.str_, rhs.size_};
   }
 
   friend std::ostream& operator<<(std::ostream& os, cstring str) {
