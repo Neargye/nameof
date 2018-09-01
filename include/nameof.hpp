@@ -48,6 +48,10 @@
 #  define NAMEOF_CONSTEXPR inline
 #endif
 
+#if !defined(NAMEOF_ENUM_MAX_SEARCH_DEPTH)
+#  define NAMEOF_ENUM_MAX_SEARCH_DEPTH 64
+#endif
+
 namespace nameof {
 
 namespace detail {
@@ -393,12 +397,12 @@ struct NameofEnumImpl {
 };
 
 template <typename T>
-struct NameofEnumImpl<T, 128> {
+struct NameofEnumImpl<T, NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
   NAMEOF_CONSTEXPR nameof::cstring operator()(T) const { return {}; }
 };
 
 template <typename T>
-struct NameofEnumImpl<T, -128> {
+struct NameofEnumImpl<T, -NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
   NAMEOF_CONSTEXPR nameof::cstring operator()(T) const { return {}; }
 };
 
