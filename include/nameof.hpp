@@ -355,7 +355,11 @@ NAMEOF_CONSTEXPR int NameofEnumImpl1() {
 #if defined(__clang__)
   return sizeof(__PRETTY_FUNCTION__) - sizeof("int nameof::detail::NameofEnumImpl1() [T = ") - sizeof("]") + 1;
 #elif defined(__GNUC__)
+#  if defined(NAMEOF_HAS_CONSTEXPR)
   return sizeof(__PRETTY_FUNCTION__) - sizeof("constexpr int nameof::detail::NameofEnumImpl1() [with T = ") - sizeof("]") + 1;
+#  else
+  return sizeof(__PRETTY_FUNCTION__) - sizeof("int nameof::detail::NameofEnumImpl1() [with T = ") - sizeof("]") + 1;
+#  endif
 #elif defined(_MSC_VER)
   return sizeof(__FUNCSIG__) - sizeof("int __cdecl nameof::detail::NameofEnumImpl1<") - sizeof(">(void)") + 1;
 #else
@@ -373,7 +377,11 @@ NAMEOF_CONSTEXPR cstring NameofEnumImpl2() {
 #elif defined(__GNUC__)
   return {__PRETTY_FUNCTION__,
           sizeof(__PRETTY_FUNCTION__) - 1,
+#  if defined(NAMEOF_HAS_CONSTEXPR)
           sizeof("constexpr nameof::cstring nameof::detail::NameofEnumImpl2() [with T = ") + NameofEnumImpl1<T>() + sizeof("; T V = ") - 2,
+#  else
+          sizeof("nameof::cstring nameof::detail::NameofEnumImpl2() [with T = ") + NameofEnumImpl1<T>() + sizeof("; T V = ") - 2,
+#  endif
           sizeof("]") - 1};
 #elif defined(_MSC_VER)
   return {__FUNCSIG__,
