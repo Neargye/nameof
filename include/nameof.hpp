@@ -497,7 +497,7 @@ constexpr cstring NameofRaw(const char* name, std::size_t size) {
 #define NAMEOF_RAW(...) ::nameof::NameofRaw<decltype(__VA_ARGS__)>(#__VA_ARGS__, (sizeof(#__VA_ARGS__) / sizeof(char)) - 1)
 
 // Used to obtain the simple (unqualified) string name of a enum variable.
-#define NAMEOF_ENUM(...) ::nameof::NameofEnum<std::decay<decltype(__VA_ARGS__)>::type>(__VA_ARGS__)
+#define NAMEOF_ENUM(...) ::nameof::NameofEnum<::std::decay<decltype(__VA_ARGS__)>::type>(__VA_ARGS__)
 
 // Used to obtain the string name of a type.
 #define NAMEOF_TYPE(...) ::nameof::NameofType<decltype(__VA_ARGS__)>()
