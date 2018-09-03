@@ -41,7 +41,7 @@
 #  define NAMEOF_HAS_CONSTEXPR14 1
 #endif
 
-#if (defined(__clang__) || defined(_MSC_VER)) || (defined(__GNUC__) && __GNUC__ >= 5)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 5) || defined(_MSC_VER)
 #  define NAMEOF_HAS_CONSTEXPR 1
 #  define NAMEOF_CONSTEXPR constexpr
 #else
