@@ -152,7 +152,7 @@ TEST_CASE("constexpr") {
     static_assert(cx == "RED", "");
     REQUIRE(cx == "RED");
 #  elif defined(__GNUC__)
-    REQUIRE(cx == "(const Color)-1");
+    REQUIRE(cx == "(Color)-1");
 #  endif
   }
 
