@@ -306,23 +306,31 @@ TEST_CASE("NAMEOF_RAW") {
 }
 
 TEST_CASE("NAMEOF_ENUM") {
-#  if defined(__clang__) || defined(_MSC_VER)
+  Color color_ = Color::BLUE;
+  Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
+#if defined(__clang__) || defined(_MSC_VER)
   REQUIRE(NAMEOF_ENUM(Color::RED) == "RED");
-  REQUIRE(NAMEOF_ENUM(::color) == "RED");
+  REQUIRE(NAMEOF_ENUM(color) == "RED");
 
-  auto color_ = Color::BLUE;
   REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
   REQUIRE(NAMEOF_ENUM(color_) == "BLUE");
 
+  REQUIRE(NAMEOF_ENUM(m[1]) == "GREEN");
+
   REQUIRE(NAMEOF_ENUM(Directions::Right) == "Right");
   REQUIRE(NAMEOF_ENUM(directions) == "Right");
-#  elif defined(__GNUC__)
+#elif defined(__GNUC__)
   REQUIRE(NAMEOF_ENUM(Color::RED) == "(Color)-1");
-  REQUIRE(NAMEOF_ENUM(color) == "(const Color)-1");
+  REQUIRE(NAMEOF_ENUM(color) == "(Color)-1");
+
+  REQUIRE(NAMEOF_ENUM(Color::BLUE) == "(Color)1");
+  REQUIRE(NAMEOF_ENUM(color_) == "(Color)1");
+
+  REQUIRE(NAMEOF_ENUM(m[1]) == "(Color)0");
 
   REQUIRE(NAMEOF_ENUM(Directions::Right) == "(Directions)2");
-  REQUIRE(NAMEOF_ENUM(directions) == "(const Directions)2");
-#  endif
+  REQUIRE(NAMEOF_ENUM(directions) == "(Directions)2");
+#endif
 }
 
 TEST_CASE("NAMEOF_TYPE") {
@@ -434,7 +442,7 @@ TEST_CASE("Spaces and Tabs ignored") {
 #if defined(__clang__) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(   color   ) == "RED");
 #elif defined(__GNUC__)
-    REQUIRE(NAMEOF_ENUM(   color   ) == "(const Color)-1");
+    REQUIRE(NAMEOF_ENUM(   color   ) == "(Color)-1");
 #endif
     REQUIRE(NAMEOF_TYPE(   struct_var   ) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(   decltype(struct_var)   ) == "SomeStruct");
@@ -447,7 +455,7 @@ TEST_CASE("Spaces and Tabs ignored") {
 #if defined(__clang__) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(	color	) == "RED");
 #elif defined(__GNUC__)
-    REQUIRE(NAMEOF_ENUM(	color	) == "(const Color)-1");
+    REQUIRE(NAMEOF_ENUM(	color	) == "(Color)-1");
 #endif
     REQUIRE(NAMEOF_TYPE(	struct_var	) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(	decltype(struct_var)	) == "SomeStruct");
