@@ -25,7 +25,7 @@ before_build:
   - if exist build RMDIR /S /Q build
   - if not exist build mkdir build
   - cd build
-  - cmake -G "%GENERATOR%" -A %PLATFORM% -DCMAKE_BUILD_TYPE=${CONFIGURATION} ..
+  - cmake -G "%GENERATOR%" -A %PLATFORM% ..
 
 build_script:
   - cmake --build . --config %CONFIGURATION%

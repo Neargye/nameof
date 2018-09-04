@@ -19,7 +19,7 @@ matrix:
           packages:
             - g++-4.8
       env:
-        - CXX_COMPILER=g++-4.8 CC_COMPILER=gcc-4.8 CONFIGURATION=Debug
+        - CXX_COMPILER=g++-4.8 CC_COMPILER=gcc-4.8
 
     - os: linux
       compiler: g++
@@ -30,7 +30,7 @@ matrix:
           packages:
             - g++-4.9
       env:
-        - CXX_COMPILER=g++-4.9 CC_COMPILER=gcc-4.9 CONFIGURATION=Debug
+        - CXX_COMPILER=g++-4.9 CC_COMPILER=gcc-4.9
 
     - os: linux
       compiler: g++
@@ -41,7 +41,7 @@ matrix:
           packages:
             - g++-5
       env:
-        - CXX_COMPILER=g++-5 CC_COMPILER=gcc-5 CONFIGURATION=Debug
+        - CXX_COMPILER=g++-5 CC_COMPILER=gcc-5
 
     - os: linux
       compiler: g++
@@ -52,7 +52,7 @@ matrix:
           packages:
             - g++-6
       env:
-        - CXX_COMPILER=g++-6 CC_COMPILER=gcc-6 CONFIGURATION=Debug
+        - CXX_COMPILER=g++-6 CC_COMPILER=gcc-6
 
     - os: linux
       compiler: g++
@@ -63,7 +63,7 @@ matrix:
           packages:
             - g++-7
       env:
-        - CXX_COMPILER=g++-7 CC_COMPILER=gcc-7 CONFIGURATION=Debug
+        - CXX_COMPILER=g++-7 CC_COMPILER=gcc-7
 
     - os: linux
       compiler: g++
@@ -74,7 +74,7 @@ matrix:
           packages:
             - g++-8
       env:
-        - CXX_COMPILER=g++-8 CC_COMPILER=gcc-8 CONFIGURATION=Debug
+        - CXX_COMPILER=g++-8 CC_COMPILER=gcc-8
 
     - os: linux
       compiler: clang++
@@ -86,7 +86,7 @@ matrix:
           packages:
             - clang-3.6
       env:
-        - CXX_COMPILER=clang++-3.6 CC_COMPILER=clang-3.6 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-3.6 CC_COMPILER=clang-3.6
 
     - os: linux
       compiler: clang++
@@ -98,7 +98,7 @@ matrix:
           packages:
             - clang-3.7
       env:
-        - CXX_COMPILER=clang++-3.7 CC_COMPILER=clang-3.7 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-3.7 CC_COMPILER=clang-3.7
 
     - os: linux
       compiler: clang++
@@ -110,7 +110,7 @@ matrix:
           packages:
             - clang-3.8
       env:
-        - CXX_COMPILER=clang++-3.8 CC_COMPILER=clang-3.8 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-3.8 CC_COMPILER=clang-3.8
 
     - os: linux
       compiler: clang++
@@ -122,7 +122,7 @@ matrix:
           packages:
             - clang-3.9
       env:
-        - CXX_COMPILER=clang++-3.9 CC_COMPILER=clang-3.9 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-3.9 CC_COMPILER=clang-3.9
 
     - os: linux
       compiler: clang++
@@ -134,7 +134,7 @@ matrix:
           packages:
             - clang-4.0
       env:
-        - CXX_COMPILER=clang++-4.0 CC_COMPILER=clang-4.0 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-4.0 CC_COMPILER=clang-4.0
 
     - os: linux
       compiler: clang++
@@ -146,7 +146,7 @@ matrix:
           packages:
             - clang-5.0
       env:
-        - CXX_COMPILER=clang++-5.0 CC_COMPILER=clang-5.0 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-5.0 CC_COMPILER=clang-5.0
 
     - os: linux
       compiler: clang++
@@ -158,85 +158,85 @@ matrix:
           packages:
             - clang-6.0
       env:
-        - CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0 CONFIGURATION=Debug
+        - CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0
 
     - os: osx
       compiler: clang++
       osx_image: xcode7.0
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode7.1
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode7.2
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode7.3
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode8.0
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode8.1
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode8.2
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode8.3
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode9.0
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode9.1
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode9.2
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode9.3
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
     - os: osx
       compiler: clang++
       osx_image: xcode9.4
       env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang CONFIGURATION=Debug
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
 install:
   - export CC=${CC_COMPILER}
@@ -274,11 +274,11 @@ before_script:
   - rm -rf build
   - mkdir -p build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=${CONFIGURATION} ..
+  - cmake -G "Unix Makefiles" ..
 
 script:
-  - cmake --build . --config ${CONFIGURATION} -- -j${JOBS}
-  - ctest --output-on-failure -С ${CONFIGURATION} -j${JOBS}
+  - cmake --build . -- -j${JOBS}
+  - ctest --output-on-failure -j${JOBS}
 
 notifications:
   email: false
