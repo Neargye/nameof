@@ -92,22 +92,6 @@ constexpr int StrCompare(const char* lhs, const char* rhs, std::size_t size) {
 #endif
 }
 
-constexpr std::size_t StrLen(const char* str, std::size_t size = 0) {
-#if !defined(_MSC_VER) && __cplusplus >= 201703L
-  static_cast<void>(size);
-  return std::char_traits<char>::length(str);
-#elif defined(NAMEOF_HAS_CONSTEXPR14)
-  for (; str != nullptr; ++size) {
-    if (str[size] == '\0') {
-      return size;
-    }
-  }
-  return size;
-#else
-  return (str[size] == '\0') ? size : StrLen(str, size + 1);
-#endif
-}
-
 } // namespace detail
 
 // std::string like compile-time const char* string.
@@ -120,7 +104,8 @@ class cstring final {
       : str_{str + prefix},
         size_{size - prefix - suffix} {}
 
-  constexpr cstring(const char* str) noexcept : cstring{str, detail::StrLen(str), 0, 0} {}
+  template <std::size_t N>
+  constexpr cstring(const char (&str)[N]) noexcept : cstring{str, N - 1, 0, 0} {}
 
   constexpr cstring() noexcept : cstring{nullptr, 0, 0, 0} {}
 
@@ -475,10 +460,9 @@ NAMEOF_CONSTEXPR cstring NameofEnum(D value) {
 #endif
 }
 
-template <typename T>
+template <typename T, typename D = detail::nstd::identity<T>>
 NAMEOF_CONSTEXPR cstring NameofType() {
-  return true ? detail::NameofType<detail::nstd::identity<T>>()
-              : detail::NameofType<detail::nstd::identity<T>>();
+  return true ? detail::NameofType<D>() : detail::NameofType<D>();
 }
 
 template <typename T>
