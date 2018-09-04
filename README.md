@@ -44,7 +44,7 @@ NAMEOF(SomeMethod<int, float>) -> "SomeMethod"
 NAMEOF_FULL(SomeMethod<int, float>) -> "SomeMethod4<int, float>"
 // Name of enum
 NAMEOF(SomeEnum::RED) -> "RED"
-SomeEnum e = SomeEnum::RED;
+auto e = SomeEnum::RED;
 NAMEOF_ENUM(e) -> "RED"
 // Name of type
 NAMEOF_TYPE(SomeEnum::RED) -> "SomeEnum"
@@ -104,11 +104,34 @@ void f() {
 
 * The argument expression identifies a code definition, but it is never evaluated.
 
-* If you need raw fully-qualified name, use NAMEOF_RAW.
+* If you need raw fully-qualified name, use NAMEOF_RAW().
 
 ```cpp
 NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
 NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
+```
+
+* Instead of macros NAMEOF_ENUM, you can use the function nameof::NameofEnum().
+
+```cpp
+nameof::NameofEnum(SomeEnum::RED) -> "RED"
+auto e = SomeEnum::RED;
+nameof::NameofEnum(e) -> "RED"
+```
+
+* Instead of macros NAMEOF_TYPE, you can use the function nameof::NameofType<>.
+
+```cpp
+nameof::NameofType<decltype(SomeEnum::RED)>() -> "SomeEnum"
+nameof::NameofType<int> -> "int"
+```
+
+* NAMEOF_ENUM does not work on the GCC.
+
+```cpp
+// On GCC.
+auto e = SomeEnum::RED;
+NAMEOF_ENUM(e) -> "(SomeEnum)0"
 ```
 
 * Spaces and Tabs ignored
