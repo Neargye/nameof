@@ -3,7 +3,7 @@
 include(GNUInstallDirs)
 
 project(nameof LANGUAGES CXX)
-set(${PROJECT_NAME} "0.5.0")
+set(${PROJECT_NAME}_version "0.5.0")
 set(package_name ${PROJECT_NAME})
 set(include_source_dir "${CMAKE_SOURCE_DIR}/include")
 
