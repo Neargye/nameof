@@ -1,6 +1,5 @@
 os: linux
-dist: trusty
-
+dist: xenial
 sudo: required
 
 language: cpp
@@ -142,7 +141,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-xenial-5.0
           packages:
             - clang-5.0
       env:
@@ -154,7 +153,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
+            - llvm-toolchain-xenial-6.0
           packages:
             - clang-6.0
       env:
@@ -166,7 +165,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-7
+            - llvm-toolchain-xenial-7
           packages:
             - clang-7
       env:
@@ -212,7 +211,7 @@ install:
       elif [[ "${CXX}" == "clang++-4.0" ]]; then LLVM_VERSION="4.0.1";
       elif [[ "${CXX}" == "clang++-5.0" ]]; then LLVM_VERSION="5.0.2";
       elif [[ "${CXX}" == "clang++-6.0" ]]; then LLVM_VERSION="6.0.1";
-      elif [[ "${CXX}" == "clang++-7" ]]; then LLVM_VERSION="7.0.0";
+      elif [[ "${CXX}" == "clang++-7" ]]; then LLVM_VERSION="7.0.1";
       fi
       LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz"
       LIBCXX_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxx-${LLVM_VERSION}.src.tar.xz"
