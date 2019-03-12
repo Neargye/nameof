@@ -1,7 +1,7 @@
-﻿set(SOURCES test.cpp)
-
-include_directories(3rdparty/Catch2)
+﻿include_directories(3rdparty/Catch2)
 include_directories(${CMAKE_SOURCE_DIR}/include)
+
+set(SOURCES test.cpp)
 
 set(OPTIONS "")
 
@@ -14,6 +14,8 @@ set(HAS_CPPLATEST_FLAG FALSE)
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(OPTIONS /W4)
 
+    set(HAS_CPP11_FLAG TRUE)
+
     if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.00)
         set(HAS_CPP14_FLAG TRUE)
         set(HAS_CPPLATEST_FLAG TRUE)
@@ -23,6 +25,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(HAS_CPP17_FLAG TRUE)
         set(OPTIONS ${OPTIONS} /permissive-)
     endif()
+
+    set(OPTIONS ${OPTIONS} /wd4702) # Disable warning C4702: unreachable code
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_VERBOSE_MAKEFILE ON)
     set(OPTIONS -Wall -Wextra -pedantic-errors)
@@ -65,15 +69,17 @@ function(make_target target std)
 endfunction()
 
 if(HAS_CPP11_FLAG)
-    make_target(nameof-cpp11.t c++11)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    make_target(nameof-cpp11.t "")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        make_target(${CMAKE_PROJECT_NAME}-cpp11.t "")
+    else()
+        make_target(${CMAKE_PROJECT_NAME}-cpp11.t c++11)
+    endif()
+    add_test(NAME ${CMAKE_PROJECT_NAME}-cpp11.t COMMAND ${CMAKE_PROJECT_NAME}-cpp11.t)
 endif()
-add_test(NAME nameof-cpp11.t COMMAND nameof-cpp11.t)
 
 if(HAS_CPP14_FLAG)
-    make_target(nameof-cpp14.t c++14)
-    add_test(NAME nameof-cpp14.t COMMAND nameof-cpp14.t)
+    make_target(${CMAKE_PROJECT_NAME}-cpp14.t c++14)
+    add_test(NAME ${CMAKE_PROJECT_NAME}-cpp14.t COMMAND ${CMAKE_PROJECT_NAME}-cpp14.t)
 endif()
 
 if(HAS_CPP17_FLAG)
@@ -81,11 +87,11 @@ if(HAS_CPP17_FLAG)
     if(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
         set(std17 c++1z)
     endif()
-    make_target(nameof-cpp17.t ${std17})
-    add_test(NAME nameof-cpp17.t COMMAND nameof-cpp17.t)
+    make_target(${CMAKE_PROJECT_NAME}-cpp17.t ${std17})
+    add_test(NAME ${CMAKE_PROJECT_NAME}-cpp17.t COMMAND ${CMAKE_PROJECT_NAME}-cpp17.t)
 endif()
 
 if(HAS_CPPLATEST_FLAG)
-    make_target(nameof-cpplatest.t c++latest)
-    add_test(NAME nameof-cpplatest.t COMMAND nameof-cpplatest.t)
+    make_target(${CMAKE_PROJECT_NAME}-cpplatest.t c++latest)
+    add_test(NAME ${CMAKE_PROJECT_NAME}-cpplatest.t COMMAND ${CMAKE_PROJECT_NAME}-cpplatest.t)
 endif()
