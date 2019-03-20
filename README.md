@@ -18,7 +18,7 @@ Before, you had to use string literals to refer to definitions, which is brittle
 
 ## Features
 
-* C++11
+* C++17
 * Header-only
 * Dependency-free
 * Compile-time
@@ -43,11 +43,10 @@ NAMEOF(person.address.zip_code) -> "zip_code"
 NAMEOF(SomeMethod<int, float>) -> "SomeMethod"
 NAMEOF_FULL(SomeMethod<int, float>) -> "SomeMethod4<int, float>"
 // Name of enum
-NAMEOF(SomeEnum::RED) -> "RED"
-auto e = SomeEnum::RED;
-NAMEOF_ENUM(e) -> "RED"
+auto c = Color::RED;
+NAMEOF_ENUM(c) -> "RED"
 // Name of type
-NAMEOF_TYPE(SomeEnum::RED) -> "SomeEnum"
+NAMEOF_TYPE(Color::RED) -> "Color"
 NAMEOF_TYPE_T(int) -> "int"
 // Name of macros
 NAMEOF(__LINE__) -> "__LINE__"
@@ -57,7 +56,7 @@ NAMEOF(__LINE__) -> "__LINE__"
 
 ```cpp
 constexpr auto cx = NAMEOF(somevar); -> "somevar"
-static_assert(cx == "somevar", "Wrong name!");
+static_assert("somevar" == cx, "Wrong name!");
 ```
 
 * Compilation check
@@ -102,6 +101,8 @@ void f() {
 
 ## Remarks
 
+* Nameof return std::string_view.
+
 * The argument expression identifies a code definition, but it is never evaluated.
 
 * If you need raw fully-qualified name, use NAMEOF_RAW().
@@ -114,24 +115,23 @@ NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
 * Instead of macros NAMEOF_ENUM, you can use the function nameof::NameofEnum().
 
 ```cpp
-nameof::NameofEnum(SomeEnum::RED) -> "RED"
-auto e = SomeEnum::RED;
-nameof::NameofEnum(e) -> "RED"
+nameof::NameofEnum(Color::RED) -> "RED"
+auto c = Color::RED;
+nameof::NameofEnum(c) -> "RED"
 ```
 
 * Instead of macros NAMEOF_TYPE, you can use the function nameof::NameofType<>.
 
 ```cpp
-nameof::NameofType<decltype(SomeEnum::RED)>() -> "SomeEnum"
+nameof::NameofType<decltype(Color::RED)>() -> "Color"
 nameof::NameofType<int> -> "int"
 ```
 
 * NAMEOF_ENUM does not work on the GCC.
 
 ```cpp
-// On GCC.
-auto e = SomeEnum::RED;
-NAMEOF_ENUM(e) -> "(SomeEnum)0"
+auto c = Color::RED;
+NAMEOF_ENUM(c) -> "(Color)0"
 ```
 
 * Spaces and Tabs ignored
@@ -143,7 +143,7 @@ NAMEOF(	somevar	) -> "somevar"
 
 ## Integration
 
-You should add required file [nameof.hpp](include/nameof.hpp) and switch to C++11.
+You should add required file [nameof.hpp](include/nameof.hpp).
 
 ## Compiler compatibility
 

@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.6)
 
-project(nameof VERSION "0.3.0" LANGUAGES CXX)
+project(nameof VERSION "0.6.0" LANGUAGES CXX)
 
 option(NAMEOF_OPT_BUILD_EXAMPLES "Build nameof examples" ON)
 option(NAMEOF_OPT_BUILD_TESTS "Build and perform nameof tests" ON)

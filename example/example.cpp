@@ -1,7 +1,6 @@
-// nameof example
-//
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-// Copyright (c) 2018 Daniil Goncharov <neargye@gmail.com>.
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2018 - 2019 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
@@ -50,14 +49,25 @@ void SomeMethod3() {
 
 template <typename T, typename U>
 std::string SomeMethod4(U value) {
-  return NAMEOF(SomeMethod4<T, U>) + "<" + NAMEOF_TYPE_T(T) + ", " + NAMEOF_TYPE_T(U) + ">(" + NAMEOF_TYPE_T(U) + " " + NAMEOF(value) + ")";
+  std::string s;
+  s += NAMEOF(SomeMethod4<T, U>);
+  s += "<";
+  s += NAMEOF_TYPE_T(T);
+  s += ", ";
+  s += NAMEOF_TYPE_T(U);
+  s += ">(";
+  s += NAMEOF_TYPE_T(U);
+  s += " ";
+  s += NAMEOF(value);
+  s += ")";
+  return s;
 }
 
 template <typename T>
 class SomeClass {
 public:
   void SomeMethod5() const {
-    std::cout << nameof::NameofType<T>() << std::endl;
+    std::cout << nameof::nameof_type<T>() << std::endl;
   }
 
   template <typename C>
@@ -75,7 +85,7 @@ struct Long {
   LL ll;
 };
 
-enum class Color { RED, GREEN, BLUE };
+enum class Color { RED = -10, GREEN, BLUE };
 
 SomeStruct structvar;
 Long othervar;
@@ -84,14 +94,14 @@ SomeStruct* ptrvar = &structvar;
 int main() {
   // Compile-time nameof.
   constexpr auto constexpr_work_fine = NAMEOF(structvar);
-  static_assert("structvar" == constexpr_work_fine, "");
+  static_assert("structvar" == constexpr_work_fine);
 
   // Enum name.
   std::cout << NAMEOF(Color::RED) << std::endl; // RED
-  std::cout << NAMEOF_ENUM(Color::RED) << std::endl; // RED
   auto color = Color::RED;
   std::cout << NAMEOF(color) << std::endl; // color
   std::cout << NAMEOF_ENUM(color) << std::endl; // RED
+  std::cout << nameof::nameof_enum(color) << std::endl; // RED
 
   // Variable name.
   std::cout << NAMEOF(structvar) << std::endl; // structvar

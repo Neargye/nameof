@@ -1,7 +1,6 @@
-// nameof test
-//
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
-// Copyright (c) 2018 Daniil Goncharov <neargye@gmail.com>.
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2018 - 2019 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
@@ -38,12 +37,12 @@ struct SomeStruct {
 };
 
 void SomeMethod3() {
-  std::cout << NAMEOF(SomeMethod3) << " no called!" << std::endl;
+  throw std::runtime_error{"should not be called!"};
 }
 
 template <typename T, typename U>
-std::string SomeMethod4(U value) {
-  return NAMEOF(SomeMethod4<T, U>) + "<" + NAMEOF_TYPE_T(T) + ", " + NAMEOF_TYPE_T(U) + ">(" + NAMEOF_TYPE_T(U) + " " + NAMEOF(value) + ")";
+std::string SomeMethod4(U) {
+  throw std::runtime_error{"should not be called!"};
 }
 
 template <typename T>
@@ -87,101 +86,102 @@ TEST_CASE("constexpr") {
   SECTION("NAMEOF") {
     // variable
     constexpr auto cx1 = NAMEOF(struct_var);
-    static_assert(cx1 == "struct_var", "");
+    static_assert(cx1 == "struct_var");
     REQUIRE(cx1 == "struct_var");
     // member
     constexpr auto cx2 = NAMEOF((&struct_var)->somefield);
-    static_assert(cx2 == "somefield", "");
+    static_assert(cx2 == "somefield");
     REQUIRE(cx2 == "somefield");
     // function
     constexpr auto cx3 = NAMEOF(&SomeClass<int>::SomeMethod6<long int>);
-    static_assert(cx3 == "SomeMethod6", "");
+    static_assert(cx3 == "SomeMethod6");
     REQUIRE(cx3 == "SomeMethod6");
     // enum
     constexpr auto cx4 = NAMEOF(Color::RED);
-    static_assert(cx4 == "RED", "");
+    static_assert(cx4 == "RED");
     REQUIRE(cx4 == "RED");
   }
 
   SECTION("NAMEOF_FULL") {
     // variable
     constexpr auto cx1 = NAMEOF_FULL(struct_var);
-    static_assert(cx1 == "struct_var", "");
+    static_assert(cx1 == "struct_var");
     REQUIRE(cx1 == "struct_var");
     // member
     constexpr auto cx2 = NAMEOF_FULL((&struct_var)->somefield);
-    static_assert(cx2 == "somefield", "");
+    static_assert(cx2 == "somefield");
     REQUIRE(cx2 == "somefield");
     // function
     constexpr auto cx3 = NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>);
-    static_assert(cx3 == "SomeMethod6<long int>", "");
+    static_assert(cx3 == "SomeMethod6<long int>");
     REQUIRE(cx3 == "SomeMethod6<long int>");
     // enum
     constexpr auto cx4 = NAMEOF_FULL(Color::RED);
-    static_assert(cx4 == "RED", "");
+    static_assert(cx4 == "RED");
     REQUIRE(cx4 == "RED");
   }
 
   SECTION("NAMEOF_RAW") {
     // variable
     constexpr auto cx1 = NAMEOF_RAW(struct_var);
-    static_assert(cx1 == "struct_var", "");
+    static_assert(cx1 == "struct_var");
     REQUIRE(cx1 == "struct_var");
     // member
     constexpr auto cx2 = NAMEOF_RAW((&struct_var)->somefield);
-    static_assert(cx2 == "(&struct_var)->somefield", "");
+    static_assert(cx2 == "(&struct_var)->somefield");
     REQUIRE(cx2 == "(&struct_var)->somefield");
     // function
     constexpr auto cx4 = NAMEOF_RAW(&SomeStruct::SomeMethod2);
-    static_assert(cx4 == "&SomeStruct::SomeMethod2", "");
+    static_assert(cx4 == "&SomeStruct::SomeMethod2");
     REQUIRE(cx4 == "&SomeStruct::SomeMethod2");
     // enum
     constexpr auto cx5 = NAMEOF_RAW(Color::RED);
-    static_assert(cx5 == "Color::RED", "");
+    static_assert(cx5 == "Color::RED");
     REQUIRE(cx5 == "Color::RED");
     // macros
     constexpr auto cx6 = NAMEOF_RAW(__cplusplus);
-    static_assert(cx6 == "__cplusplus", "");
+    static_assert(cx6 == "__cplusplus");
     REQUIRE(cx6 == "__cplusplus");
   }
 
-#if defined(NAMEOF_HAS_CONSTEXPR)
   SECTION("NAMEOF_ENUM") {
     constexpr auto cx = NAMEOF_ENUM(color);
-#  if defined(__clang__) || defined(_MSC_VER)
-    static_assert(cx == "RED", "");
+#if defined(__clang__) || defined(_MSC_VER)
+    static_assert(cx == "RED");
     REQUIRE(cx == "RED");
-#  elif defined(__GNUC__)
+#elif defined(__GNUC__)
+    static_assert(cx == "(Color)-1");
     REQUIRE(cx == "(Color)-1");
-#  endif
+#endif
   }
 
   SECTION("NAMEOF_TYPE") {
     constexpr auto cx = NAMEOF_TYPE(ptr_c);
-#  if defined(__clang__)
-    static_assert(cx == "const volatile SomeClass<int> *", "");
+#if defined(__clang__)
+    static_assert(cx == "const volatile SomeClass<int> *");
     REQUIRE(cx == "const volatile SomeClass<int> *");
-#  elif defined(__GNUC__)
+#elif defined(__GNUC__)
+    static_assert(cx == "const volatile SomeClass<int>*");
     REQUIRE(cx == "const volatile SomeClass<int>*");
-#  elif defined(_MSC_VER)
-    static_assert(cx == "SomeClass<int> const volatile *", "");
+#elif defined(_MSC_VER)
+    static_assert(cx == "SomeClass<int> const volatile *");
     REQUIRE(cx == "SomeClass<int> const volatile *");
-#  endif
+#endif
   }
 
   SECTION("NAMEOF_TYPE_T") {
     constexpr auto cx = NAMEOF_TYPE_T(const SomeClass<int> volatile *);
-#  if defined(__clang__)
-    static_assert(cx == "const volatile SomeClass<int> *", "");
+#if defined(__clang__)
+    static_assert(cx == "const volatile SomeClass<int> *");
     REQUIRE(cx == "const volatile SomeClass<int> *");
-#  elif defined(__GNUC__)
+#elif defined(__GNUC__)
+    static_assert(cx == "const volatile SomeClass<int>*");
     REQUIRE(cx == "const volatile SomeClass<int>*");
-#  elif defined(_MSC_VER)
-    static_assert(cx == "SomeClass<int> const volatile *", "");
+#elif defined(_MSC_VER)
+    static_assert(cx == "SomeClass<int> const volatile *");
     REQUIRE(cx == "SomeClass<int> const volatile *");
-#  endif
-  }
 #endif
+  }
 }
 
 TEST_CASE("NAMEOF") {
@@ -461,5 +461,3 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF_TYPE_T(	decltype(struct_var)	) == "SomeStruct");
   }
 }
-
-TEST_CASE("cstring") {}
