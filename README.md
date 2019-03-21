@@ -15,31 +15,25 @@ master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)
 
 ## What is Nameof?
 
-A header only C++17 library provides nameof macros and functions to obtain the simple name of a variable, type, member, function, macros and enum.
+A header only C++17 library provides nameof macros and functions to obtain the simple name of variable, type, function, macros and enum.
 
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
 
 ## Features
 
 * C++17
+* Simple syntax.
 * Header-only
 * Dependency-free
 * Compile-time
-* Compilation check
-* Name of variable
-* Name of member
-* Name of function
-* Name of emum
-* Name of macros
-* Name of type
 
 ## [Examples](example/example.cpp)
 
-* Name of variable and member
+* Name of variable
 ```cpp
 // Name of variable
 NAMEOF(somevar) -> "somevar"
-// Name of member
+// Name of member variable
 NAMEOF(person.address.zip_code) -> "zip_code"
 
 constexpr auto cx_name = NAMEOF(somevar);
