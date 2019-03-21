@@ -53,7 +53,7 @@ NAMEOF(some_method<int, float>) -> "some_method"
 NAMEOF_FULL(some_method<int, float>) -> "some_method<int, float>"
 // Name of member function
 NAMEOF(somevar.foo() -> "foo"
-NAMEOF(somevar.boo<int>() -> "boo<int>"
+NAMEOF_FULL(somevar.boo<int>() -> "boo<int>"
 
 constexpr auto cx_name = NAMEOF(somevar.foo());
 static_assert("foo" == cx_name);
