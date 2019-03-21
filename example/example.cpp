@@ -92,9 +92,9 @@ Long othervar;
 SomeStruct* ptrvar = &structvar;
 
 int main() {
-  // Compile-time nameof.
-  constexpr auto constexpr_work_fine = NAMEOF(structvar);
-  static_assert("structvar" == constexpr_work_fine);
+  // Compile-time.
+  constexpr auto cx_name = NAMEOF(structvar);
+  static_assert("structvar" == cx_name);
 
   // Enum name.
   std::cout << NAMEOF(Color::RED) << std::endl; // RED

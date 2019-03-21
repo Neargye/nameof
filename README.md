@@ -36,7 +36,6 @@ Before, you had to use string literals to refer to definitions, which is brittle
 ## [Examples](example/example.cpp)
 
 * Name of variable and member
-
 ```cpp
 // Name of variable
 NAMEOF(somevar) -> "somevar"
@@ -47,8 +46,7 @@ constexpr auto cx_name = NAMEOF(somevar);
 static_assert("somevar" == cx_name);
 ```
 
-* Name of of function
-
+* Name of function
 ```cpp
 // Name of function
 NAMEOF(some_method<int, float>) -> "some_method"
@@ -60,37 +58,35 @@ NAMEOF(somevar.boo<int>() -> "boo<int>"
 constexpr auto cx_name = NAMEOF(somevar.foo());
 static_assert("foo" == cx_name);
 ```
-* Name of of enum
 
+* Name of enum
 ```cpp
 // Name of enum
 const auto c = Color::RED;
 NAMEOF_ENUM(c) -> "RED"
 // Name of enum function
-nameof::NameofEnum(c) -> "RED"
+nameof::nameof_enum(c) -> "RED"
 
 constexpr auto cx_name = NAMEOF_ENUM(c);
 static_assert("RED" == cx_name);
 ```
 
 * Name of type
-
 ```cpp
 // Name of variable type
 NAMEOF_TYPE(Color::RED) -> "Color"
 // Name of type
 NAMEOF_TYPE_T(int) -> "int"
 // Name of variable type function
-nameof::NameofType(Color::RED) -> "Color"
+nameof::nameof_type(Color::RED) -> "Color"
 // Name of type function
-nameof::NameofType<int> -> "int"
+nameof::nameof_type<int> -> "int"
 
 constexpr auto cx_name = NAMEOF_TYPE(Color::RED);
 static_assert("Color" == cx_name);
 ```
 
 * Name of macros
-
 ```cpp
 NAMEOF(__LINE__) -> "__LINE__"
 
@@ -105,14 +101,19 @@ static_assert("__LINE__" == cx_name);
 * The argument expression identifies a code definition, but it is never evaluated.
 
 * If you need raw fully-qualified name, use NAMEOF_RAW.
-
 ```cpp
 NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
 NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
 ```
 
-* Spaces and Tabs ignored
+* NAMEOF_ENUM does not work on the GCC.
+```cpp
+auto c = Color::RED;
+NAMEOF_ENUM(c) -> "(Color)0"
+nameof::nameof_enum(c) -> "(Color)0"
+```
 
+* Spaces and Tabs ignored
 ```cpp
 NAMEOF(   somevar   ) -> "somevar"
 NAMEOF(	somevar	) -> "somevar"
