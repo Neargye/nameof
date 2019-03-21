@@ -9,7 +9,8 @@ set(OPTIONS "")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(OPTIONS /W4)
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.11)
+    check_cxx_compiler_flag(/permissive HAS_PERMISSIVE_FLAG)
+    if(HAS_PERMISSIVE_FLAG)
         set(OPTIONS ${OPTIONS} /permissive-)
     endif()
     set(OPTIONS ${OPTIONS} /wd4702) # Disable warning C4702: unreachable code

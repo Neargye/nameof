@@ -1,4 +1,6 @@
-﻿include_directories(${CMAKE_SOURCE_DIR}/include)
+﻿include(CheckCXXCompilerFlag)
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 set(OPTIONS "")
 
@@ -8,7 +10,8 @@ if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clan
     set(OPTIONS ${OPTIONS} -std=c++17)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(OPTIONS /W4)
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.11)
+    check_cxx_compiler_flag(/permissive HAS_PERMISSIVE_FLAG)
+    if(HAS_PERMISSIVE_FLAG)
         set(OPTIONS ${OPTIONS} /permissive-)
     endif()
     set(OPTIONS ${OPTIONS} /std:c++17)
