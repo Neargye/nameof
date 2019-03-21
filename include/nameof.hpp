@@ -36,7 +36,7 @@
 #include <string_view>
 
 #if !defined(NAMEOF_ENUM_MAX_SEARCH_DEPTH)
-#  define NAMEOF_ENUM_MAX_SEARCH_DEPTH 64
+#  define NAMEOF_ENUM_MAX_SEARCH_DEPTH 256
 #endif
 
 namespace nameof {
@@ -154,29 +154,34 @@ constexpr std::string_view nameof_enum_impl() {
 template <typename T, int I>
 struct nameof_enum_t {
   constexpr std::string_view operator()(int value) const {
-    return (value - I == 0)
-               ? nameof_enum_impl<T, T(I)>()
-               : (value - I == 1)
-                     ? nameof_enum_impl<T, T(I + 1)>()
-                     : (value - I == 2)
-                           ? nameof_enum_impl<T, T(I + 2)>()
-                           : (value - I == 3)
-                                 ? nameof_enum_impl<T, T(I + 3)>()
-                                 : (value - I == 4)
-                                       ? nameof_enum_impl<T, T(I + 4)>()
-                                       : (value - I == 5)
-                                             ? nameof_enum_impl<T, T(I + 5)>()
-                                             : (value - I == 6)
-                                                   ? nameof_enum_impl<T, T(I + 6)>()
-                                                   : (value - I == 7)
-                                                         ? nameof_enum_impl<T, T(I + 7)>()
-                                                         : nameof_enum_t<T, I + 8>{}(value);
+    switch (value - I) {
+      case 0:
+        return nameof_enum_impl<T, T{I}>();
+      case 1:
+        return nameof_enum_impl<T, T{I + 1}>();
+      case 2:
+        return nameof_enum_impl<T, T{I + 2}>();
+      case 3:
+        return nameof_enum_impl<T, T{I + 3}>();
+      case 4:
+        return nameof_enum_impl<T, T{I + 4}>();
+      case 5:
+        return nameof_enum_impl<T, T{I + 5}>();
+      case 6:
+        return nameof_enum_impl<T, T{I + 6}>();
+      case 7:
+        return nameof_enum_impl<T, T{I + 7}>();
+      default:
+        return nameof_enum_t<T, I + 8>{}(value);
+    }
   }
 };
 
 template <typename T>
 struct nameof_enum_t<T, NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
-  constexpr std::string_view operator()(int) const { return {"nameof_enum::out_of_range"}; }
+  constexpr std::string_view operator()(int) const {
+    return { "nameof_enum::out_of_range" };
+  }
 };
 
 constexpr std::string_view nameof_type_impl_(std::string_view name) {
