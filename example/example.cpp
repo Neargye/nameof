@@ -114,7 +114,7 @@ int main() {
 
   // Function name.
   std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // SomeMethod1
-  std::cout << NAMEOF(&SomeStruct::SomeMethod2) << std::endl; // SomeMethod2
+  std::cout << NAMEOF(structvar.SomeMethod2()) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
 
   std::cout << NAMEOF(SomeMethod4<int, float>(1.0f)) << std::endl; // SomeMethod4
@@ -128,6 +128,7 @@ int main() {
 
   // Type name.
   std::cout << NAMEOF_TYPE(structvar) << std::endl; // SomeStruct
+  std::cout << nameof::nameof_type(structvar) << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
   std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // Long::LL
@@ -135,6 +136,7 @@ int main() {
 
   std::cout << NAMEOF_TYPE_T(const SomeClass<int> volatile *) << std::endl; // const volatile SomeClass<int> *
   std::cout << NAMEOF_TYPE_T(SomeClass<int>) << std::endl; // SomeClass<int>
+  std::cout << nameof::nameof_type<SomeClass<int>>() << std::endl; // SomeClass<int>
 
   // Raw name.
   std::cout << NAMEOF_RAW(__LINE__) << std::endl; // __LINE__
