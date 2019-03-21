@@ -30,7 +30,7 @@ Before, you had to use string literals to refer to definitions, which is brittle
 * Name of member
 * Name of function
 * Name of emum
-* Name of macrose
+* Name of macros
 * Name of type
 
 ## [Examples](example/example.cpp)
