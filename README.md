@@ -13,7 +13,10 @@ Branch | Linux/OSX | Windows | License | Codacy
 -------|-----------|---------|---------|-------
 master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)|[![Build status](https://ci.appveyor.com/api/projects/status/yq5fk0d9mwljbubt/branch/master?svg=true)](https://ci.appveyor.com/project/Neargye/nameof/branch/master)|[![License](https://img.shields.io/github/license/Neargye/nameof.svg)](LICENSE)|[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1d06f3f07afe4f34acd29c0c8efa830b)](https://www.codacy.com/app/Neargye/nameof?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Neargye/nameof&amp;utm_campaign=Badge_Grade)
 
-Used to obtain the simple name of a variable, type, member, function, macros.
+## What is Nameof?
+
+A header only C++17 library provides nameof macros and functions to obtain the simple name of a variable, type, member, function, macros and enum.
+
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
 
 ## Features
@@ -32,71 +35,67 @@ Before, you had to use string literals to refer to definitions, which is brittle
 
 ## [Examples](example/example.cpp)
 
-* A nameof macros expression has this form
+* Name of variable and member
 
 ```cpp
 // Name of variable
 NAMEOF(somevar) -> "somevar"
 // Name of member
 NAMEOF(person.address.zip_code) -> "zip_code"
+
+constexpr auto cx_name = NAMEOF(somevar);
+static_assert("somevar" == cx_name);
+```
+
+* Name of of function
+
+```cpp
 // Name of function
-NAMEOF(SomeMethod<int, float>) -> "SomeMethod"
-NAMEOF_FULL(SomeMethod<int, float>) -> "SomeMethod4<int, float>"
+NAMEOF(some_method<int, float>) -> "some_method"
+NAMEOF_FULL(some_method<int, float>) -> "some_method<int, float>"
+// Name of member function
+NAMEOF(somevar.foo() -> "foo"
+NAMEOF(somevar.boo<int>() -> "boo<int>"
+
+constexpr auto cx_name = NAMEOF(somevar.foo());
+static_assert("foo" == cx_name);
+```
+* Name of of enum
+
+```cpp
 // Name of enum
-auto c = Color::RED;
+const auto c = Color::RED;
 NAMEOF_ENUM(c) -> "RED"
-// Name of type
+// Name of enum function
+nameof::NameofEnum(c) -> "RED"
+
+constexpr auto cx_name = NAMEOF_ENUM(c);
+static_assert("RED" == cx_name);
+```
+
+* Name of type
+
+```cpp
+// Name of variable type
 NAMEOF_TYPE(Color::RED) -> "Color"
+// Name of type
 NAMEOF_TYPE_T(int) -> "int"
-// Name of macros
+// Name of variable type function
+nameof::NameofType(Color::RED) -> "Color"
+// Name of type function
+nameof::NameofType<int> -> "int"
+
+constexpr auto cx_name = NAMEOF_TYPE(Color::RED);
+static_assert("Color" == cx_name);
+```
+
+* Name of macros
+
+```cpp
 NAMEOF(__LINE__) -> "__LINE__"
-```
 
-* Constexpr
-
-```cpp
-constexpr auto cx = NAMEOF(somevar); -> "somevar"
-static_assert("somevar" == cx, "Wrong name!");
-```
-
-* Compilation check
-
-```cpp
-NAMEOF_TYPE_T(std::stringgg) -> error namespace "std" has no member "stringgg"
-```
-
-* Validate parameters
-
-```cpp
-void f(char* s) {
-  if (s == nullptr)
-    throw std::invalid_argument(NAMEOF(s).apend("with type = ").apend(NAMEOF_TYPE(s)));
-}
-```
-
-* Serialization, for example json:
-
-```cpp
-void to_json(json& j, const person& p) {
-  j = json{{NAMEOF(p.name), p.name},
-           {NAMEOF(p.address), p.address},
-           {NAMEOF(p.age), p.age}};
-}
-
-void from_json(const json& j, person& p) {
-  p.name =    j.at(NAMEOF(p.name));
-  p.address = j.at(NAMEOF(p.address));
-  p.age =     j.at(NAMEOF(p.age));
-}
-```
-
-* Logging
-
-```cpp
-template <typename T>
-void f() {
-  Log(NAMEOF(f) + " method entry with T = " + NAMEOF_TYPE_T(T));
-}
+constexpr auto cx_name = NAMEOF(__LINE__);
+static_assert("__LINE__" == cx_name);
 ```
 
 ## Remarks
@@ -105,34 +104,11 @@ void f() {
 
 * The argument expression identifies a code definition, but it is never evaluated.
 
-* If you need raw fully-qualified name, use NAMEOF_RAW().
+* If you need raw fully-qualified name, use NAMEOF_RAW.
 
 ```cpp
 NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
 NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
-```
-
-* Instead of macros NAMEOF_ENUM, you can use the function nameof::NameofEnum().
-
-```cpp
-nameof::NameofEnum(Color::RED) -> "RED"
-auto c = Color::RED;
-nameof::NameofEnum(c) -> "RED"
-```
-
-* Instead of macros NAMEOF_TYPE, you can use the function nameof::NameofType<>.
-
-```cpp
-nameof::NameofType(Color::RED) -> "Color"
-nameof::NameofType<decltype(Color::RED)>() -> "Color"
-nameof::NameofType<int> -> "int"
-```
-
-* NAMEOF_ENUM does not work on the GCC.
-
-```cpp
-auto c = Color::RED;
-NAMEOF_ENUM(c) -> "(Color)0"
 ```
 
 * Spaces and Tabs ignored
