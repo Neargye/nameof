@@ -123,6 +123,7 @@ nameof::NameofEnum(c) -> "RED"
 * Instead of macros NAMEOF_TYPE, you can use the function nameof::NameofType<>.
 
 ```cpp
+nameof::NameofType(Color::RED) -> "Color"
 nameof::NameofType<decltype(Color::RED)>() -> "Color"
 nameof::NameofType<int> -> "int"
 ```
