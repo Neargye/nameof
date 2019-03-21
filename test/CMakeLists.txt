@@ -1,59 +1,32 @@
-﻿include_directories(3rdparty/Catch2)
+﻿include(CheckCXXCompilerFlag)
+
+include_directories(3rdparty/Catch2)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 set(SOURCES test.cpp)
 
 set(OPTIONS "")
 
-set(HAS_CPP11_FLAG FALSE)
-set(HAS_CPP14_FLAG FALSE)
-set(HAS_CPP17_FLAG FALSE)
-set(HAS_CPP20_FLAG FALSE)
-set(HAS_CPPLATEST_FLAG FALSE)
-
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set(OPTIONS /W4)
-
-    set(HAS_CPP11_FLAG TRUE)
-
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.00)
-        set(HAS_CPP14_FLAG TRUE)
-        set(HAS_CPPLATEST_FLAG TRUE)
-    endif()
-
     if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.11)
-        set(HAS_CPP17_FLAG TRUE)
         set(OPTIONS ${OPTIONS} /permissive-)
     endif()
-
     set(OPTIONS ${OPTIONS} /wd4702) # Disable warning C4702: unreachable code
+
+    set(HAS_CPP11_FLAG TRUE)
+    check_cxx_compiler_flag(/std:c++14 HAS_CPP14_FLAG)
+    check_cxx_compiler_flag(/std:c++17 HAS_CPP17_FLAG)
+    check_cxx_compiler_flag(/std:c++20 HAS_CPP20_FLAG)
+    check_cxx_compiler_flag(/std:c++latest HAS_CPPLATEST_FLAG)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_VERBOSE_MAKEFILE ON)
     set(OPTIONS -Wall -Wextra -pedantic-errors)
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8.0)
-            set(HAS_CPP11_FLAG TRUE)
-        endif()
-        if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9.2)
-            set(HAS_CPP14_FLAG TRUE)
-        endif()
-        if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.1.0)
-            set(HAS_CPP17_FLAG TRUE)
-        endif()
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3.0)
-            set(HAS_CPP11_FLAG TRUE)
-        endif()
-        if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4.0)
-            set(HAS_CPP14_FLAG TRUE)
-        endif()
-        if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0.0)
-            set(HAS_CPP17_FLAG TRUE)
-        endif()
-    endif()
+    check_cxx_compiler_flag(-std=c++11 HAS_CPP11_FLAG)
+    check_cxx_compiler_flag(-std=c++14 HAS_CPP14_FLAG)
+    check_cxx_compiler_flag(-std=c++17 HAS_CPP17_FLAG)
+    check_cxx_compiler_flag(-std=c++20 HAS_CPP20_FLAG)
 endif()
 
 function(make_target target std)
@@ -69,11 +42,7 @@ function(make_target target std)
 endfunction()
 
 if(HAS_CPP17_FLAG)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-        make_target(${CMAKE_PROJECT_NAME}-cpp17.t c++1z)
-    else()
-        make_target(${CMAKE_PROJECT_NAME}-cpp17.t c++17)
-    endif()
+    make_target(${CMAKE_PROJECT_NAME}-cpp17.t c++17)
     add_test(NAME ${CMAKE_PROJECT_NAME}-cpp17.t COMMAND ${CMAKE_PROJECT_NAME}-cpp17.t)
 endif()
 
