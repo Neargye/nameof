@@ -201,6 +201,12 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(__LINE__) == "__LINE__");
     REQUIRE(NAMEOF_RAW(__FILE__) == "__FILE__");
   }
+
+  SECTION("type") {
+    REQUIRE(NAMEOF_RAW(const SomeStruct volatile *) == "const SomeStruct volatile *");
+    REQUIRE(NAMEOF_RAW(SomeClass<int>) == "SomeClass<int>");
+    REQUIRE(NAMEOF_RAW(decltype(othervar)) == "decltype(othervar)");
+  }
 }
 
 TEST_CASE("NAMEOF_ENUM") {

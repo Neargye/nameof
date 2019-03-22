@@ -130,6 +130,7 @@ int main() {
   std::cout << NAMEOF_RAW(__LINE__) << std::endl; // __LINE__
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // structvar.somefield
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
+  std::cout << NAMEOF_RAW(const SomeClass<int> volatile *) << std::endl; // const SomeClass<int> volatile *
 
   // Some more example.
 

@@ -15,7 +15,7 @@ master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)
 
 ## What is Nameof?
 
-Header-only C++17 library provides nameof macros and functions to obtain the simple name of variable, type, function, macro, and enum.
+Header-only C++17 library provides nameof macros and functions to obtain simple name of variable, type, function, macro, and enum.
 
 Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
 
@@ -56,9 +56,9 @@ static_assert("foo" == cx_name);
 * Name of enum
 ```cpp
 // Name of enum
-const auto c = Color::RED;
+auto c = Color::RED;
 NAMEOF_ENUM(c) -> "RED"
-// Name of enum function
+// Name of enum
 nameof::nameof_enum(c) -> "RED"
 
 constexpr auto cx_name = NAMEOF_ENUM(c);
@@ -71,9 +71,9 @@ static_assert("RED" == cx_name);
 NAMEOF_TYPE(Color::RED) -> "Color"
 // Name of type
 NAMEOF_TYPE_T(int) -> "int"
-// Name of variable type function
+// Name of variable type
 nameof::nameof_type(Color::RED) -> "Color"
-// Name of type function
+// Name of type
 nameof::nameof_type<int> -> "int"
 
 constexpr auto cx_name = NAMEOF_TYPE(Color::RED);
@@ -82,6 +82,7 @@ static_assert("Color" == cx_name);
 
 * Name of macro
 ```cpp
+// Name of macro
 NAMEOF(__LINE__) -> "__LINE__"
 
 constexpr auto cx_name = NAMEOF(__LINE__);
@@ -92,12 +93,13 @@ static_assert("__LINE__" == cx_name);
 
 * Nameof return std::string_view.
 
-* The argument expression identifies a code definition, but it is never evaluated.
+* The argument expression identifies code definition, but it is never evaluated.
 
 * If you need raw fully-qualified name, use NAMEOF_RAW.
 ```cpp
 NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
 NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
+NAMEOF_RAW(std::string) -> "std::string"
 ```
 
 * NAMEOF_ENUM does not work on the GCC.
@@ -122,6 +124,6 @@ You should add required file [nameof.hpp](include/nameof.hpp).
 * Clang/LLVM >= 5
 * MSVC >= 15.3 / Visual Studio 2017
 * Xcode >= 9
-* GCC >= 7 (NAMEOF_ENUM not support)
+* GCC >= 7
 
 ## Licensed under the [MIT License](LICENSE)
