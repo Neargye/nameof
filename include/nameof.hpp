@@ -260,13 +260,13 @@ constexpr std::string_view nameof_type(T) noexcept {
 
 } // namespace nameof
 
-// Used to obtain the simple (unqualified) string name of a variable, member, function, enum, macros.
+// Used to obtain the simple (unqualified) string name of a variable, member, function, enum, macro.
 #define NAMEOF(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, false)
 
-// Used to obtain the full string name of a variable, member, function, enum, macros.
+// Used to obtain the full string name of a variable, member, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
-// Used to obtain the raw string name of a variable, member, function, enum, macros.
+// Used to obtain the raw string name of a variable, member, function, enum, macro.
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__)
 
 // Used to obtain the simple (unqualified) string name of a enum variable.

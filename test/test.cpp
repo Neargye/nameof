@@ -196,7 +196,7 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(Color::BLUE) == "Color::BLUE");
   }
 
-  SECTION("macros") {
+  SECTION("macro") {
     REQUIRE(NAMEOF_RAW(__cplusplus) == "__cplusplus");
     REQUIRE(NAMEOF_RAW(__LINE__) == "__LINE__");
     REQUIRE(NAMEOF_RAW(__FILE__) == "__FILE__");
