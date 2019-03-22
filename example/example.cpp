@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <stdexcept>
 #include <typeinfo>
 
@@ -49,18 +50,9 @@ void SomeMethod3() {
 
 template <typename T, typename U>
 std::string SomeMethod4(U value) {
-  std::string s;
-  s += NAMEOF(SomeMethod4<T, U>);
-  s += "<";
-  s += NAMEOF_TYPE_T(T);
-  s += ", ";
-  s += NAMEOF_TYPE_T(U);
-  s += ">(";
-  s += NAMEOF_TYPE_T(U);
-  s += " ";
-  s += NAMEOF(value);
-  s += ")";
-  return s;
+  std::stringstream s;
+  s << NAMEOF(SomeMethod4<T, U>) << "<" << NAMEOF_TYPE_T(T) << ", " << NAMEOF_TYPE_T(U) << ">(" << NAMEOF_TYPE_T(U) << " " << NAMEOF(value) << ")";
+  return s.str();
 }
 
 template <typename T>
@@ -97,17 +89,13 @@ int main() {
   static_assert("structvar" == cx_name);
 
   // Enum name.
-  std::cout << NAMEOF(Color::RED) << std::endl; // RED
   auto color = Color::RED;
-  std::cout << NAMEOF(color) << std::endl; // color
   std::cout << NAMEOF_ENUM(color) << std::endl; // RED
   std::cout << nameof::nameof_enum(color) << std::endl; // RED
 
   // Variable name.
   std::cout << NAMEOF(structvar) << std::endl; // structvar
   std::cout << NAMEOF(::structvar) << std::endl; // structvar
-
-  // Member name.
   std::cout << NAMEOF(structvar.somefield) << std::endl; // somefield
   std::cout << NAMEOF((&structvar)->somefield) << std::endl; // somefield
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
@@ -143,6 +131,8 @@ int main() {
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // structvar.somefield
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
 
+  // Some more example.
+
   std::cout << SomeMethod4<int>(structvar) << std::endl; // SomeMethod4<int>(SomeStruct value)
 
   const auto div = [](int x, int y) -> int {
@@ -161,7 +151,7 @@ int main() {
 
   /* Remarks */
 #if 0
-  // This expression does not have a name.
+  // This expression does not have name.
   std::cout << NAMEOF("Bad case"_string) << std::endl; // '_string'
   std::cout << NAMEOF(42.0) << std::endl; // '0'
   std::cout << NAMEOF(42.f) << std::endl; // 'f'
@@ -178,15 +168,15 @@ int main() {
 #endif
 
 #if 0
-  // This expression does not compilation.
-  std::cout << NAMEOF("Bad case") << std::endl; // ''
-  std::cout << NAMEOF("somevar.somefield") << std::endl; // ''
-  std::cout << NAMEOF(std::basic_string<char>) << std::endl; // ''
-  std::cout << NAMEOF(ptrvar[0]) << std::endl; // 'ptrvar[0]'
-  std::cout << NAMEOF(std::cout << structvar << std::endl) << std::endl; // ''
-  std::cout << NAMEOF(decltype(structvar)) << std::endl; // ''
-  std::cout << NAMEOF(typeid(structvar)) << std::endl; // ''
-  std::cout << NAMEOF((structvar)) << std::endl; // ''
+  // This expression does not have name and not compilation.
+  std::cout << NAMEOF("Bad case") << std::endl;
+  std::cout << NAMEOF("somevar.somefield") << std::endl;
+  std::cout << NAMEOF(std::basic_string<char>) << std::endl;
+  std::cout << NAMEOF(ptrvar[0]) << std::endl;
+  std::cout << NAMEOF(std::cout << structvar << std::endl) << std::endl;
+  std::cout << NAMEOF(decltype(structvar)) << std::endl;
+  std::cout << NAMEOF(typeid(structvar)) << std::endl;
+  std::cout << NAMEOF((structvar)) << std::endl;
 #endif
 
   return 0;
