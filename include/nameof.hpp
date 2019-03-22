@@ -48,17 +48,17 @@ struct identity {
   using type = T;
 };
 
-constexpr bool is_lexeme(char s) noexcept {
-  return !((s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_');
+constexpr bool is_name_char(char s) noexcept {
+  return (s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_';
 }
 
-constexpr bool is_bracket(char s) noexcept {
+constexpr bool is_bracket_char(char s) noexcept {
   return s == ')' || s == '}' || s == '>' || s == '(' || s == '{' || s == '<';
 }
 
 constexpr std::string_view pretty_name(std::string_view name, bool with_suffix) noexcept {
   for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
-    if (h == 0 && is_lexeme(name[i - 1]) && !is_bracket(name[i - 1])) {
+    if (h == 0 && !is_name_char(name[i - 1]) && !is_bracket_char(name[i - 1])) {
       ++s;
       continue;
     }
@@ -103,7 +103,7 @@ constexpr std::string_view pretty_name(std::string_view name, bool with_suffix) 
   }
 
   for (std::size_t i = name.size() - s; i > 0; --i) {
-    if (is_lexeme(name[i - 1])) {
+    if (!is_name_char(name[i - 1])) {
       name.remove_prefix(i);
       break;
     }
@@ -113,12 +113,12 @@ constexpr std::string_view pretty_name(std::string_view name, bool with_suffix) 
   return name;
 }
 
-template <typename T>
+template <typename E>
 constexpr int nameof_enum_impl_() noexcept {
 #if defined(__clang__)
-  return sizeof(__PRETTY_FUNCTION__) - sizeof("int nameof::detail::nameof_enum_impl_() [T = ") - sizeof("]") + 1;
+  return sizeof(__PRETTY_FUNCTION__) - sizeof("int nameof::detail::nameof_enum_impl_() [E = ") - sizeof("]") + 1;
 #elif defined(__GNUC__)
-  return sizeof(__PRETTY_FUNCTION__) - sizeof("constexpr int nameof::detail::nameof_enum_impl_() [with T = ") - sizeof("]") + 1;
+  return sizeof(__PRETTY_FUNCTION__) - sizeof("constexpr int nameof::detail::nameof_enum_impl_() [with E = ") - sizeof("]") + 1;
 #elif defined(_MSC_VER)
   return sizeof(__FUNCSIG__) - sizeof("int __cdecl nameof::detail::nameof_enum_impl_<") - sizeof(">(void) noexcept") + 1;
 #else
@@ -126,24 +126,24 @@ constexpr int nameof_enum_impl_() noexcept {
 #endif
 }
 
-template <typename T, T V>
+template <typename E, E V>
 constexpr std::string_view nameof_enum_impl() noexcept {
 #if defined(__clang__)
   const auto str = __PRETTY_FUNCTION__;
   const auto size = sizeof(__PRETTY_FUNCTION__) - 1;
-  const auto prefix = sizeof("std::string_view nameof::detail::nameof_enum_impl() [T = ") + nameof_enum_impl_<T>() + sizeof("; V = ") - 2;
+  const auto prefix = sizeof("std::string_view nameof::detail::nameof_enum_impl() [E = ") + nameof_enum_impl_<E>() + sizeof("; V = ") - 2;
   const auto suffix = sizeof("]") - 1;
   return detail::pretty_name({str + prefix, size - prefix - suffix}, false);
 #elif defined(__GNUC__)
   const auto str = __PRETTY_FUNCTION__;
   const auto size = sizeof(__PRETTY_FUNCTION__) - 1;
-  const auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_enum_impl() [with T = ") + nameof_enum_impl_<T>() + sizeof("; V = ");
+  const auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_enum_impl() [with E = ") + nameof_enum_impl_<E>() + sizeof("; V = ");
   const auto suffix = sizeof("; std::string_view = std::basic_string_view<char>]") - 1;
   return {str + prefix, size - prefix - suffix};
 #elif defined(_MSC_VER)
   const auto str = __FUNCSIG__;
   const auto size = sizeof(__FUNCSIG__) - 1;
-  const auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_enum_impl<") + nameof_enum_impl_<T>();
+  const auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_enum_impl<") + nameof_enum_impl_<E>();
   const auto suffix = sizeof(">(void) noexcept") - 1;
   return detail::pretty_name({str + prefix, size - prefix - suffix}, false);
 #else
@@ -151,36 +151,36 @@ constexpr std::string_view nameof_enum_impl() noexcept {
 #endif
 }
 
-template <typename T, int I>
+template <typename E, int V>
 struct nameof_enum_t {
   constexpr std::string_view operator()(int value) const noexcept {
-    switch (value - I) {
+    switch (value - V) {
       case 0:
-        return nameof_enum_impl<T, T{I}>();
+        return nameof_enum_impl<E, E{V}>();
       case 1:
-        return nameof_enum_impl<T, T{I + 1}>();
+        return nameof_enum_impl<E, E{V + 1}>();
       case 2:
-        return nameof_enum_impl<T, T{I + 2}>();
+        return nameof_enum_impl<E, E{V + 2}>();
       case 3:
-        return nameof_enum_impl<T, T{I + 3}>();
+        return nameof_enum_impl<E, E{V + 3}>();
       case 4:
-        return nameof_enum_impl<T, T{I + 4}>();
+        return nameof_enum_impl<E, E{V + 4}>();
       case 5:
-        return nameof_enum_impl<T, T{I + 5}>();
+        return nameof_enum_impl<E, E{V + 5}>();
       case 6:
-        return nameof_enum_impl<T, T{I + 6}>();
+        return nameof_enum_impl<E, E{V + 6}>();
       case 7:
-        return nameof_enum_impl<T, T{I + 7}>();
+        return nameof_enum_impl<E, E{V + 7}>();
       default:
-        return nameof_enum_t<T, I + 8>{}(value);
+        return nameof_enum_t<E, V + 8>{}(value);
     }
   }
 };
 
-template <typename T>
-struct nameof_enum_t<T, NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
+template <typename E>
+struct nameof_enum_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> {
   constexpr std::string_view operator()(int) const noexcept {
-    return { "nameof_enum::out_of_range" };
+    return {"nameof_enum::out_of_range"};
   }
 };
 
@@ -228,9 +228,8 @@ constexpr std::string_view nameof_type_impl() noexcept {
 #endif
 }
 
-template <typename T,
-          typename = typename std::enable_if<!std::is_reference<T>::value>::type>
-constexpr std::string_view nameof_impl(std::string_view name, bool with_suffix = false) noexcept {
+template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
+constexpr std::string_view nameof_impl(std::string_view name, bool with_suffix) noexcept {
   return detail::pretty_name(name, with_suffix);
 }
 
@@ -241,11 +240,10 @@ constexpr std::string_view nameof_raw_impl(std::string_view name) noexcept {
 
 } // namespace detail
 
-template <typename T,
-          typename = typename std::enable_if<std::is_enum<typename std::decay<T>::type>::value>::type>
+template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 constexpr std::string_view nameof_enum(T value) noexcept {
-  constexpr auto s = std::is_signed<typename std::underlying_type<typename std::decay<T>::type>::type>::value;
-  return detail::nameof_enum_t<typename std::decay<T>::type, s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0>{}(static_cast<int>(value));
+  constexpr auto s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
+  return detail::nameof_enum_t<std::decay_t<T>, s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0>{}(static_cast<int>(value));
 }
 
 template <typename T>
@@ -260,18 +258,20 @@ constexpr std::string_view nameof_type(T) noexcept {
 
 } // namespace nameof
 
-// Used to obtain the simple (unqualified) string name of a variable, member, function, enum, macro.
+// Used to obtain the simple (unqualified) string name of variable, function, enum, macro.
 #define NAMEOF(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, false)
 
-// Used to obtain the full string name of a variable, member, function, enum, macro.
+// Used to obtain the full string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
-// Used to obtain the raw string name of a variable, member, function, enum, macro.
+// Used to obtain the raw string name of variable, function, enum, macro.
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__)
 
-// Used to obtain the simple (unqualified) string name of a enum variable.
+// Used to obtain the simple (unqualified) string name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
-// Used to obtain the string name of a type.
+// Used to obtain the string name of variable type.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+
+// Used to obtain the string name of type.
 #define NAMEOF_TYPE_T(...) ::nameof::nameof_type<__VA_ARGS__>()
