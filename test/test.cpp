@@ -237,6 +237,34 @@ TEST_CASE("NAMEOF_ENUM") {
 #endif
 }
 
+TEST_CASE("nameof::nameof_enum(value)") {
+  Color color_ = Color::BLUE;
+  Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
+#if defined(__clang__) || defined(_MSC_VER)
+  REQUIRE(nameof::nameof_enum(Color::RED) == "RED");
+  REQUIRE(nameof::nameof_enum(color) == "RED");
+
+  REQUIRE(nameof::nameof_enum(Color::BLUE) == "BLUE");
+  REQUIRE(nameof::nameof_enum(color_) == "BLUE");
+
+  REQUIRE(nameof::nameof_enum(m[1]) == "GREEN");
+
+  REQUIRE(nameof::nameof_enum(Directions::Right) == "Right");
+  REQUIRE(nameof::nameof_enum(directions) == "Right");
+#elif defined(__GNUC__)
+  REQUIRE(nameof::nameof_enum(Color::RED) == "(Color)-1");
+  REQUIRE(nameof::nameof_enum(color) == "(Color)-1");
+
+  REQUIRE(nameof::nameof_enum(Color::BLUE) == "(Color)1");
+  REQUIRE(nameof::nameof_enum(color_) == "(Color)1");
+
+  REQUIRE(nameof::nameof_enum(m[1]) == "(Color)0");
+
+  REQUIRE(nameof::nameof_enum(Directions::Right) == "(Directions)2");
+  REQUIRE(nameof::nameof_enum(directions) == "(Directions)2");
+#endif
+}
+
 TEST_CASE("NAMEOF_TYPE") {
 #if defined(__clang__)
   REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");
@@ -335,6 +363,61 @@ TEST_CASE("NAMEOF_TYPE_T") {
   REQUIRE(NAMEOF_TYPE_T(Long::LL) == "Long::LL");
 
   REQUIRE(NAMEOF_TYPE_T(Color) == "Color");
+#endif
+}
+
+TEST_CASE("nameof::nameof_type()"){
+#if defined(__clang__)
+  REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct *");
+  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct &");
+  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct *");
+  REQUIRE(nameof::nameof_type<SomeStruct &>() == "SomeStruct &");
+  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "const volatile SomeStruct *");
+
+  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
+  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "const volatile SomeClass<int> *");
+
+  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
+
+  REQUIRE(nameof::nameof_type<Color>() == "Color");
+#elif defined(_MSC_VER)
+  REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct *");
+  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct &");
+  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct *");
+  REQUIRE(nameof::nameof_type<SomeStruct &>() == "SomeStruct &");
+  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "SomeStruct const volatile *");
+
+  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
+  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "SomeClass<int> const volatile *");
+
+  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
+
+  REQUIRE(nameof::nameof_type<Color>() == "Color");
+#elif defined(__GNUC__)
+  REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct*");
+  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct&");
+  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct*");
+  REQUIRE(nameof::nameof_type<SomeStruct &>() == "SomeStruct&");
+  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "const volatile SomeStruct*");
+
+  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
+  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "const volatile SomeClass<int>*");
+
+  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
+
+  REQUIRE(nameof::nameof_type<Color>() == "Color");
 #endif
 }
 

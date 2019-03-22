@@ -72,9 +72,9 @@ NAMEOF_TYPE(Color::RED) -> "Color"
 // Name of type
 NAMEOF_TYPE_T(int) -> "int"
 // Name of variable type
-nameof::nameof_type(Color::RED) -> "Color"
+nameof::nameof_type<decltype(Color::RED)>() -> "Color"
 // Name of type
-nameof::nameof_type<int> -> "int"
+nameof::nameof_type<int>() -> "int"
 
 constexpr auto cx_name = NAMEOF_TYPE(Color::RED);
 static_assert("Color" == cx_name);

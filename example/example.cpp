@@ -116,7 +116,7 @@ int main() {
 
   // Type name.
   std::cout << NAMEOF_TYPE(structvar) << std::endl; // SomeStruct
-  std::cout << nameof::nameof_type(structvar) << std::endl; // SomeStruct
+  std::cout << nameof::nameof_type<decltype(structvar)>() << std::endl; // SomeStruct
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
   std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // Long::LL

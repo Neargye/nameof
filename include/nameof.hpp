@@ -250,11 +250,6 @@ template <typename T>
   return detail::nameof_type_impl<detail::identity<T>>();
 }
 
-template <typename T>
-[[nodiscard]] constexpr std::string_view nameof_type(T) noexcept {
-  return nameof_type<T>();
-}
-
 } // namespace nameof
 
 // NAMEOF used to obtain the simple (unqualified) string name of variable, function, enum, macro.
