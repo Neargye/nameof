@@ -119,8 +119,9 @@ You should add required file [nameof.hpp](include/nameof.hpp).
 
 ## Compiler compatibility
 
-* GCC
-* Clang
-* MSVC
+* Clang/LLVM >= 5
+* MSVC >= 15.3 / Visual Studio 2017
+* Xcode >= 9
+* GCC >= 7 (NAMEOF_ENUM not support)
 
 ## Licensed under the [MIT License](LICENSE)
