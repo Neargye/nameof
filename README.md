@@ -122,7 +122,7 @@ You should add required file [nameof.hpp](include/nameof.hpp).
 ## Compiler compatibility
 
 * Clang/LLVM >= 5
-* MSVC >= 15.3 / Visual Studio 2017
+* Visual C++ >= 15.3 / Visual Studio >= 2017
 * Xcode >= 9
 * GCC >= 7
 
