@@ -129,22 +129,22 @@ template <typename E>
 template <typename E, E V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
 #if defined(__clang__)
-  const auto str = __PRETTY_FUNCTION__;
-  const auto size = sizeof(__PRETTY_FUNCTION__) - 1;
-  const auto prefix = sizeof("std::string_view nameof::detail::nameof_enum_impl() [E = ") + nameof_enum_impl_<E>() + sizeof("; V = ") - 2;
-  const auto suffix = sizeof("]") - 1;
+  constexpr auto str = __PRETTY_FUNCTION__;
+  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  constexpr auto prefix = sizeof("std::string_view nameof::detail::nameof_enum_impl() [E = ") + nameof_enum_impl_<E>() + sizeof("; V = ") - 2;
+  constexpr auto suffix = sizeof("]") - 1;
   return detail::pretty_name({str + prefix, size - prefix - suffix}, false);
 #elif defined(__GNUC__)
-  const auto str = __PRETTY_FUNCTION__;
-  const auto size = sizeof(__PRETTY_FUNCTION__) - 1;
-  const auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_enum_impl() [with E = ") + nameof_enum_impl_<E>() + sizeof("; V = ");
-  const auto suffix = sizeof("; std::string_view = std::basic_string_view<char>]") - 1;
+  constexpr auto str = __PRETTY_FUNCTION__;
+  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_enum_impl() [with E = ") + nameof_enum_impl_<E>() + sizeof("; V = ");
+  constexpr auto suffix = sizeof("; std::string_view = std::basic_string_view<char>]") - 1;
   return {str + prefix, size - prefix - suffix};
 #elif defined(_MSC_VER)
-  const auto str = __FUNCSIG__;
-  const auto size = sizeof(__FUNCSIG__) - 1;
-  const auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_enum_impl<") + nameof_enum_impl_<E>();
-  const auto suffix = sizeof(">(void) noexcept") - 1;
+  constexpr auto str = __FUNCSIG__;
+  constexpr auto size = sizeof(__FUNCSIG__) - 1;
+  constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_enum_impl<") + nameof_enum_impl_<E>();
+  constexpr auto suffix = sizeof(">(void) noexcept") - 1;
   return detail::pretty_name({str + prefix, size - prefix - suffix}, false);
 #else
   return {};
@@ -206,22 +206,22 @@ struct nameof_enum_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
-  const auto str = __PRETTY_FUNCTION__;
-  const auto size = sizeof(__PRETTY_FUNCTION__) - 1;
-  const auto prefix = sizeof("std::string_view nameof::detail::nameof_type_impl() [T = nameof::detail::identity<") - 1;
-  const auto suffix = sizeof(">]") - 1;
+  constexpr auto str = __PRETTY_FUNCTION__;
+  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  constexpr auto prefix = sizeof("std::string_view nameof::detail::nameof_type_impl() [T = nameof::detail::identity<") - 1;
+  constexpr auto suffix = sizeof(">]") - 1;
   return nameof_type_impl_({str + prefix, size - prefix - suffix});
 #elif defined(__GNUC__)
-  const auto str = __PRETTY_FUNCTION__;
-  const auto size = sizeof(__PRETTY_FUNCTION__) - 1;
-  const auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_type_impl() [with T = nameof::detail::identity<") - 1;
-  const auto suffix = sizeof(">; std::string_view = std::basic_string_view<char>]") - 1;
+  constexpr auto str = __PRETTY_FUNCTION__;
+  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_type_impl() [with T = nameof::detail::identity<") - 1;
+  constexpr auto suffix = sizeof(">; std::string_view = std::basic_string_view<char>]") - 1;
   return nameof_type_impl_({str + prefix, size - prefix - suffix});
 #elif defined(_MSC_VER)
-  const auto str = __FUNCSIG__;
-  const auto size = sizeof(__FUNCSIG__) - 1;
-  const auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
-  const auto suffix = sizeof(">>(void) noexcept") - 1;
+  constexpr auto str = __FUNCSIG__;
+  constexpr auto size = sizeof(__FUNCSIG__) - 1;
+  constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
+  constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
   return nameof_type_impl_({str + prefix, size - prefix - suffix});
 #else
   return {};
