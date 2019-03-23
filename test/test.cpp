@@ -69,7 +69,7 @@ struct Long {
 
 enum class Color { RED = -1, GREEN, BLUE };
 
-enum Directions { Up, Down, Right, Left};
+enum Directions { Up, Down, Right, Left };
 
 SomeStruct struct_var;
 Long othervar;
