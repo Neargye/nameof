@@ -48,12 +48,12 @@ struct identity final {
   using type = T;
 };
 
-[[nodiscard]] constexpr bool is_name_char(char s) noexcept {
-  return (s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || s == '_';
+[[nodiscard]] constexpr bool is_name_char(char c) noexcept {
+  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
-[[nodiscard]] constexpr bool is_bracket_char(char s) noexcept {
-  return s == ')' || s == '}' || s == '>' || s == '(' || s == '{' || s == '<';
+[[nodiscard]] constexpr bool is_bracket_char(char c) noexcept {
+  return c == ')' || c == '}' || c == '>' || c == '(' || c == '{' || c == '<';
 }
 
 [[nodiscard]] constexpr std::string_view pretty_name(std::string_view name, bool with_suffix) noexcept {
