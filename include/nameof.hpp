@@ -156,21 +156,21 @@ struct nameof_enum_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
     switch (value - V) {
       case 0:
-        return nameof_enum_impl<E, E{V}>();
+        return nameof_enum_impl<E, static_cast<E>(V)>();
       case 1:
-        return nameof_enum_impl<E, E{V + 1}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 1)>();
       case 2:
-        return nameof_enum_impl<E, E{V + 2}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 2)>();
       case 3:
-        return nameof_enum_impl<E, E{V + 3}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 3)>();
       case 4:
-        return nameof_enum_impl<E, E{V + 4}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 4)>();
       case 5:
-        return nameof_enum_impl<E, E{V + 5}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 5)>();
       case 6:
-        return nameof_enum_impl<E, E{V + 6}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 6)>();
       case 7:
-        return nameof_enum_impl<E, E{V + 7}>();
+        return nameof_enum_impl<E, static_cast<E>(V + 7)>();
       default:
         return nameof_enum_t<E, V + 8>{}(value);
     }
@@ -241,7 +241,7 @@ template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
 
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
-  constexpr auto s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
+  constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
   return detail::nameof_enum_t<std::decay_t<T>, s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0>{}(static_cast<int>(value));
 }
 
