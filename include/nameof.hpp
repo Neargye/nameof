@@ -136,12 +136,13 @@ template <typename T>
   constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
 #else
-  std::string_view name{"nameof_type::unsupported_compiler"};
-  constexpr auto prefix = 0;
-  constexpr auto suffix = 0;
+  return "nameof_type::unsupported_compiler";
 #endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
   name.remove_prefix(prefix);
   name.remove_suffix(suffix);
+#  if defined(_MSC_VER)
   if (name.size() > sizeof("enum") && name[0] == 'e' && name[1] == 'n' && name[2] == 'u' && name[3] == 'm' && name[4] == ' ') {
     name.remove_prefix(sizeof("enum"));
   }
@@ -151,33 +152,42 @@ template <typename T>
   if (name.size() > sizeof("struct") && name[0] == 's' && name[1] == 't' && name[2] == 'r' && name[3] == 'u' && name[4] == 'c' && name[5] == 't' && name[6] == ' ') {
     name.remove_prefix(sizeof("struct"));
   }
+#  endif
   while (name.back() == ' ') {
     name.remove_suffix(1);
   }
-
   return name;
+#endif
 }
 
 template <typename E, E V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
 #if defined(__clang__)
-  constexpr auto str = __PRETTY_FUNCTION__;
-  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto suffix = sizeof("]") - 1;
-  return detail::pretty_name({str, size - suffix}, false);
 #elif defined(__GNUC__)
-  constexpr auto str = __PRETTY_FUNCTION__;
-  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_enum_impl() [with E = ") + nameof_type_impl<identity<E>>().length() + sizeof("; V = ");
   constexpr auto suffix = sizeof("; std::string_view = std::basic_string_view<char>]") - 1;
-  return {str + prefix, size - prefix - suffix};
+  name.remove_prefix(prefix);
 #elif defined(_MSC_VER)
-  constexpr auto str = __FUNCSIG__;
-  constexpr auto size = sizeof(__FUNCSIG__) - 1;
+  std::string_view name{__FUNCSIG__};
   constexpr auto suffix = sizeof(">(void) noexcept") - 1;
-  return detail::pretty_name({str, size - suffix}, false);
 #else
-  return {"nameof_enum::unsupported_compiler"};
+  return "nameof_enum::unsupported_compiler";
+#endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+  name.remove_suffix(suffix);
+#  if defined(__clang__) || defined(_MSC_VER)
+  for (std::size_t i = name.size(); i > 0; --i) {
+    if (!is_name_char(name[i - 1])) {
+      name.remove_prefix(i);
+      break;
+    }
+  }
+#  endif
+  return name;
 #endif
 }
 
@@ -220,7 +230,7 @@ struct nameof_enum_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
 
 template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
 [[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_suffix) noexcept {
-  return detail::pretty_name(name, with_suffix);
+  return pretty_name(name, with_suffix);
 }
 
 [[nodiscard]] constexpr std::string_view nameof_raw_impl(std::string_view name) noexcept {
