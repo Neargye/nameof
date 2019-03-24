@@ -237,7 +237,7 @@ TEST_CASE("NAMEOF_ENUM") {
 #endif
 }
 
-TEST_CASE("nameof::nameof_enum(value)") {
+TEST_CASE("nameof::nameof_enum<T>(value)") {
   Color color_ = Color::BLUE;
   Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
 #if defined(__clang__) || defined(_MSC_VER)
@@ -394,7 +394,7 @@ TEST_CASE("NAMEOF_TYPE_T") {
 #endif
 }
 
-TEST_CASE("nameof::nameof_type()"){
+TEST_CASE("nameof::nameof_type<T>()"){
 #if defined(__clang__)
   REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "SomeStruct");
   REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct *");
