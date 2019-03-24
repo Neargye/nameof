@@ -124,28 +124,24 @@ struct identity final {
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
-  constexpr auto str = __PRETTY_FUNCTION__;
-  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto prefix = sizeof("std::string_view nameof::detail::nameof_type_impl() [T = nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">]") - 1;
 #elif defined(__GNUC__)
-  constexpr auto str = __PRETTY_FUNCTION__;
-  constexpr auto size = sizeof(__PRETTY_FUNCTION__) - 1;
+  std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_type_impl() [with T = nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">; std::string_view = std::basic_string_view<char>]") - 1;
 #elif defined(_MSC_VER)
-  constexpr auto str = __FUNCSIG__;
-  constexpr auto size = sizeof(__FUNCSIG__) - 1;
+  std::string_view name{__FUNCSIG__};
   constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
 #else
-  constexpr auto str = "nameof_type::unsupported_compiler";
-  constexpr auto size = sizeof("nameof_type::unsupported_compiler") - 1;
+  std::string_view name{"nameof_type::unsupported_compiler"};
   constexpr auto prefix = 0;
   constexpr auto suffix = 0;
 #endif
-
-  std::string_view name{str + prefix, size - prefix - suffix};
+  name.remove_prefix(prefix);
+  name.remove_suffix(suffix);
   if (name.size() > sizeof("enum") && name[0] == 'e' && name[1] == 'n' && name[2] == 'u' && name[3] == 'm' && name[4] == ' ') {
     name.remove_prefix(sizeof("enum"));
   }
