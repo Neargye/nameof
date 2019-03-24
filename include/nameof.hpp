@@ -33,13 +33,21 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <limits>
 #include <string_view>
 
 #if !defined(NAMEOF_ENUM_MAX_SEARCH_DEPTH)
-#  define NAMEOF_ENUM_MAX_SEARCH_DEPTH 256
+#  define NAMEOF_ENUM_MAX_SEARCH_DEPTH 128
 #endif
 
 namespace nameof {
+
+static_assert(NAMEOF_ENUM_MAX_SEARCH_DEPTH > 0,
+              "NAMEOF_ENUM_MAX_SEARCH_DEPTH must be positive and greater than zero.");
+static_assert(NAMEOF_ENUM_MAX_SEARCH_DEPTH % 8 == 0,
+              "NAMEOF_ENUM_MAX_SEARCH_DEPTH must be a multiple of 8.");
+static_assert(NAMEOF_ENUM_MAX_SEARCH_DEPTH < std::numeric_limits<int>::max(),
+              "NAMEOF_ENUM_MAX_SEARCH_DEPTH must be less INT_MAX.");
 
 namespace detail {
 
@@ -154,6 +162,10 @@ template <typename E, E V>
 template <typename E, int V>
 struct nameof_enum_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
+    if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
+      return {"nameof_enum::out_of_range"};
+    }
+
     switch (value - V) {
       case 0:
         return nameof_enum_impl<E, static_cast<E>(V)>();
@@ -242,7 +254,8 @@ template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
-  return detail::nameof_enum_t<std::decay_t<T>, s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0>{}(static_cast<int>(value));
+  constexpr int min = s ? -MAGIC_ENUM_MAX_SEARCH_DEPTH : 0;
+  return detail::nameof_enum_t<std::decay_t<T>, min>{}(static_cast<int>(value));
 }
 
 template <typename T>
