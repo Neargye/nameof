@@ -155,7 +155,7 @@ template <typename E, E V>
   constexpr auto suffix = sizeof(">(void) noexcept") - 1;
   return detail::pretty_name({str + prefix, size - prefix - suffix}, false);
 #else
-  return {};
+  return {"nameof_enum::unsupported_compiler"};
 #endif
 }
 
@@ -236,7 +236,7 @@ template <typename T>
   constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
   return nameof_type_impl_({str + prefix, size - prefix - suffix});
 #else
-  return {};
+  return {"nameof_type::unsupported_compiler"};
 #endif
 }
 
