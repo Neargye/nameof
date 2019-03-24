@@ -265,6 +265,34 @@ TEST_CASE("nameof::nameof_enum(value)") {
 #endif
 }
 
+TEST_CASE("nameof::nameof_enum<value>()") {
+  constexpr Color color_ = Color::BLUE;
+  constexpr Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
+#if defined(__clang__) || defined(_MSC_VER)
+  REQUIRE(nameof::nameof_enum<Color::RED>() == "RED");
+  REQUIRE(nameof::nameof_enum<color>() == "RED");
+
+  REQUIRE(nameof::nameof_enum<Color::BLUE>() == "BLUE");
+  REQUIRE(nameof::nameof_enum<color_>() == "BLUE");
+
+  REQUIRE(nameof::nameof_enum<m[1]>() == "GREEN");
+
+  REQUIRE(nameof::nameof_enum<Directions::Right>() == "Right");
+  REQUIRE(nameof::nameof_enum<directions>() == "Right");
+#elif defined(__GNUC__)
+  REQUIRE(nameof::nameof_enum<Color::RED>() == "(Color)-1");
+  REQUIRE(nameof::nameof_enum<color>() == "(Color)-1");
+
+  REQUIRE(nameof::nameof_enum<Color::BLUE>() == "(Color)1");
+  REQUIRE(nameof::nameof_enum<color_>() == "(Color)1");
+
+  REQUIRE(nameof::nameof_enum<m[1]>() == "(Color)0");
+
+  REQUIRE(nameof::nameof_enum<Directions::Right>() == "(Directions)2");
+  REQUIRE(nameof::nameof_enum<directions>() == "(Directions)2");
+#endif
+}
+
 TEST_CASE("NAMEOF_TYPE") {
 #if defined(__clang__)
   REQUIRE(NAMEOF_TYPE(struct_var) == "SomeStruct");

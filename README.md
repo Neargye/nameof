@@ -63,6 +63,9 @@ nameof::nameof_enum(c) -> "RED"
 
 constexpr auto cx_name = NAMEOF_ENUM(c);
 static_assert("RED" == cx_name);
+
+constexpr auto cx_color = Color::RED;
+nameof::nameof_enum<cx_color>() -> "RED"
 ```
 
 * Name of type
@@ -107,6 +110,8 @@ NAMEOF_RAW(std::string) -> "std::string"
 auto c = Color::RED;
 NAMEOF_ENUM(c) -> "(Color)0"
 nameof::nameof_enum(c) -> "(Color)0"
+
+NAMEOF(Color::RED) -> "RED"
 ```
 
 * Spaces and Tabs ignored

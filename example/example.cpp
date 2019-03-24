@@ -92,6 +92,8 @@ int main() {
   auto color = Color::RED;
   std::cout << NAMEOF_ENUM(color) << std::endl; // RED
   std::cout << nameof::nameof_enum(color) << std::endl; // RED
+  constexpr auto cx_color = Color::RED;
+  std::cout << nameof::nameof_enum<cx_color>() << std::endl; // RED
 
   // Variable name.
   std::cout << NAMEOF(structvar) << std::endl; // structvar
