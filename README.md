@@ -55,16 +55,17 @@ static_assert("foo" == cx_name);
 
 * Name of enum
 ```cpp
-// Name of enum
 auto c = Color::RED;
+// Name of enum variable
 NAMEOF_ENUM(c) -> "RED"
-// Name of enum
+// Name of enum variable
 nameof::nameof_enum(c) -> "RED"
 
 constexpr auto cx_name = NAMEOF_ENUM(c);
 static_assert("RED" == cx_name);
 
 constexpr auto cx_color = Color::RED;
+// Name of static storage enum variable
 nameof::nameof_enum<cx_color>() -> "RED"
 ```
 
