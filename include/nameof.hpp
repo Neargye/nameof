@@ -254,7 +254,7 @@ template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
-  constexpr int min = s ? -MAGIC_ENUM_MAX_SEARCH_DEPTH : 0;
+  constexpr int min = s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0;
   return detail::nameof_enum_t<std::decay_t<T>, min>{}(static_cast<int>(value));
 }
 
