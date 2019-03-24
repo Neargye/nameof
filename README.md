@@ -22,7 +22,7 @@ Before, you had to use string literals to refer to definitions, which is brittle
 ## Features
 
 * C++17
-* Simple syntax.
+* Simple syntax
 * Header-only
 * Dependency-free
 * Compile-time
@@ -61,12 +61,9 @@ NAMEOF_ENUM(c) -> "RED"
 // Name of enum variable
 nameof::nameof_enum(c) -> "RED"
 
-constexpr auto cx_name = NAMEOF_ENUM(c);
-static_assert("RED" == cx_name);
-
-constexpr auto cx_color = Color::RED;
+constexpr auto cx_color = Color::BLUE;
 // Name of static storage enum variable
-nameof::nameof_enum<cx_color>() -> "RED"
+nameof::nameof_enum<cx_color>() -> "BLUE"
 ```
 
 * Name of type
