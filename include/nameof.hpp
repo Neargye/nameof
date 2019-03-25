@@ -5,7 +5,7 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// vesion 0.7.1
+// vesion 0.7.2
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
@@ -239,7 +239,7 @@ template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
 
 } // namespace detail
 
-// nameof_enum used to obtain the simple (unqualified) string name of enum variable.
+// nameof_enum used to obtain the simple (unqualified) string enum name of enum variable.
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
@@ -247,7 +247,7 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>
   return detail::nameof_enum_t<std::decay_t<T>, min>{}(static_cast<int>(value));
 }
 
-// nameof_enum used to obtain the simple (unqualified) string name of static storage enum variable.
+// nameof_enum used to obtain the simple (unqualified) string enum name of static storage enum variable.
 template <auto V, typename = std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum() noexcept {
   return detail::nameof_enum_impl<decltype(V), V>();
@@ -267,7 +267,7 @@ template <typename T>
 // NAMEOF_FULL used to obtain the full string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
-// NAMEOF_ENUM used to obtain the simple (unqualified) string name of enum variable.
+// NAMEOF_ENUM used to obtain the simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
 // NAMEOF_TYPE used to obtain the string name of variable type.
