@@ -119,7 +119,6 @@ int main() {
   // Type name.
   std::cout << NAMEOF_TYPE(structvar) << std::endl; // SomeStruct
   std::cout << nameof::nameof_type<decltype(structvar)>() << std::endl; // SomeStruct
-  std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // LL
   std::cout << NAMEOF_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
   std::cout << NAMEOF_TYPE(othervar.ll) << std::endl; // Long::LL
   std::cout << NAMEOF_TYPE(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int> &&
@@ -136,7 +135,7 @@ int main() {
 
   // Some more example.
 
-  std::cout << SomeMethod4<int>(structvar) << std::endl; // SomeMethod4<int>(SomeStruct value)
+  std::cout << SomeMethod4<int>(structvar) << std::endl; // SomeMethod4<int, SomeStruct>(SomeStruct value)
 
   const auto div = [](int x, int y) -> int {
     if (y == 0) {
