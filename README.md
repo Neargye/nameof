@@ -38,31 +38,26 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 NAMEOF(somevar) -> "somevar"
 // Name of member variable
 NAMEOF(person.address.zip_code) -> "zip_code"
-
-constexpr auto cx_name = NAMEOF(somevar);
-static_assert("somevar" == cx_name);
 ```
 
 * Name of function
 ```cpp
 // Name of function
-NAMEOF(some_method<int, float>) -> "some_method"
-NAMEOF_FULL(some_method<int, float>) -> "some_method<int, float>"
-// Name of member function
-NAMEOF(somevar.foo()) -> "foo"
-NAMEOF_FULL(somevar.boo<int>()) -> "boo<int>"
+NAMEOF(foo<int, float>()) -> "foo"
+NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
 
-constexpr auto cx_name = NAMEOF(somevar.foo());
-static_assert("foo" == cx_name);
+// Name of member function
+NAMEOF(somevar.some_method()) -> "some_method"
+NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
 ```
 
 * Name of enum
 ```cpp
-auto c = Color::RED;
+auto color = Color::RED;
 // Name of enum variable
-NAMEOF_ENUM(c) -> "RED"
+NAMEOF_ENUM(color) -> "RED"
 // Name of enum variable
-nameof::nameof_enum(c) -> "RED"
+nameof::nameof_enum(color) -> "RED"
 
 constexpr auto cx_color = Color::BLUE;
 // Name of static storage enum variable
@@ -71,26 +66,20 @@ nameof::nameof_enum<cx_color>() -> "BLUE"
 
 * Name of type
 ```cpp
+using T = int;
+T var = 42;
 // Name of variable type
-NAMEOF_TYPE(Color::RED) -> "Color"
+NAMEOF_TYPE(var) -> "int"
+nameof::nameof_type<decltype(var)>() -> "int"
 // Name of type
-NAMEOF_TYPE_T(int) -> "int"
-// Name of variable type
-nameof::nameof_type<decltype(Color::RED)>() -> "Color"
-// Name of type
-nameof::nameof_type<int>() -> "int"
-
-constexpr auto cx_name = NAMEOF_TYPE(Color::RED);
-static_assert("Color" == cx_name);
+NAMEOF_TYPE_T(T) -> "int"
+nameof::nameof_type<T>() -> "int"
 ```
 
 * Name of macro
 ```cpp
 // Name of macro
 NAMEOF(__LINE__) -> "__LINE__"
-
-constexpr auto cx_name = NAMEOF(__LINE__);
-static_assert("__LINE__" == cx_name);
 ```
 
 ## Remarks
