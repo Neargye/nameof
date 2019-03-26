@@ -188,7 +188,7 @@ template <typename E, E V>
 }
 
 template <typename E, int V>
-struct nameof_enum_t final {
+struct nameof_enum_impl_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
     if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
       return {"nameof_enum::out_of_range"};
@@ -212,13 +212,13 @@ struct nameof_enum_t final {
       case 7:
         return nameof_enum_impl<E, static_cast<E>(V + 7)>();
       default:
-        return nameof_enum_t<E, V + 8>{}(value);
+        return nameof_enum_impl_t<E, V + 8>{}(value);
     }
   }
 };
 
 template <typename E>
-struct nameof_enum_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
+struct nameof_enum_impl_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
   [[nodiscard]] constexpr std::string_view operator()(int) const noexcept {
     return {"nameof_enum::out_of_range"};
   }
@@ -240,7 +240,7 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
   constexpr int min = s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0;
-  return detail::nameof_enum_t<std::decay_t<T>, min>{}(static_cast<int>(value));
+  return detail::nameof_enum_impl_t<std::decay_t<T>, min>{}(static_cast<int>(value));
 }
 
 // nameof_enum used to obtain the simple (unqualified) string enum name of static storage enum variable.
