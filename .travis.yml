@@ -1,4 +1,4 @@
-os: linux
+os: linux # Use linux unless specified otherwise.
 dist: xenial
 sudo: required
 
@@ -72,6 +72,18 @@ matrix:
       env:
         - CXX_COMPILER=clang++-7 CC_COMPILER=clang-7
 
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-8
+          packages:
+            - clang-8
+      env:
+        - CXX_COMPILER=clang++-8 CC_COMPILER=clang-8
+
     - os: osx
       compiler: clang++
       osx_image: xcode9.4
@@ -101,6 +113,7 @@ install:
       elif [[ "${CXX}" == "clang++-5.0" ]]; then LLVM_VERSION="5.0.2";
       elif [[ "${CXX}" == "clang++-6.0" ]]; then LLVM_VERSION="6.0.1";
       elif [[ "${CXX}" == "clang++-7" ]]; then LLVM_VERSION="7.0.1";
+      elif [[ "${CXX}" == "clang++-8" ]]; then LLVM_VERSION="8.0.0";
       fi
       LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz"
       LIBCXX_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxx-${LLVM_VERSION}.src.tar.xz"
@@ -116,10 +129,9 @@ install:
       export LDFLAGS="-L ${LLVM_INSTALL}/lib -l c++ -l c++abi"
       export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${LLVM_INSTALL}/lib"
     fi
-
   - |
     # If linux and gcc-9 install gcc-9.
-    if [[ "${CXX_COMPILER}" == "g++-9" ]]; then
+    if [[ "${CXX}" == "g++-9" ]]; then
       wget http://kayari.org/gcc-latest/gcc-latest.deb
       sudo dpkg -i gcc-latest.deb
       sudo ln -s /opt/gcc-latest/bin/gcc /usr/bin/gcc-9
