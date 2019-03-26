@@ -223,17 +223,6 @@ TEST_CASE("NAMEOF_ENUM") {
 
   REQUIRE(NAMEOF_ENUM(Directions::Right) == "Right");
   REQUIRE(NAMEOF_ENUM(directions) == "Right");
-#elif defined(__GNUC__)
-  REQUIRE(NAMEOF_ENUM(Color::RED) == "(Color)-1");
-  REQUIRE(NAMEOF_ENUM(color) == "(Color)-1");
-
-  REQUIRE(NAMEOF_ENUM(Color::BLUE) == "(Color)1");
-  REQUIRE(NAMEOF_ENUM(color_) == "(Color)1");
-
-  REQUIRE(NAMEOF_ENUM(m[1]) == "(Color)0");
-
-  REQUIRE(NAMEOF_ENUM(Directions::Right) == "(Directions)2");
-  REQUIRE(NAMEOF_ENUM(directions) == "(Directions)2");
 #endif
 }
 
@@ -251,17 +240,6 @@ TEST_CASE("nameof::nameof_enum<T>(value)") {
 
   REQUIRE(nameof::nameof_enum(Directions::Right) == "Right");
   REQUIRE(nameof::nameof_enum(directions) == "Right");
-#elif defined(__GNUC__)
-  REQUIRE(nameof::nameof_enum(Color::RED) == "(Color)-1");
-  REQUIRE(nameof::nameof_enum(color) == "(Color)-1");
-
-  REQUIRE(nameof::nameof_enum(Color::BLUE) == "(Color)1");
-  REQUIRE(nameof::nameof_enum(color_) == "(Color)1");
-
-  REQUIRE(nameof::nameof_enum(m[1]) == "(Color)0");
-
-  REQUIRE(nameof::nameof_enum(Directions::Right) == "(Directions)2");
-  REQUIRE(nameof::nameof_enum(directions) == "(Directions)2");
 #endif
 }
 
@@ -279,17 +257,6 @@ TEST_CASE("nameof::nameof_enum<value>()") {
 
   REQUIRE(nameof::nameof_enum<Directions::Right>() == "Right");
   REQUIRE(nameof::nameof_enum<directions>() == "Right");
-#elif defined(__GNUC__)
-  REQUIRE(nameof::nameof_enum<Color::RED>() == "(Color)-1");
-  REQUIRE(nameof::nameof_enum<color>() == "(Color)-1");
-
-  REQUIRE(nameof::nameof_enum<Color::BLUE>() == "(Color)1");
-  REQUIRE(nameof::nameof_enum<color_>() == "(Color)1");
-
-  REQUIRE(nameof::nameof_enum<m[1]>() == "(Color)0");
-
-  REQUIRE(nameof::nameof_enum<Directions::Right>() == "(Directions)2");
-  REQUIRE(nameof::nameof_enum<directions>() == "(Directions)2");
 #endif
 }
 
@@ -456,8 +423,6 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF_RAW(   struct_var   ) == "struct_var");
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(   color   ) == "RED");
-#elif defined(__GNUC__)
-    REQUIRE(NAMEOF_ENUM(   color   ) == "(Color)-1");
 #endif
     REQUIRE(NAMEOF_TYPE(   struct_var   ) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(   decltype(struct_var)   ) == "SomeStruct");
@@ -469,8 +434,6 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF_RAW(	struct_var	) == "struct_var");
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(	color	) == "RED");
-#elif defined(__GNUC__)
-    REQUIRE(NAMEOF_ENUM(	color	) == "(Color)-1");
 #endif
     REQUIRE(NAMEOF_TYPE(	struct_var	) == "SomeStruct");
     REQUIRE(NAMEOF_TYPE_T(	decltype(struct_var)	) == "SomeStruct");
