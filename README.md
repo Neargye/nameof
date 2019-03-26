@@ -96,20 +96,13 @@ static_assert("__LINE__" == cx_name);
 
 * The argument expression identifies code definition, but it is never evaluated.
 
+* NAMEOF_ENUM supported on the GCC >= 9.
+
 * If you need raw fully-qualified name, use NAMEOF_RAW.
 ```cpp
 NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
 NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
 NAMEOF_RAW(std::string) -> "std::string"
-```
-
-* NAMEOF_ENUM does not work on the GCC.
-```cpp
-auto c = Color::RED;
-NAMEOF_ENUM(c) -> "(Color)0"
-nameof::nameof_enum(c) -> "(Color)0"
-
-NAMEOF(Color::RED) -> "RED"
 ```
 
 * Spaces and Tabs ignored
