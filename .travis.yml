@@ -33,12 +33,6 @@ matrix:
 
     - os: linux
       compiler: g++
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
       env:
         - CXX_COMPILER=g++-9 CC_COMPILER=gcc-9
 
@@ -121,6 +115,17 @@ install:
       export CXXFLAGS="-isystem ${LLVM_INSTALL}/include/c++/v1"
       export LDFLAGS="-L ${LLVM_INSTALL}/lib -l c++ -l c++abi"
       export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${LLVM_INSTALL}/lib"
+    fi
+
+  - |
+    # If linux and gcc-9 install gcc-9.
+    if [[ "${CXX_COMPILER}" == "g++-9" ]]; then
+      wget http://kayari.org/gcc-latest/gcc-latest.deb
+      sudo dpkg -i gcc-latest.deb
+      sudo ln -s /opt/gcc-latest/bin/gcc /usr/bin/gcc-9
+      sudo ln -s /opt/gcc-latest/bin/g++ /usr/bin/g++-9
+      sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+      sudo ldconfig /opt/gcc-latest/lib64
     fi
 
 before_script:
