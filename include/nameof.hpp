@@ -191,7 +191,7 @@ template <typename E, int V>
 struct nameof_enum_impl_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
     if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
-      return {"nameof_enum::out_of_range"};
+      return "nameof_enum::out_of_range";
     }
 
     switch (value - V) {
@@ -220,7 +220,7 @@ struct nameof_enum_impl_t final {
 template <typename E>
 struct nameof_enum_impl_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
   [[nodiscard]] constexpr std::string_view operator()(int) const noexcept {
-    return {"nameof_enum::out_of_range"};
+    return "nameof_enum::out_of_range";
   }
 };
 
