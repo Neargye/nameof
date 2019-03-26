@@ -17,15 +17,18 @@ master |[![Build Status](https://travis-ci.org/Neargye/nameof.svg?branch=master)
 
 Header-only C++17 library provides nameof macros and functions to obtain simple name of variable, type, function, macro, and enum.
 
-Before, you had to use string literals to refer to definitions, which is brittle when renaming code elements because tools do not know to check these string literals.
-
 ## Features
 
 * C++17
-* Simple syntax
 * Header-only
 * Dependency-free
 * Compile-time
+* Name of variable, member variable
+* Name of type, variable type
+* Name of function, member function
+* Name of enum, enum variable
+* Name of macro
+* Enum to string
 
 ## [Examples](example/example.cpp)
 
@@ -94,11 +97,11 @@ static_assert("__LINE__" == cx_name);
 
 * Nameof return std::string_view.
 
-* The argument expression identifies code definition, but it is never evaluated.
+* Nameof expression arguments are identified, but do not evaluated.
 
 * NAMEOF_ENUM supported on the GCC >= 9.
 
-* If you need raw fully-qualified name, use NAMEOF_RAW.
+* If you need of raw fully-qualified name, use NAMEOF_RAW.
 ```cpp
 NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
 NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
@@ -113,7 +116,7 @@ NAMEOF(	somevar	) -> "somevar"
 
 ## Integration
 
-You should add required file [nameof.hpp](include/nameof.hpp).
+You have to add required file [nameof.hpp](include/nameof.hpp).
 
 ## Compiler compatibility
 
