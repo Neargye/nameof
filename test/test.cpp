@@ -454,7 +454,7 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF(   struct_var   ) == "struct_var");
     REQUIRE(NAMEOF_FULL(   struct_var   ) == "struct_var");
     REQUIRE(NAMEOF_RAW(   struct_var   ) == "struct_var");
-#if defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(   color   ) == "RED");
 #elif defined(__GNUC__)
     REQUIRE(NAMEOF_ENUM(   color   ) == "(Color)-1");
@@ -467,7 +467,7 @@ TEST_CASE("Spaces and Tabs ignored") {
     REQUIRE(NAMEOF(	struct_var	) == "struct_var");
     REQUIRE(NAMEOF_FULL(	struct_var	) == "struct_var");
     REQUIRE(NAMEOF_RAW(	struct_var	) == "struct_var");
-#if defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
     REQUIRE(NAMEOF_ENUM(	color	) == "RED");
 #elif defined(__GNUC__)
     REQUIRE(NAMEOF_ENUM(	color	) == "(Color)-1");
