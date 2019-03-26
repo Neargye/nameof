@@ -162,6 +162,7 @@ template <typename T>
 
 template <auto V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
+  static_assert(std::is_enum_v<decltype(V)>);
 #if defined(__clang__)
   std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto suffix = sizeof("]") - 1;
@@ -190,6 +191,7 @@ template <auto V>
 template <typename E, int V>
 struct nameof_enum_impl_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
+    static_assert(std::is_enum_v<E>);
     if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
       return "nameof_enum::out_of_range";
     }
@@ -220,6 +222,7 @@ struct nameof_enum_impl_t final {
 template <typename E>
 struct nameof_enum_impl_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
   [[nodiscard]] constexpr std::string_view operator()(int) const noexcept {
+    static_assert(std::is_enum_v<E>);
     return "nameof_enum::out_of_range";
   }
 };
