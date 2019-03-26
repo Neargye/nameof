@@ -168,8 +168,10 @@ template <typename E, E V>
 #elif defined(__GNUC__)
   std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_enum_impl() [with E = ") + nameof_type_impl<identity<E>>().length() + sizeof("; V = ");
+#  if __GNUC__ < 9
   constexpr auto suffix = sizeof("; std::string_view = std::basic_string_view<char>]") - 1;
   name.remove_prefix(prefix);
+#  endif
 #elif defined(_MSC_VER)
   std::string_view name{__FUNCSIG__};
   constexpr auto suffix = sizeof(">(void) noexcept") - 1;
@@ -179,7 +181,7 @@ template <typename E, E V>
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
   name.remove_suffix(suffix);
-#  if defined(__clang__) || defined(_MSC_VER)
+#  if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   for (std::size_t i = name.size(); i > 0; --i) {
     if (!is_name_char(name[i - 1])) {
       name.remove_prefix(i);

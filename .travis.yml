@@ -32,6 +32,17 @@ matrix:
         - CXX_COMPILER=g++-8 CC_COMPILER=gcc-8
 
     - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-9
+      env:
+        - CXX_COMPILER=g++-9 CC_COMPILER=gcc-9
+
+    - os: linux
       compiler: clang++
       addons:
         apt:

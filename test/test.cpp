@@ -212,7 +212,7 @@ TEST_CASE("NAMEOF_RAW") {
 TEST_CASE("NAMEOF_ENUM") {
   Color color_ = Color::BLUE;
   Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-#if defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   REQUIRE(NAMEOF_ENUM(Color::RED) == "RED");
   REQUIRE(NAMEOF_ENUM(color) == "RED");
 
@@ -240,7 +240,7 @@ TEST_CASE("NAMEOF_ENUM") {
 TEST_CASE("nameof::nameof_enum<T>(value)") {
   Color color_ = Color::BLUE;
   Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-#if defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   REQUIRE(nameof::nameof_enum(Color::RED) == "RED");
   REQUIRE(nameof::nameof_enum(color) == "RED");
 
@@ -268,7 +268,7 @@ TEST_CASE("nameof::nameof_enum<T>(value)") {
 TEST_CASE("nameof::nameof_enum<value>()") {
   constexpr Color color_ = Color::BLUE;
   constexpr Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-#if defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   REQUIRE(nameof::nameof_enum<Color::RED>() == "RED");
   REQUIRE(nameof::nameof_enum<color>() == "RED");
 
