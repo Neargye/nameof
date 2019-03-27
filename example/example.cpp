@@ -77,7 +77,7 @@ struct Long {
   LL ll;
 };
 
-enum class Color { RED = -10, GREEN, BLUE };
+enum class Color { RED, GREEN, BLUE };
 
 SomeStruct structvar;
 Long othervar;

@@ -23,6 +23,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
 
+#define NAMEOF_ENUM_MAX_SEARCH_DEPTH 120
 #include <nameof.hpp>
 
 #include <string>
@@ -67,9 +68,9 @@ struct Long {
   LL ll;
 };
 
-enum class Color { RED = -1, GREEN, BLUE };
+enum class Color : int { RED = -10, GREEN = 0, BLUE = 10 };
 
-enum Directions { Up, Down, Right, Left };
+enum Directions : unsigned int { Up, Down, Right, Left };
 
 SomeStruct struct_var;
 Long othervar;
@@ -223,6 +224,13 @@ TEST_CASE("NAMEOF_ENUM") {
 
   REQUIRE(NAMEOF_ENUM(Directions::Right) == "Right");
   REQUIRE(NAMEOF_ENUM(directions) == "Right");
+
+  REQUIRE(NAMEOF_ENUM((Color)NAMEOF_ENUM_MAX_SEARCH_DEPTH).empty());
+  REQUIRE(NAMEOF_ENUM((Color)-100).empty());
+  REQUIRE(NAMEOF_ENUM((Color)100).empty());
+  REQUIRE(NAMEOF_ENUM((Directions)NAMEOF_ENUM_MAX_SEARCH_DEPTH).empty());
+  REQUIRE(NAMEOF_ENUM((Directions)100).empty());
+  REQUIRE(NAMEOF_ENUM((Directions)100).empty());
 #endif
 }
 
@@ -240,6 +248,13 @@ TEST_CASE("nameof::nameof_enum<T>(value)") {
 
   REQUIRE(nameof::nameof_enum(Directions::Right) == "Right");
   REQUIRE(nameof::nameof_enum(directions) == "Right");
+
+  REQUIRE(nameof::nameof_enum((Color)NAMEOF_ENUM_MAX_SEARCH_DEPTH).empty());
+  REQUIRE(nameof::nameof_enum((Color)-100).empty());
+  REQUIRE(nameof::nameof_enum((Color)100).empty());
+  REQUIRE(nameof::nameof_enum((Directions)NAMEOF_ENUM_MAX_SEARCH_DEPTH).empty());
+  REQUIRE(nameof::nameof_enum((Directions)100).empty());
+  REQUIRE(nameof::nameof_enum((Directions)100).empty());
 #endif
 }
 
@@ -257,6 +272,13 @@ TEST_CASE("nameof::nameof_enum<value>()") {
 
   REQUIRE(nameof::nameof_enum<Directions::Right>() == "Right");
   REQUIRE(nameof::nameof_enum<directions>() == "Right");
+
+  REQUIRE(nameof::nameof_enum<(Color)NAMEOF_ENUM_MAX_SEARCH_DEPTH>().empty());
+  REQUIRE(nameof::nameof_enum<(Color)-100>().empty());
+  REQUIRE(nameof::nameof_enum<(Color)100>().empty());
+  REQUIRE(nameof::nameof_enum<(Directions)NAMEOF_ENUM_MAX_SEARCH_DEPTH>().empty());
+  REQUIRE(nameof::nameof_enum<(Directions)100>().empty());
+  REQUIRE(nameof::nameof_enum<(Directions)100>().empty());
 #endif
 }
 

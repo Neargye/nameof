@@ -136,7 +136,7 @@ template <typename T>
   constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
 #else
-  return "nameof_type::unsupported_compiler";
+  return {}; // Unsupported compiler.
 #endif
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
@@ -156,6 +156,7 @@ template <typename T>
   while (name.back() == ' ') {
     name.remove_suffix(1);
   }
+
   return name;
 #endif
 }
@@ -173,7 +174,7 @@ template <auto V>
   std::string_view name{__FUNCSIG__};
   constexpr auto suffix = sizeof(">(void) noexcept") - 1;
 #else
-  return "nameof_enum::unsupported_compiler";
+  return {}; // Unsupported compiler.
 #endif
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
@@ -184,7 +185,12 @@ template <auto V>
       break;
     }
   }
-  return name;
+
+  if (name.front() >= '0' && name.front() <= '9') {
+    return {}; // Enum variable does not have name.
+  } else {
+    return name;
+  }
 #endif
 }
 
@@ -193,7 +199,7 @@ struct nameof_enum_impl_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
     static_assert(std::is_enum_v<E>);
     if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
-      return "nameof_enum::out_of_range";
+      return {}; // Enum variable out of range.
     }
 
     switch (value - V) {
@@ -223,7 +229,7 @@ template <typename E>
 struct nameof_enum_impl_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
   [[nodiscard]] constexpr std::string_view operator()(int) const noexcept {
     static_assert(std::is_enum_v<E>);
-    return "nameof_enum::out_of_range";
+    return {}; // Enum variable out of range NAMEOF_ENUM_MAX_SEARCH_DEPTH.
   }
 };
 
