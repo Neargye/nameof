@@ -105,7 +105,7 @@ NAMEOF(	somevar	) -> "somevar"
 
 ## Integration
 
-You have to add required file [nameof.hpp](include/nameof.hpp).
+You should add required file [nameof.hpp](include/nameof.hpp).
 
 ## Compiler compatibility
 
