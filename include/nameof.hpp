@@ -36,18 +36,18 @@
 #include <limits>
 #include <string_view>
 
-#if !defined(NAMEOF_ENUM_MAX_SEARCH_DEPTH)
-#  define NAMEOF_ENUM_MAX_SEARCH_DEPTH 128
+#if !defined(NAMEOF_ENUM_RANGE)
+#  define NAMEOF_ENUM_RANGE 128
 #endif
 
 namespace nameof {
 
-static_assert(NAMEOF_ENUM_MAX_SEARCH_DEPTH > 0,
-              "NAMEOF_ENUM_MAX_SEARCH_DEPTH must be positive and greater than zero.");
-static_assert(NAMEOF_ENUM_MAX_SEARCH_DEPTH % 8 == 0,
-              "NAMEOF_ENUM_MAX_SEARCH_DEPTH must be a multiple of 8.");
-static_assert(NAMEOF_ENUM_MAX_SEARCH_DEPTH < std::numeric_limits<int>::max(),
-              "NAMEOF_ENUM_MAX_SEARCH_DEPTH must be less INT_MAX.");
+static_assert(NAMEOF_ENUM_RANGE > 0,
+              "NAMEOF_ENUM_RANGE must be positive and greater than zero.");
+static_assert(NAMEOF_ENUM_RANGE % 8 == 0,
+              "NAMEOF_ENUM_RANGE must be a multiple of 8.");
+static_assert(NAMEOF_ENUM_RANGE < std::numeric_limits<int>::max(),
+              "NAMEOF_ENUM_RANGE must be less INT_MAX.");
 
 namespace detail {
 
@@ -56,17 +56,17 @@ struct identity final {
   using type = T;
 };
 
-[[nodiscard]] constexpr bool is_name_char(char c) noexcept {
-  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+[[nodiscard]] constexpr bool is_name_char(char c, bool front) noexcept {
+  return (!front && c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
 [[nodiscard]] constexpr bool is_bracket_char(char c) noexcept {
   return c == ')' || c == '}' || c == '>' || c == '(' || c == '{' || c == '<';
 }
 
-[[nodiscard]] constexpr std::string_view pretty_name(std::string_view name, bool with_suffix) noexcept {
+[[nodiscard]] constexpr std::string_view pretty_name(std::string_view name, bool with_template_suffix) noexcept {
   for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
-    if (h == 0 && !is_name_char(name[i - 1]) && !is_bracket_char(name[i - 1])) {
+    if (h == 0 && !is_name_char(name[i - 1], false) && !is_bracket_char(name[i - 1])) {
       ++s;
       continue;
     }
@@ -111,14 +111,18 @@ struct identity final {
   }
 
   for (std::size_t i = name.size() - s; i > 0; --i) {
-    if (!is_name_char(name[i - 1])) {
+    if (!is_name_char(name[i - 1], false)) {
       name.remove_prefix(i);
       break;
     }
   }
-  name.remove_suffix(with_suffix ? 0 : s);
+  name.remove_suffix(with_template_suffix ? 0 : s);
 
-  return name;
+  if (name.length() > 0 && is_name_char(name.front(), true)) {
+    return name;
+  } else {
+    return {}; // Does not have name.
+  }
 }
 
 template <typename T>
@@ -156,14 +160,13 @@ template <typename T>
   while (name.back() == ' ') {
     name.remove_suffix(1);
   }
-
   return name;
 #endif
 }
 
 template <auto V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
-  static_assert(std::is_enum_v<decltype(V)>);
+  static_assert(std::is_enum_v<decltype(V)>, "nameof::nameof_enum require enum type.");
 #if defined(__clang__)
   std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto suffix = sizeof("]") - 1;
@@ -179,25 +182,14 @@ template <auto V>
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   name.remove_suffix(suffix);
-  for (std::size_t i = name.size(); i > 0; --i) {
-    if (!is_name_char(name[i - 1])) {
-      name.remove_prefix(i);
-      break;
-    }
-  }
-
-  if (name.front() >= '0' && name.front() <= '9') {
-    return {}; // Enum variable does not have name.
-  } else {
-    return name;
-  }
+  return pretty_name(name, false);
 #endif
 }
 
 template <typename E, int V>
 struct nameof_enum_impl_t final {
   [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
-    static_assert(std::is_enum_v<E>);
+    static_assert(std::is_enum_v<E>, "nameof::nameof_enum require enum type.");
     if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
       return {}; // Enum variable out of range.
     }
@@ -226,16 +218,16 @@ struct nameof_enum_impl_t final {
 };
 
 template <typename E>
-struct nameof_enum_impl_t<E, NAMEOF_ENUM_MAX_SEARCH_DEPTH> final {
+struct nameof_enum_impl_t<E, NAMEOF_ENUM_RANGE> final {
   [[nodiscard]] constexpr std::string_view operator()(int) const noexcept {
-    static_assert(std::is_enum_v<E>);
-    return {}; // Enum variable out of range NAMEOF_ENUM_MAX_SEARCH_DEPTH.
+    static_assert(std::is_enum_v<E>, "nameof::nameof_enum require enum type.");
+    return {}; // Enum variable out of range NAMEOF_ENUM_RANGE.
   }
 };
 
 template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
-[[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_suffix) noexcept {
-  return pretty_name(name, with_suffix);
+[[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_template_suffix) noexcept {
+  return pretty_name(name, with_template_suffix);
 }
 
 [[nodiscard]] constexpr std::string_view nameof_raw_impl(std::string_view name) noexcept {
@@ -244,21 +236,24 @@ template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
 
 } // namespace detail
 
-// nameof_enum used to obtain the simple (unqualified) string enum name of enum variable.
+// nameof_enum(enum) used to obtain the simple (unqualified) string enum name of enum variable.
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
-  constexpr int min = s ? -NAMEOF_ENUM_MAX_SEARCH_DEPTH : 0;
+  constexpr int min = s ? -NAMEOF_ENUM_RANGE : 0;
+  if (static_cast<int>(value) >= NAMEOF_ENUM_RANGE || static_cast<int>(value) <= -NAMEOF_ENUM_RANGE) {
+    return {}; // Enum variable out of range NAMEOF_ENUM_RANGE.
+  }
   return detail::nameof_enum_impl_t<std::decay_t<T>, min>{}(static_cast<int>(value));
 }
 
-// nameof_enum used to obtain the simple (unqualified) string enum name of static storage enum variable.
+// nameof_enum<enum>() used to obtain the simple (unqualified) string enum name of static storage enum variable.
 template <auto V, typename = std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum() noexcept {
   return detail::nameof_enum_impl<V>();
 }
 
-// nameof_type used to obtain the string name of type.
+// nameof_type<type>() used to obtain the string name of type.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
   return detail::nameof_type_impl<detail::identity<T>>();
@@ -269,17 +264,20 @@ template <typename T>
 // NAMEOF used to obtain the simple (unqualified) string name of variable, function, enum, macro.
 #define NAMEOF(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, false)
 
-// NAMEOF_FULL used to obtain the full string name of variable, function, enum, macro.
+// NAMEOF_FULL used to obtain the simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
 // NAMEOF_ENUM used to obtain the simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
-// NAMEOF_TYPE used to obtain the string name of variable type.
-#define NAMEOF_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+// NAMEOF_CONST_ENUM used to obtain the simple (unqualified) string enum name of static storage enum variable.
+#define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// NAMEOF_TYPE_T used to obtain the string name of type.
-#define NAMEOF_TYPE_T(...) ::nameof::nameof_type<__VA_ARGS__>()
+// NAMEOF_TYPE used to obtain the string name of type.
+#define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
+
+// NAMEOF_VAR_TYPE used to obtain the string name of variable type.
+#define NAMEOF_VAR_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
 
 // NAMEOF_RAW used to obtain the raw string name of variable, function, enum, macro.
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl(#__VA_ARGS__)
