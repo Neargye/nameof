@@ -164,9 +164,9 @@ template <typename T>
 #endif
 }
 
-template <auto V>
+template <typename E, E V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
-  static_assert(std::is_enum_v<decltype(V)>, "nameof::nameof_enum require enum type.");
+  static_assert(std::is_enum_v<E>, "nameof::nameof_enum require enum type.");
 #if defined(__clang__)
   std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto suffix = sizeof("]") - 1;
@@ -196,21 +196,21 @@ struct nameof_enum_impl_t final {
 
     switch (value - V) {
       case 0:
-        return nameof_enum_impl<static_cast<E>(V)>();
+        return nameof_enum_impl<E, static_cast<E>(V)>();
       case 1:
-        return nameof_enum_impl<static_cast<E>(V + 1)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 1)>();
       case 2:
-        return nameof_enum_impl<static_cast<E>(V + 2)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 2)>();
       case 3:
-        return nameof_enum_impl<static_cast<E>(V + 3)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 3)>();
       case 4:
-        return nameof_enum_impl<static_cast<E>(V + 4)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 4)>();
       case 5:
-        return nameof_enum_impl<static_cast<E>(V + 5)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 5)>();
       case 6:
-        return nameof_enum_impl<static_cast<E>(V + 6)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 6)>();
       case 7:
-        return nameof_enum_impl<static_cast<E>(V + 7)>();
+        return nameof_enum_impl<E, static_cast<E>(V + 7)>();
       default:
         return nameof_enum_impl_t<E, V + 8>{}(value);
     }
@@ -250,7 +250,7 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>
 // nameof_enum<enum>() used to obtain the simple (unqualified) string enum name of static storage enum variable.
 template <auto V, typename = std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum() noexcept {
-  return detail::nameof_enum_impl<V>();
+  return detail::nameof_enum_impl<decltype(V), V>();
 }
 
 // nameof_type<type>() used to obtain the string name of type.
