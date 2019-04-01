@@ -156,7 +156,7 @@ int main() {
   }
 
   /* Remarks */
-#if 1
+#if 0
   // This expression does not have name.
   std::cout << NAMEOF("Bad case"_string) << std::endl; // '_string'
   std::cout << NAMEOF(42.0) << std::endl; // ''
