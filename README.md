@@ -35,80 +35,82 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 ## [Examples](example/example.cpp)
 
 * Name of variable
-```cpp
-// Name of variable.
-NAMEOF(somevar) -> "somevar"
+  ```cpp
+  // Name of variable.
+  NAMEOF(somevar) -> "somevar"
 
-// Name of member variable.
-NAMEOF(person.address.zip_code) -> "zip_code"
-```
+  // Name of member variable.
+  NAMEOF(person.address.zip_code) -> "zip_code"
+  ```
 
 * Name of function
-```cpp
-// Name of function.
-NAMEOF(foo<int, float>()) -> "foo"
-NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
+  ```cpp
+  // Name of function.
+  NAMEOF(foo<int, float>()) -> "foo"
+  NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
 
-// Name of member function.
-NAMEOF(somevar.some_method()) -> "some_method"
-NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
-```
+  // Name of member function.
+  NAMEOF(somevar.some_method()) -> "some_method"
+  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
+  ```
 
 * Name of enum
-```cpp
-auto color = Color::RED;
-// Name of enum variable.
-NAMEOF_ENUM(color) -> "RED"
-nameof::nameof_enum(color) -> "RED"
+  ```cpp
+  auto color = Color::RED;
+  // Name of enum variable.
+  NAMEOF_ENUM(color) -> "RED"
+  nameof::nameof_enum(color) -> "RED"
 
-constexpr auto const_color = Color::BLUE;
-// Name of static storage enum variable.
-NAMEOF_CONST_ENUM(const_color) -> "BLUE"
-nameof::nameof_enum<const_color>() -> "BLUE"
-```
+  constexpr auto const_color = Color::BLUE;
+  // Name of static storage enum variable.
+  NAMEOF_CONST_ENUM(const_color) -> "BLUE"
+  nameof::nameof_enum<const_color>() -> "BLUE"
+  ```
 
 * Name of type
-```cpp
-using T = int;
-T var = 42;
-// Name of variable type.
-NAMEOF_VAR_TYPE(var) -> "int"
-nameof::nameof_type<decltype(var)>() -> "int"
+  ```cpp
+  using T = int;
+  T var = 42;
+  // Name of variable type.
+  NAMEOF_VAR_TYPE(var) -> "int"
+  nameof::nameof_type<decltype(var)>() -> "int"
 
-// Name of type.
-NAMEOF_TYPE(T) -> "int"
-nameof::nameof_type<T>() -> "int"
-```
+  // Name of type.
+  NAMEOF_TYPE(T) -> "int"
+  nameof::nameof_type<T>() -> "int"
+  ```
 
 * Name of macro
-```cpp
-// Name of macro.
-NAMEOF(__LINE__) -> "__LINE__"
-NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
-```
+  ```cpp
+  // Name of macro.
+  NAMEOF(__LINE__) -> "__LINE__"
+  NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
+  ```
 
 ## Remarks
 
-* Nameof return std::string_view.
-
-* If arguments does not have name, Nameof return empty string.
+* Nameof return std::string_view. If arguments does not have name, Nameof return empty string.
 
 * Nameof expression arguments are identified, but do not evaluated.
 
-* NAMEOF_ENUM supported on the GCC >= 9.
+* Enum variable must be in range (-NAMEOF_ENUM_RANGE, NAMEOF_ENUM_RANGE). By default NAMEOF_ENUM_RANGE = 128. If you need a larger range, redefine the macro NAMEOF_ENUM_RANGE.
+  ```cpp
+  #define NAMEOF_ENUM_RANGE 1028 // Redefine NAMEOF_ENUM_RANGE for larger range.
+  #include <nameof.hpp>
+  ```
 
 * If you need of raw fully-qualified name, use NAMEOF_RAW.
-```cpp
-NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
-NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
-NAMEOF_RAW(const SomeClass<int> volatile *) -> "const SomeClass<int> volatile *"
-```
+  ```cpp
+  NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
+  NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
+  NAMEOF_RAW(const SomeClass<int> volatile *) -> "const SomeClass<int> volatile *"
+  ```
 
 * Spaces and Tabs ignored
-```cpp
-NAMEOF(   somevar   ) -> "somevar"
-NAMEOF(	somevar	) -> "somevar"
-```
+  ```cpp
+  NAMEOF(   somevar   ) -> "somevar"
+  NAMEOF(	somevar	) -> "somevar"
+  ```
 
 ## Integration
 
@@ -119,6 +121,6 @@ You should add required file [nameof.hpp](include/nameof.hpp).
 * Clang/LLVM >= 5
 * Visual C++ >= 15.3 / Visual Studio >= 2017
 * Xcode >= 9
-* GCC >= 7
+* GCC >= 7 (GCC >= 9 for NAMEOF_ENUM)
 
 ## Licensed under the [MIT License](LICENSE)
