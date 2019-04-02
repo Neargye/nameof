@@ -102,8 +102,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 * If you need of raw fully-qualified name, use NAMEOF_RAW.
   ```cpp
   NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
-  NAMEOF_RAW(&SomeStruct::SomeMethod) -> "&SomeStruct::SomeMethod"
-  NAMEOF_RAW(const SomeClass<int> volatile *) -> "const SomeClass<int> volatile *"
+  NAMEOF_RAW(&some_class::some_method<int>) -> "&some_class::some_method<int>"
   ```
 
 * Spaces and Tabs ignored

@@ -93,7 +93,6 @@ TEST_CASE("NAMEOF") {
 
   SECTION("member") {
     REQUIRE(NAMEOF(struct_var.somefield) == "somefield");
-    REQUIRE(NAMEOF(struct_var.somefield++) == "somefield");
     REQUIRE(NAMEOF((&struct_var)->somefield) == "somefield");
     REQUIRE(NAMEOF(othervar.ll.field) == "field");
   }
@@ -129,7 +128,6 @@ TEST_CASE("NAMEOF_FULL") {
 
   SECTION("member") {
     REQUIRE(NAMEOF_FULL(struct_var.somefield) == "somefield");
-    REQUIRE(NAMEOF_FULL(struct_var.somefield++) == "somefield");
     REQUIRE(NAMEOF_FULL((&struct_var)->somefield) == "somefield");
     REQUIRE(NAMEOF_FULL(othervar.ll.field) == "field");
   }
@@ -163,6 +161,7 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(::struct_var) == "::struct_var");
     REQUIRE(NAMEOF_RAW(ptr_s) == "ptr_s");
     REQUIRE(NAMEOF_RAW(*ptr_s) == "*ptr_s");
+    REQUIRE(NAMEOF_RAW(ptr_s[0]) == "ptr_s[0]");
   }
 
   SECTION("member") {
@@ -201,12 +200,6 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(__cplusplus) == "__cplusplus");
     REQUIRE(NAMEOF_RAW(__LINE__) == "__LINE__");
     REQUIRE(NAMEOF_RAW(__FILE__) == "__FILE__");
-  }
-
-  SECTION("type") {
-    REQUIRE(NAMEOF_RAW(const SomeStruct volatile *) == "const SomeStruct volatile *");
-    REQUIRE(NAMEOF_RAW(SomeClass<int>) == "SomeClass<int>");
-    REQUIRE(NAMEOF_RAW(decltype(othervar)) == "decltype(othervar)");
   }
 }
 

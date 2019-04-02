@@ -61,22 +61,13 @@ struct identity final {
   return (!front && c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
-[[nodiscard]] constexpr bool is_bracket_char(char c) noexcept {
-  return c == ')' || c == '}' || c == '>' || c == '(' || c == '{' || c == '<';
-}
-
 [[nodiscard]] constexpr std::string_view pretty_name(std::string_view name, bool with_template_suffix) noexcept {
   for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
-    if (h == 0 && !is_name_char(name[i - 1], false) && !is_bracket_char(name[i - 1])) {
-      ++s;
-      continue;
-    }
-
-    if (name[i - 1] == ')' || name[i - 1] == '}') {
+    if (name[i - 1] == ')') {
       ++h;
       ++s;
       continue;
-    } else if (name[i - 1] == '(' || name[i - 1] == '{') {
+    } else if (name[i - 1] == '(') {
       --h;
       ++s;
       continue;
@@ -89,6 +80,10 @@ struct identity final {
       ++s;
       continue;
     }
+  }
+
+  if (name.length() > 0 && (name.front() == '"' || (name.front() >= '0' && name.front() <= '9') || name.back() == '"')) {
+    return {}; // Invalid name.
   }
 
   std::size_t s = 0;
@@ -122,7 +117,7 @@ struct identity final {
   if (name.length() > 0 && is_name_char(name.front(), true)) {
     return name;
   } else {
-    return {}; // Does not have name.
+    return {}; // Invalid name.
   }
 }
 
@@ -183,7 +178,19 @@ template <typename E, E V>
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   name.remove_suffix(suffix);
-  return pretty_name(name, false);
+  for (std::size_t i = name.size(); i > 0; --i) {
+    if (!is_name_char(name[i - 1], false)) {
+      name.remove_prefix(i);
+      break;
+    }
+  }
+
+  if (name.length() > 0 && is_name_char(name.front(), true)) {
+    return name;
+  }
+  else {
+    return {}; // Invalid enum name.
+  }
 #endif
 }
 
@@ -226,11 +233,12 @@ struct nameof_enum_impl_t<E, NAMEOF_ENUM_RANGE> final {
   }
 };
 
-template <typename T, typename = std::enable_if_t<!std::is_reference_v<T>>>
+template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_template_suffix) noexcept {
   return pretty_name(name, with_template_suffix);
 }
 
+template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_raw_impl(std::string_view name) noexcept {
   return name;
 }
@@ -268,6 +276,9 @@ template <typename T>
 // NAMEOF_FULL used to obtain the simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
+// NAMEOF_RAW used to obtain the raw string name of variable, function, enum, macro.
+#define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__)
+
 // NAMEOF_ENUM used to obtain the simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
@@ -279,6 +290,3 @@ template <typename T>
 
 // NAMEOF_VAR_TYPE used to obtain the string name of variable type.
 #define NAMEOF_VAR_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
-
-// NAMEOF_RAW used to obtain the raw string name of variable, function, enum, macro.
-#define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl(#__VA_ARGS__)

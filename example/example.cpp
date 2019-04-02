@@ -102,6 +102,7 @@ int main() {
   std::cout << NAMEOF(structvar.somefield) << std::endl; // somefield
   std::cout << NAMEOF((&structvar)->somefield) << std::endl; // somefield
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
+  std::cout << NAMEOF(ptrvar) << std::endl; // 'ptrvar'
 
   // Function name.
   std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // SomeMethod1
@@ -120,7 +121,7 @@ int main() {
   // Type name.
   std::cout << NAMEOF_VAR_TYPE(structvar) << std::endl; // SomeStruct
   std::cout << nameof::nameof_type<decltype(structvar)>() << std::endl; // SomeStruct
-  std::cout << NAMEOF_VAR_TYPE(SomeClass<int>{}) << std::endl; // SomeClass
+  std::cout << NAMEOF_VAR_TYPE(SomeClass<int>{}) << std::endl; // SomeClass<int>
   std::cout << NAMEOF_VAR_TYPE(othervar.ll) << std::endl; // Long::LL
   std::cout << NAMEOF_VAR_TYPE(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int> &&
 
@@ -135,7 +136,6 @@ int main() {
   // Raw name.
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // structvar.somefield
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
-  std::cout << NAMEOF_RAW(const SomeClass<int> volatile *) << std::endl; // const SomeClass<int> volatile *
 
   // Some more complex example.
 
@@ -158,30 +158,20 @@ int main() {
   /* Remarks */
 #if 0
   // This expression does not have name.
-  std::cout << NAMEOF("Bad case"_string) << std::endl; // '_string'
+  std::cout << NAMEOF(ptrvar[0]) << std::endl; // ''
   std::cout << NAMEOF(42.0) << std::endl; // ''
-  std::cout << NAMEOF(42.f) << std::endl; // 'f'
   std::cout << NAMEOF(42) << std::endl; // ''
   std::cout << NAMEOF(42.0_deg) << std::endl; // ''
-  std::cout << NAMEOF(std::string()) << std::endl; // 'string'
-  std::cout << NAMEOF(std::string{}) << std::endl; // 'string'
-  std::cout << NAMEOF(std::string{"test"}) << std::endl; // 'string'
-  std::cout << NAMEOF(structvar.somefield + structvar.somefield) << std::endl; // ' somefield'
-  std::cout << NAMEOF(42 + 42) << std::endl; // ''
+  std::cout << NAMEOF((structvar)) << std::endl; // ''
   std::cout << NAMEOF((SomeMethod4<int, float>)(1.0f)) << std::endl; // ''
   std::cout << NAMEOF(42, 42, 42) << std::endl; // ''
-#endif
-
-#if 0
-  // This expression does not have name and not compilation.
-  std::cout << NAMEOF("Bad case") << std::endl;
-  std::cout << NAMEOF("somevar.somefield") << std::endl;
-  std::cout << NAMEOF(std::basic_string<char>) << std::endl;
-  std::cout << NAMEOF(ptrvar[0]) << std::endl;
-  std::cout << NAMEOF(std::cout << structvar << std::endl) << std::endl;
-  std::cout << NAMEOF(decltype(structvar)) << std::endl;
-  std::cout << NAMEOF(typeid(structvar)) << std::endl;
-  std::cout << NAMEOF((structvar)) << std::endl;
+  std::cout << NAMEOF(42 + 42) << std::endl; // ''
+  std::cout << NAMEOF("Bad case"_string) << std::endl; // ''
+  std::cout << NAMEOF("Bad case") << std::endl; // ''
+  std::cout << NAMEOF("somevar.somefield") << std::endl; // ''
+  std::cout << NAMEOF(42.f) << std::endl; // ''
+  std::cout << NAMEOF(structvar.somefield++) << std::endl; // ''
+  std::cout << NAMEOF(std::string{"test"}) << std::endl; // ''
 #endif
 
   return 0;
