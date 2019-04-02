@@ -36,6 +36,7 @@
 #include <limits>
 #include <string_view>
 
+// Enum variable must be in range (-NAMEOF_ENUM_RANGE, NAMEOF_ENUM_RANGE). If you need a larger range, redefine the macro NAMEOF_ENUM_RANGE.
 #if !defined(NAMEOF_ENUM_RANGE)
 #  define NAMEOF_ENUM_RANGE 128
 #endif
