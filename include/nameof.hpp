@@ -62,6 +62,22 @@ struct identity final {
 }
 
 [[nodiscard]] constexpr std::string_view pretty_name(std::string_view name, bool with_template_suffix) noexcept {
+  if (name.length() >= 1 && (name.front() == '"' || name.front() == '\'')) {
+    return {}; // Narrow multibyte string literal.
+  } else if (name.length() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
+    return {}; // Raw string literal.
+  } else if (name.length() >= 2 && name[0] == 'L' && (name[1] == '"' || name[1] == '\'')) {
+    return {}; // Wide string literal.
+  } else if (name.length() >= 2 && name[0] == 'U' && (name[1] == '"' || name[1] == '\'')) {
+    return {}; // UTF-32 encoded string literal.
+  } else if (name.length() >= 2 && name[0] == 'u' && (name[1] == '"' || name[1] == '\'')) {
+    return {}; // UTF-16 encoded string literal.
+  } else if (name.length() >= 3 && name[0] == 'u' && name[1] == '8' && (name[2] == '"' || name[2] == '\'')) {
+    return {}; // UTF-8 encoded string literal.
+  } else if (name.length() >= 1 && (name.front() >= '0' && name.front() <= '9')) {
+    return {}; // Invalid name.
+  }
+
   for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
     if (name[i - 1] == ')') {
       ++h;
@@ -80,10 +96,6 @@ struct identity final {
       ++s;
       continue;
     }
-  }
-
-  if (name.length() > 0 && (name.front() == '"' || (name.front() >= '0' && name.front() <= '9') || name.back() == '"')) {
-    return {}; // Invalid name.
   }
 
   std::size_t s = 0;
@@ -178,19 +190,7 @@ template <typename E, E V>
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   name.remove_suffix(suffix);
-  for (std::size_t i = name.size(); i > 0; --i) {
-    if (!is_name_char(name[i - 1], false)) {
-      name.remove_prefix(i);
-      break;
-    }
-  }
-
-  if (name.length() > 0 && is_name_char(name.front(), true)) {
-    return name;
-  }
-  else {
-    return {}; // Invalid enum name.
-  }
+  return pretty_name(name, false);
 #endif
 }
 
@@ -245,7 +245,7 @@ template <typename T>
 
 } // namespace detail
 
-// nameof_enum(enum) used to obtain the simple (unqualified) string enum name of enum variable.
+// nameof_enum(enum) obtains simple (unqualified) string enum name of enum variable.
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
@@ -256,13 +256,13 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>
   return detail::nameof_enum_impl_t<std::decay_t<T>, min>{}(static_cast<int>(value));
 }
 
-// nameof_enum<enum>() used to obtain the simple (unqualified) string enum name of static storage enum variable.
+// nameof_enum<enum>() obtains simple (unqualified) string enum name of static storage enum variable.
 template <auto V, typename = std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum() noexcept {
   return detail::nameof_enum_impl<decltype(V), V>();
 }
 
-// nameof_type<type>() used to obtain the string name of type.
+// nameof_type<type>() obtains string name of type.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
   return detail::nameof_type_impl<detail::identity<T>>();
@@ -270,23 +270,23 @@ template <typename T>
 
 } // namespace nameof
 
-// NAMEOF used to obtain the simple (unqualified) string name of variable, function, enum, macro.
+// NAMEOF obtains simple (unqualified) string name of variable, function, enum, macro.
 #define NAMEOF(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, false)
 
-// NAMEOF_FULL used to obtain the simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
+// NAMEOF_FULL obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
-// NAMEOF_RAW used to obtain the raw string name of variable, function, enum, macro.
+// NAMEOF_RAW obtains raw string name of variable, function, enum, macro.
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__)
 
-// NAMEOF_ENUM used to obtain the simple (unqualified) string enum name of enum variable.
+// NAMEOF_ENUM obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
-// NAMEOF_CONST_ENUM used to obtain the simple (unqualified) string enum name of static storage enum variable.
+// NAMEOF_CONST_ENUM obtains simple (unqualified) string enum name of static storage enum variable.
 #define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// NAMEOF_TYPE used to obtain the string name of type.
+// NAMEOF_TYPE obtains string name of type.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// NAMEOF_VAR_TYPE used to obtain the string name of variable type.
+// NAMEOF_VAR_TYPE obtains string name of variable type.
 #define NAMEOF_VAR_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
