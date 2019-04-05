@@ -34,27 +34,27 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 ## [Examples](example/example.cpp)
 
-* Name of variable
+* Nameof
   ```cpp
   // Name of variable.
   NAMEOF(somevar) -> "somevar"
 
   // Name of member variable.
   NAMEOF(person.address.zip_code) -> "zip_code"
-  ```
 
-* Name of function
-  ```cpp
   // Name of function.
   NAMEOF(foo<int, float>()) -> "foo"
-  NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
 
   // Name of member function.
   NAMEOF(somevar.some_method()) -> "some_method"
-  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
+  NAMEOF(somevar.some_method<int>()) -> "some_method"
+
+  // Name of macro.
+  NAMEOF(__LINE__) -> "__LINE__"
+  NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
   ```
 
-* Name of enum
+* Nameof enum
   ```cpp
   auto color = Color::RED;
   // Name of enum variable.
@@ -67,7 +67,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   nameof::nameof_enum<const_color>() -> "BLUE"
   ```
 
-* Name of type
+* Nameof type
   ```cpp
   using T = int;
   T var = 42;
@@ -80,20 +80,22 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   nameof::nameof_type<T>() -> "int"
   ```
 
-* Name of macro
+* Nameof full (with template suffix)
   ```cpp
-  // Name of macro.
-  NAMEOF(__LINE__) -> "__LINE__"
-  NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
+  // Name of function.
+  NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
+
+  // Name of member function.
+  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
   ```
 
 ## Remarks
 
-* Nameof return std::string_view. If arguments does not have name, Nameof return empty string.
+* Nameof returns `std::string_view`. If argument does not have name, returns empty string.
 
-* Nameof expression arguments are identified, but do not evaluated.
+* Nameof expression argument are identified, but do not evaluated.
 
-* Enum variable must be in range (-NAMEOF_ENUM_RANGE, NAMEOF_ENUM_RANGE). By default NAMEOF_ENUM_RANGE = 128. If you need a larger range, redefine the macro NAMEOF_ENUM_RANGE.
+* Enum variable must be in range `(-NAMEOF_ENUM_RANGE, NAMEOF_ENUM_RANGE)`. By default `NAMEOF_ENUM_RANGE = 128`. If you need a larger range, redefine the macro `NAMEOF_ENUM_RANGE`.
   ```cpp
   #define NAMEOF_ENUM_RANGE 1028 // Redefine NAMEOF_ENUM_RANGE for larger range.
   #include <nameof.hpp>
