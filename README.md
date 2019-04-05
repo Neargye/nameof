@@ -80,15 +80,6 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   nameof::nameof_type<T>() -> "int"
   ```
 
-* Nameof full (with template suffix)
-  ```cpp
-  // Name of function.
-  NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
-
-  // Name of member function.
-  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
-  ```
-
 ## Remarks
 
 * Nameof returns `std::string_view`. If argument does not have name, returns empty string.
@@ -101,7 +92,16 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   #include <nameof.hpp>
   ```
 
-* If you need of raw fully-qualified name, use NAMEOF_RAW.
+* If you need name with template suffix, use NAMEOF_FULL.
+  ```cpp
+  // Name of function.
+  NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
+
+  // Name of member function.
+  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
+  ```
+
+* If you need raw fully-qualified name, use NAMEOF_RAW.
   ```cpp
   NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
   NAMEOF_RAW(&some_class::some_method<int>) -> "&some_class::some_method<int>"
