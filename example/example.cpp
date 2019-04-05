@@ -88,15 +88,17 @@ int main() {
   constexpr auto name = NAMEOF(structvar);
   static_assert("structvar" == name);
 
-  // Enum name.
+  // Nameof enum variable.
   auto color = Color::RED;
-  std::cout << NAMEOF_ENUM(color) << std::endl; // RED
   std::cout << nameof::nameof_enum(color) << std::endl; // RED
+  std::cout << NAMEOF_ENUM(color) << std::endl; // RED
+
+  // Nameof static storage enum variable.
   constexpr auto const_color = Color::BLUE;
   std::cout << nameof::nameof_enum<const_color>() << std::endl; // BLUE
   std::cout << NAMEOF_CONST_ENUM(const_color) << std::endl; // BLUE
 
-  // Variable name.
+  // Nameof.
   std::cout << NAMEOF(structvar) << std::endl; // structvar
   std::cout << NAMEOF(::structvar) << std::endl; // structvar
   std::cout << NAMEOF(structvar.somefield) << std::endl; // somefield
@@ -104,36 +106,36 @@ int main() {
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // field
   std::cout << NAMEOF(ptrvar) << std::endl; // 'ptrvar'
 
-  // Function name.
+  // Nameof function.
   std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // SomeMethod1
   std::cout << NAMEOF(structvar.SomeMethod2()) << std::endl; // SomeMethod2
   std::cout << NAMEOF(SomeMethod3) << std::endl; // SomeMethod3
-
   std::cout << NAMEOF(SomeMethod4<int, float>(1.0f)) << std::endl; // SomeMethod4
   std::cout << NAMEOF(SomeMethod4<int, float>) << std::endl; // SomeMethod4
-  std::cout << NAMEOF_FULL(SomeMethod4<int, float>) << std::endl; // SomeMethod4<int, float>
-
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod5) << std::endl; // SomeMethod5
-
   std::cout << NAMEOF(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6
+
+  // Nameof with template suffix.
+  std::cout << NAMEOF_FULL(SomeMethod4<int, float>) << std::endl; // SomeMethod4<int, float>
   std::cout << NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // SomeMethod6<long int>
 
-  // Type name.
-  std::cout << NAMEOF_VAR_TYPE(structvar) << std::endl; // SomeStruct
+  // Nameof variable type.
   std::cout << nameof::nameof_type<decltype(structvar)>() << std::endl; // SomeStruct
+  std::cout << NAMEOF_VAR_TYPE(structvar) << std::endl; // SomeStruct
   std::cout << NAMEOF_VAR_TYPE(SomeClass<int>{}) << std::endl; // SomeClass<int>
   std::cout << NAMEOF_VAR_TYPE(othervar.ll) << std::endl; // Long::LL
   std::cout << NAMEOF_VAR_TYPE(std::declval<const SomeClass<int>>()) << std::endl; // const SomeClass<int> &&
 
+  // Nameof type.
+  std::cout << nameof::nameof_type<SomeClass<int>>() << std::endl; // SomeClass<int>
   std::cout << NAMEOF_TYPE(const SomeClass<int> volatile *) << std::endl; // const volatile SomeClass<int> *
   std::cout << NAMEOF_TYPE(SomeClass<int>) << std::endl; // SomeClass<int>
-  std::cout << nameof::nameof_type<SomeClass<int>>() << std::endl; // SomeClass<int>
 
-  // Macro name.
+  // Nameof macro.
   std::cout << NAMEOF(__LINE__) << std::endl; // __LINE__
   std::cout << NAMEOF(NAMEOF(structvar)) << std::endl; // 'NAMEOF'
 
-  // Raw name.
+  // Nameof raw.
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // structvar.somefield
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // &SomeStruct::SomeMethod1
 
