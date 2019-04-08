@@ -93,11 +93,6 @@ int main() {
   std::cout << nameof::nameof_enum(color) << std::endl; // 'RED'
   std::cout << NAMEOF_ENUM(color) << std::endl; // 'RED'
 
-  // Nameof static storage enum variable.
-  constexpr auto const_color = Color::BLUE;
-  std::cout << nameof::nameof_enum<const_color>() << std::endl; // 'BLUE'
-  std::cout << NAMEOF_CONST_ENUM(const_color) << std::endl; // 'BLUE'
-
   // Nameof.
   std::cout << NAMEOF(structvar) << std::endl; // 'structvar'
   std::cout << NAMEOF(::structvar) << std::endl; // 'structvar'

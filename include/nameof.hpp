@@ -31,24 +31,21 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
-#include <type_traits>
 #include <limits>
+#include <type_traits>
 #include <string_view>
-
-// Enum variable must be in range (-NAMEOF_ENUM_RANGE, NAMEOF_ENUM_RANGE). If you need a larger range, redefine the macro NAMEOF_ENUM_RANGE.
-#if !defined(NAMEOF_ENUM_RANGE)
-#  define NAMEOF_ENUM_RANGE 128
-#endif
 
 namespace nameof {
 
-static_assert(NAMEOF_ENUM_RANGE > 0,
-              "NAMEOF_ENUM_RANGE must be positive and greater than zero.");
-static_assert(NAMEOF_ENUM_RANGE % 8 == 0,
-              "NAMEOF_ENUM_RANGE must be a multiple of 8.");
-static_assert(NAMEOF_ENUM_RANGE < std::numeric_limits<int>::max(),
-              "NAMEOF_ENUM_RANGE must be less INT_MAX.");
+// Enum value must be in range [-256, 256]. If you need another range, add specialization enum_range for necessary enum type.
+template <typename E>
+struct enum_range final {
+  static_assert(std::is_enum_v<E>, "nameof::enum_range requires enum type.");
+  static constexpr int min = std::is_signed_v<std::underlying_type_t<E>> ? -256 : 0;
+  static constexpr int max = 256;
+};
 
 namespace detail {
 
@@ -168,13 +165,14 @@ template <typename T>
   while (name.back() == ' ') {
     name.remove_suffix(1);
   }
+
   return name;
 #endif
 }
 
 template <typename E, E V>
-[[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::nameof_enum require enum type.");
+[[nodiscard]] constexpr std::string_view enum_name_impl() noexcept {
+  static_assert(std::is_enum_v<E>, "nameof::enum_name_impl requires enum type.");
 #if defined(__clang__)
   std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto suffix = sizeof("]") - 1;
@@ -190,48 +188,37 @@ template <typename E, E V>
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   name.remove_suffix(suffix);
+
   return pretty_name(name, false);
 #endif
 }
 
-template <typename E, int V>
-struct nameof_enum_impl_t final {
-  [[nodiscard]] constexpr std::string_view operator()(int value) const noexcept {
-    static_assert(std::is_enum_v<E>, "nameof::nameof_enum require enum type.");
-    if constexpr (V > std::numeric_limits<std::underlying_type_t<E>>::max()) {
-      return {}; // Enum variable out of range.
-    }
+template <typename E, int... I>
+[[nodiscard]] constexpr decltype(auto) enum_strings_impl(std::integer_sequence<int, I...>) noexcept {
+  static_assert(std::is_enum_v<E>, "magic_enum::detail::enum_strings_impl requires enum type.");
+  using U = std::underlying_type_t<E>;
+  constexpr int min = (enum_range<E>::min > std::numeric_limits<U>::min()) ? enum_range<E>::min : std::numeric_limits<U>::min();
+  constexpr std::array<std::string_view, sizeof...(I)> enum_names{{enum_name_impl<E, static_cast<E>(I + min)>()...}};
 
-    switch (value - V) {
-      case 0:
-        return nameof_enum_impl<E, static_cast<E>(V)>();
-      case 1:
-        return nameof_enum_impl<E, static_cast<E>(V + 1)>();
-      case 2:
-        return nameof_enum_impl<E, static_cast<E>(V + 2)>();
-      case 3:
-        return nameof_enum_impl<E, static_cast<E>(V + 3)>();
-      case 4:
-        return nameof_enum_impl<E, static_cast<E>(V + 4)>();
-      case 5:
-        return nameof_enum_impl<E, static_cast<E>(V + 5)>();
-      case 6:
-        return nameof_enum_impl<E, static_cast<E>(V + 6)>();
-      case 7:
-        return nameof_enum_impl<E, static_cast<E>(V + 7)>();
-      default:
-        return nameof_enum_impl_t<E, V + 8>{}(value);
-    }
-  }
-};
+  return enum_names;
+}
 
 template <typename E>
-struct nameof_enum_impl_t<E, NAMEOF_ENUM_RANGE> final {
-  [[nodiscard]] constexpr std::string_view operator()(int) const noexcept {
-    static_assert(std::is_enum_v<E>, "nameof::nameof_enum require enum type.");
-    return {}; // Enum variable out of range NAMEOF_ENUM_RANGE.
+[[nodiscard]] constexpr std::string_view nameof_enum_impl(int value) noexcept {
+  static_assert(std::is_enum_v<E>, "magic_enum::detail::nameof_enum_impl requires enum type.");
+  using U = std::underlying_type_t<E>;
+  constexpr int max = (enum_range<E>::max < std::numeric_limits<U>::max()) ? enum_range<E>::max : std::numeric_limits<U>::max();
+  constexpr int min = (enum_range<E>::min > std::numeric_limits<U>::min()) ? enum_range<E>::min : std::numeric_limits<U>::min();
+  constexpr auto enum_range = std::make_integer_sequence<int, max - min + 1>{};
+  constexpr auto enum_names = enum_strings_impl<E>(enum_range);
+  const int i = value - min;
+
+  if (i >= 0 && static_cast<std::size_t>(i) < enum_names.size()) {
+    return enum_names[i];
+  } else {
+    return {};
   }
-};
+}
 
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_template_suffix) noexcept {
@@ -248,18 +235,7 @@ template <typename T>
 // nameof_enum(enum) obtains simple (unqualified) string enum name of enum variable.
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
-  constexpr bool s = std::is_signed_v<std::underlying_type_t<std::decay_t<T>>>;
-  constexpr int min = s ? -NAMEOF_ENUM_RANGE : 0;
-  if (static_cast<int>(value) >= NAMEOF_ENUM_RANGE || static_cast<int>(value) <= -NAMEOF_ENUM_RANGE) {
-    return {}; // Enum variable out of range NAMEOF_ENUM_RANGE.
-  }
-  return detail::nameof_enum_impl_t<std::decay_t<T>, min>{}(static_cast<int>(value));
-}
-
-// nameof_enum<enum>() obtains simple (unqualified) string enum name of static storage enum variable.
-template <auto V, typename = std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>>>
-[[nodiscard]] constexpr std::string_view nameof_enum() noexcept {
-  return detail::nameof_enum_impl<decltype(V), V>();
+  return detail::nameof_enum_impl<std::decay_t<T>>(static_cast<int>(value));
 }
 
 // nameof_type<type>() obtains string name of type.
@@ -281,9 +257,6 @@ template <typename T>
 
 // NAMEOF_ENUM obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
-
-// NAMEOF_CONST_ENUM obtains simple (unqualified) string enum name of static storage enum variable.
-#define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
 // NAMEOF_TYPE obtains string name of type.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()

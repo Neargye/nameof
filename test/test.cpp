@@ -23,7 +23,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
 
-#define NAMEOF_ENUM_RANGE 120
 #include <nameof.hpp>
 
 #include <string>
@@ -205,11 +204,14 @@ TEST_CASE("NAMEOF_RAW") {
 
 TEST_CASE("NAMEOF_ENUM") {
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  Color color_ = Color::BLUE;
+  constexpr Color color_ = Color::BLUE;
   Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
+
   REQUIRE(NAMEOF_ENUM(Color::RED) == "RED");
   REQUIRE(NAMEOF_ENUM(color) == "RED");
 
+  constexpr auto color_name = NAMEOF_ENUM(color_);
+  REQUIRE(color_name == "BLUE");
   REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
   REQUIRE(NAMEOF_ENUM(color_) == "BLUE");
 
@@ -218,10 +220,8 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(NAMEOF_ENUM(Directions::Right) == "Right");
   REQUIRE(NAMEOF_ENUM(directions) == "Right");
 
-  REQUIRE(NAMEOF_ENUM((Color)NAMEOF_ENUM_RANGE).empty());
   REQUIRE(NAMEOF_ENUM((Color)-100).empty());
   REQUIRE(NAMEOF_ENUM((Color)100).empty());
-  REQUIRE(NAMEOF_ENUM((Directions)NAMEOF_ENUM_RANGE).empty());
   REQUIRE(NAMEOF_ENUM((Directions)100).empty());
   REQUIRE(NAMEOF_ENUM((Directions)100).empty());
 #endif
@@ -229,11 +229,14 @@ TEST_CASE("NAMEOF_ENUM") {
 
 TEST_CASE("nameof::nameof_enum(enum)") {
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  Color color_ = Color::BLUE;
+  constexpr Color color_ = Color::BLUE;
   Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
+
   REQUIRE(nameof::nameof_enum(Color::RED) == "RED");
   REQUIRE(nameof::nameof_enum(color) == "RED");
 
+  constexpr auto color_name = nameof::nameof_enum(color_);
+  REQUIRE(color_name == "BLUE");
   REQUIRE(nameof::nameof_enum(Color::BLUE) == "BLUE");
   REQUIRE(nameof::nameof_enum(color_) == "BLUE");
 
@@ -242,60 +245,10 @@ TEST_CASE("nameof::nameof_enum(enum)") {
   REQUIRE(nameof::nameof_enum(Directions::Right) == "Right");
   REQUIRE(nameof::nameof_enum(directions) == "Right");
 
-  REQUIRE(nameof::nameof_enum((Color)NAMEOF_ENUM_RANGE).empty());
   REQUIRE(nameof::nameof_enum((Color)-100).empty());
   REQUIRE(nameof::nameof_enum((Color)100).empty());
-  REQUIRE(nameof::nameof_enum((Directions)NAMEOF_ENUM_RANGE).empty());
   REQUIRE(nameof::nameof_enum((Directions)100).empty());
   REQUIRE(nameof::nameof_enum((Directions)100).empty());
-#endif
-}
-
-TEST_CASE("NAMEOF_CONST_ENUM") {
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  static const Color color_ = Color::BLUE;
-  constexpr Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-  REQUIRE(NAMEOF_CONST_ENUM(Color::RED) == "RED");
-  REQUIRE(NAMEOF_CONST_ENUM(color) == "RED");
-
-  REQUIRE(NAMEOF_CONST_ENUM(Color::BLUE) == "BLUE");
-  REQUIRE(NAMEOF_CONST_ENUM(color_) == "BLUE");
-
-  REQUIRE(NAMEOF_CONST_ENUM(m[1]) == "GREEN");
-
-  REQUIRE(NAMEOF_CONST_ENUM(Directions::Right) == "Right");
-  REQUIRE(NAMEOF_CONST_ENUM(directions) == "Right");
-
-  REQUIRE(NAMEOF_CONST_ENUM((Color)NAMEOF_ENUM_RANGE).empty());
-  REQUIRE(NAMEOF_CONST_ENUM((Color)-100).empty());
-  REQUIRE(NAMEOF_CONST_ENUM((Color)100).empty());
-  REQUIRE(NAMEOF_CONST_ENUM((Directions)NAMEOF_ENUM_RANGE).empty());
-  REQUIRE(NAMEOF_CONST_ENUM((Directions)100).empty());
-  REQUIRE(NAMEOF_CONST_ENUM((Directions)100).empty());
-#endif
-}
-
-TEST_CASE("nameof::nameof_enum<enum>()") {
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  static const Color color_ = Color::BLUE;
-  constexpr Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-  REQUIRE(nameof::nameof_enum<Color::RED>() == "RED");
-  REQUIRE(nameof::nameof_enum<color>() == "RED");
-
-  REQUIRE(nameof::nameof_enum<Color::BLUE>() == "BLUE");
-  REQUIRE(nameof::nameof_enum<color_>() == "BLUE");
-
-  REQUIRE(nameof::nameof_enum<m[1]>() == "GREEN");
-
-  REQUIRE(nameof::nameof_enum<Directions::Right>() == "Right");
-  REQUIRE(nameof::nameof_enum<directions>() == "Right");
-
-  REQUIRE(nameof::nameof_enum<(Color)NAMEOF_ENUM_RANGE>().empty());
-  REQUIRE(nameof::nameof_enum<(Color)-100>().empty());
-  REQUIRE(nameof::nameof_enum<(Color)100>().empty());
-  REQUIRE(nameof::nameof_enum<(Directions)NAMEOF_ENUM_RANGE>().empty());
-  REQUIRE(nameof::nameof_enum<(Directions)100>().empty());
-  REQUIRE(nameof::nameof_enum<(Directions)100>().empty());
 #endif
 }
 
