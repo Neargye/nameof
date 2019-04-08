@@ -193,24 +193,21 @@ template <typename E, E V>
 #endif
 }
 
-template <typename E, int... I>
+template <typename E, int O, int... I>
 [[nodiscard]] constexpr decltype(auto) enum_strings_impl(std::integer_sequence<int, I...>) noexcept {
   static_assert(std::is_enum_v<E>, "magic_enum::detail::enum_strings_impl requires enum type.");
-  using U = std::underlying_type_t<E>;
-  constexpr int min = (enum_range<E>::min > std::numeric_limits<U>::min()) ? enum_range<E>::min : std::numeric_limits<U>::min();
-  constexpr std::array<std::string_view, sizeof...(I)> enum_names{{enum_name_impl<E, static_cast<E>(I + min)>()...}};
+  constexpr std::array<std::string_view, sizeof...(I)> enum_names{{enum_name_impl<E, static_cast<E>(I + O)>()...}};
 
   return enum_names;
 }
 
-template <typename E>
+template <typename E, typename U = std::underlying_type_t<E>>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl(int value) noexcept {
   static_assert(std::is_enum_v<E>, "magic_enum::detail::nameof_enum_impl requires enum type.");
-  using U = std::underlying_type_t<E>;
   constexpr int max = (enum_range<E>::max < std::numeric_limits<U>::max()) ? enum_range<E>::max : std::numeric_limits<U>::max();
   constexpr int min = (enum_range<E>::min > std::numeric_limits<U>::min()) ? enum_range<E>::min : std::numeric_limits<U>::min();
   constexpr auto enum_range = std::make_integer_sequence<int, max - min + 1>{};
-  constexpr auto enum_names = enum_strings_impl<E>(enum_range);
+  constexpr auto enum_names = enum_strings_impl<E, min>(enum_range);
   const int i = value - min;
 
   if (i >= 0 && static_cast<std::size_t>(i) < enum_names.size()) {
@@ -233,9 +230,11 @@ template <typename T>
 } // namespace detail
 
 // Obtains simple (unqualified) string enum name of enum variable.
-template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
+template <typename T, typename D = std::decay_t<T>, typename = std::enable_if_t<std::is_enum_v<D>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
-  return detail::nameof_enum_impl<std::decay_t<T>>(static_cast<int>(value));
+  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
+
+  return detail::nameof_enum_impl<D>(static_cast<int>(value));
 }
 
 // Obtains string name of type.
