@@ -216,7 +216,7 @@ template <typename E>
   if (i >= 0 && static_cast<std::size_t>(i) < enum_names.size()) {
     return enum_names[i];
   } else {
-    return {}; // Value or out of range.
+    return {}; // Value out of range.
   }
 }
 
