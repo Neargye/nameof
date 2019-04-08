@@ -60,11 +60,6 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   // Name of enum variable.
   NAMEOF_ENUM(color) -> "RED"
   nameof::nameof_enum(color) -> "RED"
-
-  constexpr auto const_color = Color::BLUE;
-  // Name of static storage enum variable.
-  NAMEOF_CONST_ENUM(const_color) -> "BLUE"
-  nameof::nameof_enum<const_color>() -> "BLUE"
   ```
 
 * Nameof type
@@ -78,6 +73,18 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   // Name of type.
   NAMEOF_TYPE(T) -> "int"
   nameof::nameof_type<T>() -> "int"
+  ```
+
+* Compile-time
+  ```cpp
+  constexpr auto somevar_name = NAMEOF(somevar);
+  // somevar_name -> "somevar"
+  constexpr auto color_name = NAMEOF_ENUM(Color::BLUE); // or nameof::nameof_enum(Color::BLUE)
+  // color_name -> "BLUE"
+  constexpr auto var_type_name = NAMEOF_VAR_TYPE(var); // or nameof::nameof_type<decltype(var)>()
+  // var_type_name -> "int"
+  constexpr auto type_name = NAMEOF_VAR_TYPE(T); // or nameof::nameof_type<T>()
+  // type_name -> "int"
   ```
 
 ## Remarks
