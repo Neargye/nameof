@@ -216,7 +216,7 @@ template <typename E>
   if (i >= 0 && static_cast<std::size_t>(i) < enum_names.size()) {
     return enum_names[i];
   } else {
-    return {};
+    return {}; // Value or out of range.
   }
 }
 
@@ -232,13 +232,13 @@ template <typename T>
 
 } // namespace detail
 
-// nameof_enum(enum) obtains simple (unqualified) string enum name of enum variable.
+// Obtains simple (unqualified) string enum name of enum variable.
 template <typename T, typename = std::enable_if_t<std::is_enum_v<std::decay_t<T>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(T value) noexcept {
   return detail::nameof_enum_impl<std::decay_t<T>>(static_cast<int>(value));
 }
 
-// nameof_type<type>() obtains string name of type.
+// Obtains string name of type.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
   return detail::nameof_type_impl<detail::identity<T>>();
@@ -249,17 +249,17 @@ template <typename T>
 // NAMEOF obtains simple (unqualified) string name of variable, function, enum, macro.
 #define NAMEOF(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, false)
 
-// NAMEOF_FULL obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
+// Obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__, true)
 
-// NAMEOF_RAW obtains raw string name of variable, function, enum, macro.
+// Obtains raw string name of variable, function, enum, macro.
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<decltype(__VA_ARGS__)>(#__VA_ARGS__)
 
-// NAMEOF_ENUM obtains simple (unqualified) string enum name of enum variable.
+// Obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
 
-// NAMEOF_TYPE obtains string name of type.
+// Obtains string name of type.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// NAMEOF_VAR_TYPE obtains string name of variable type.
+// Obtains string name of variable type.
 #define NAMEOF_VAR_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
