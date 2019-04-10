@@ -97,16 +97,16 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 * If you need name with template suffix, use NAMEOF_FULL.
   ```cpp
-  // Name of function.
+  // Full name of template function.
   NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
 
-  // Name of member function.
+  // Full name of template member function.
   NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
   ```
 
 * If you need raw fully-qualified name, use NAMEOF_RAW.
   ```cpp
-  NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
+  NAMEOF_RAW(::somevar.somefield) -> "::somevar.somefield"
   NAMEOF_RAW(&some_class::some_method<int>) -> "&some_class::some_method<int>"
   ```
 
