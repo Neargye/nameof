@@ -231,7 +231,7 @@ template <typename T>
   return name;
 }
 
-} // namespace detail
+} // namespace nameof::detail
 
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E, typename D = std::decay_t<E>, typename = std::enable_if_t<std::is_enum_v<D>>>
