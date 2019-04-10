@@ -125,12 +125,6 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   NAMEOF_RAW(&some_class::some_method<int>) -> "&some_class::some_method<int>"
   ```
 
-* Spaces and Tabs ignored
-  ```cpp
-  NAMEOF(   somevar   ) -> "somevar"
-  NAMEOF(	somevar	) -> "somevar"
-  ```
-
 * Nameof enum obtains the first defined value enums, and won't work if value are aliased.
   ```cpp
   enum ShapeKind {
