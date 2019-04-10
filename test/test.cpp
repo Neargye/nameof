@@ -84,7 +84,8 @@ const Directions directions = Directions::Right;
 
 TEST_CASE("NAMEOF") {
   SECTION("variable") {
-    REQUIRE(NAMEOF(othervar) == "othervar");
+    constexpr auto name = NAMEOF(othervar);
+    REQUIRE(name == "othervar");
     REQUIRE(NAMEOF(struct_var) == "struct_var");
     REQUIRE(NAMEOF(::struct_var) == "struct_var");
     REQUIRE(NAMEOF(ptr_s) == "ptr_s");
@@ -119,7 +120,8 @@ TEST_CASE("NAMEOF") {
 
 TEST_CASE("NAMEOF_FULL") {
   SECTION("variable") {
-    REQUIRE(NAMEOF_FULL(othervar) == "othervar");
+    constexpr auto full_name = NAMEOF_FULL(othervar);
+    REQUIRE(full_name == "othervar");
     REQUIRE(NAMEOF_FULL(struct_var) == "struct_var");
     REQUIRE(NAMEOF_FULL(::struct_var) == "struct_var");
     REQUIRE(NAMEOF_FULL(ptr_s) == "ptr_s");
@@ -154,7 +156,8 @@ TEST_CASE("NAMEOF_FULL") {
 
 TEST_CASE("NAMEOF_RAW") {
   SECTION("variable") {
-    REQUIRE(NAMEOF_RAW(othervar) == "othervar");
+    constexpr auto raw_name = NAMEOF_RAW(othervar);
+    REQUIRE(raw_name == "othervar");
     REQUIRE(NAMEOF_RAW(struct_var) == "struct_var");
     REQUIRE(NAMEOF_RAW(&struct_var) == "&struct_var");
     REQUIRE(NAMEOF_RAW(::struct_var) == "::struct_var");
@@ -210,8 +213,8 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(NAMEOF_ENUM(Color::RED) == "RED");
   REQUIRE(NAMEOF_ENUM(color) == "RED");
 
-  constexpr auto color_name = NAMEOF_ENUM(color_);
-  REQUIRE(color_name == "BLUE");
+  constexpr auto enum_name = NAMEOF_ENUM(color_);
+  REQUIRE(enum_name == "BLUE");
   REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
   REQUIRE(NAMEOF_ENUM(color_) == "BLUE");
 
@@ -235,8 +238,8 @@ TEST_CASE("nameof::nameof_enum") {
   REQUIRE(nameof::nameof_enum(Color::RED) == "RED");
   REQUIRE(nameof::nameof_enum(color) == "RED");
 
-  constexpr auto color_name = nameof::nameof_enum(color_);
-  REQUIRE(color_name == "BLUE");
+  constexpr auto enum_name = nameof::nameof_enum(color_);
+  REQUIRE(enum_name == "BLUE");
   REQUIRE(nameof::nameof_enum(Color::BLUE) == "BLUE");
   REQUIRE(nameof::nameof_enum(color_) == "BLUE");
 
@@ -253,8 +256,9 @@ TEST_CASE("nameof::nameof_enum") {
 }
 
 TEST_CASE("NAMEOF_VAR_TYPE") {
+  constexpr auto type_name = NAMEOF_VAR_TYPE(struct_var);
 #if defined(__clang__)
-  REQUIRE(NAMEOF_VAR_TYPE(struct_var) == "SomeStruct");
+  REQUIRE(type_name == "SomeStruct");
   REQUIRE(NAMEOF_VAR_TYPE(ptr_s) == "SomeStruct *");
   REQUIRE(NAMEOF_VAR_TYPE(ref_s) == "SomeStruct &");
 
@@ -268,7 +272,7 @@ TEST_CASE("NAMEOF_VAR_TYPE") {
 
   REQUIRE(NAMEOF_VAR_TYPE(std::declval<const SomeClass<int>>()) == "const SomeClass<int> &&");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_VAR_TYPE(struct_var) == "struct SomeStruct");
+  REQUIRE(type_name == "struct SomeStruct");
   REQUIRE(NAMEOF_VAR_TYPE(ptr_s) == "struct SomeStruct *");
   REQUIRE(NAMEOF_VAR_TYPE(ref_s) == "struct SomeStruct &");
 
@@ -282,7 +286,7 @@ TEST_CASE("NAMEOF_VAR_TYPE") {
 
   REQUIRE(NAMEOF_VAR_TYPE(std::declval<const SomeClass<int>>()) == "class SomeClass<int> const &&");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_VAR_TYPE(struct_var) == "SomeStruct");
+  REQUIRE(type_name == "SomeStruct");
   REQUIRE(NAMEOF_VAR_TYPE(ptr_s) == "SomeStruct*");
   REQUIRE(NAMEOF_VAR_TYPE(ref_s) == "SomeStruct&");
 
@@ -299,8 +303,9 @@ TEST_CASE("NAMEOF_VAR_TYPE") {
 }
 
 TEST_CASE("NAMEOF_TYPE") {
+  constexpr auto type_name = NAMEOF_TYPE(decltype(struct_var));
 #if defined(__clang__)
-  REQUIRE(NAMEOF_TYPE(decltype(struct_var)) == "SomeStruct");
+  REQUIRE(type_name == "SomeStruct");
   REQUIRE(NAMEOF_TYPE(decltype(ptr_s)) == "SomeStruct *");
   REQUIRE(NAMEOF_TYPE(decltype(ref_s)) == "SomeStruct &");
   REQUIRE(NAMEOF_TYPE(SomeStruct) == "SomeStruct");
@@ -317,7 +322,7 @@ TEST_CASE("NAMEOF_TYPE") {
 
   REQUIRE(NAMEOF_TYPE(Color) == "Color");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE(decltype(struct_var)) == "struct SomeStruct");
+  REQUIRE(type_name == "struct SomeStruct");
   REQUIRE(NAMEOF_TYPE(decltype(ptr_s)) == "struct SomeStruct *");
   REQUIRE(NAMEOF_TYPE(decltype(ref_s)) == "struct SomeStruct &");
   REQUIRE(NAMEOF_TYPE(SomeStruct) == "struct SomeStruct");
@@ -334,7 +339,7 @@ TEST_CASE("NAMEOF_TYPE") {
 
   REQUIRE(NAMEOF_TYPE(Color) == "enum Color");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_TYPE(decltype(struct_var)) == "SomeStruct");
+  REQUIRE(type_name == "SomeStruct");
   REQUIRE(NAMEOF_TYPE(decltype(ptr_s)) == "SomeStruct*");
   REQUIRE(NAMEOF_TYPE(decltype(ref_s)) == "SomeStruct&");
   REQUIRE(NAMEOF_TYPE(SomeStruct) == "SomeStruct");
@@ -353,9 +358,10 @@ TEST_CASE("NAMEOF_TYPE") {
 #endif
 }
 
-TEST_CASE("nameof::nameof_type"){
+TEST_CASE("nameof::nameof_type") {
+  constexpr auto type_name = nameof::nameof_type<decltype(struct_var)>();
 #if defined(__clang__)
-  REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "SomeStruct");
+  REQUIRE(type_name == "SomeStruct");
   REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct *");
   REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct &");
   REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
@@ -372,7 +378,7 @@ TEST_CASE("nameof::nameof_type"){
 
   REQUIRE(nameof::nameof_type<Color>() == "Color");
 #elif defined(_MSC_VER)
-  REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "struct SomeStruct");
+  REQUIRE(type_name == "struct SomeStruct");
   REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "struct SomeStruct *");
   REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "struct SomeStruct &");
   REQUIRE(nameof::nameof_type<SomeStruct>() == "struct SomeStruct");
@@ -389,7 +395,7 @@ TEST_CASE("nameof::nameof_type"){
 
   REQUIRE(nameof::nameof_type<Color>() == "enum Color");
 #elif defined(__GNUC__)
-  REQUIRE(nameof::nameof_type<decltype(struct_var)>() == "SomeStruct");
+  REQUIRE(type_name == "SomeStruct");
   REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct*");
   REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct&");
   REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
