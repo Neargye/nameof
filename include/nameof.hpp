@@ -37,14 +37,28 @@
 #include <type_traits>
 #include <string_view>
 
+// Enum value must be greater or equals than NAMEOF_ENUM_RANGE_MIN. By default NAMEOF_ENUM_RANGE_MIN = -128.
+// If need another min range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN.
+#if !defined(NAMEOF_ENUM_RANGE_MIN)
+#  define NAMEOF_ENUM_RANGE_MIN -128
+#endif
+
+// Enum value must be less or equals than NAMEOF_ENUM_RANGE_MAX. By default NAMEOF_ENUM_RANGE_MAX = 128.
+// If need another max range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MAX.
+#if !defined(NAMEOF_ENUM_RANGE_MAX)
+#  define NAMEOF_ENUM_RANGE_MAX 128
+#endif
+
 namespace nameof {
 
-// Enum value must be in range [-256, 256]. If you need another range, add specialization enum_range for necessary enum type.
+// Enum value must be in range [-NAMEOF_ENUM_RANGE_MAX, NAMEOF_ENUM_RANGE_MIN]. By default  NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 128.
+// If need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MAX and NAMEOF_ENUM_RANGE_MIN.
+// If need another range for specific enum type, add specialization enum_range for necessary enum type.
 template <typename E>
 struct enum_range final {
   static_assert(std::is_enum_v<E>, "nameof::enum_range requires enum type.");
-  static constexpr int min = std::is_signed_v<std::underlying_type_t<E>> ? -256 : 0;
-  static constexpr int max = 256;
+  static constexpr int min = std::is_signed_v<std::underlying_type_t<E>> ? NAMEOF_ENUM_RANGE_MIN : 0;
+  static constexpr int max = NAMEOF_ENUM_RANGE_MAX;
 };
 
 namespace detail {

@@ -95,21 +95,6 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 * Nameof type returns compiler-specific type name.
 
-* Enum value must be in range `[-256, 256]`. If you need another range, add specialization enum_range for necessary enum type.
-  ```cpp
-  #include <nameof.hpp>
-
-  enum number { one = 100, two = 200, three = 300 };
-
-  namespace nameof {
-  template <>
-  struct enum_range<number> {
-    static constexpr int min = 100;
-    static constexpr int max = 300;
-  };
-  }
-  ```
-
 * If you need name with template suffix, use NAMEOF_FULL.
   ```cpp
   // Name of function.
@@ -123,6 +108,30 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   ```cpp
   NAMEOF_RAW(somevar.somefield) -> "somevar.somefield"
   NAMEOF_RAW(&some_class::some_method<int>) -> "&some_class::some_method<int>"
+  ```
+
+* Enum value must be in range `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`. By default `NAMEOF_ENUM_RANGE_MIN = -128`, `NAMEOF_ENUM_RANGE_MAX = 128`.
+
+  If need another range for all enum types by default, redefine the macro `NAMEOF_ENUM_RANGE_MIN` and `NAMEOF_ENUM_RANGE_MAX`.
+  ```cpp
+  #define NAMEOF_ENUM_RANGE_MIN 0
+  #define NAMEOF_ENUM_RANGE_MAX 256
+  #include <NAMEOF_enum.hpp>
+  ```
+
+  If need another range for specific enum type, add specialization `enum_range` for necessary enum type.
+  ```cpp
+  #include <nameof.hpp>
+
+  enum number { one = 100, two = 200, three = 300 };
+
+  namespace NAMEOF_enum {
+  template <>
+  struct enum_range<number> {
+    static constexpr int min = 100;
+    static constexpr int max = 300;
+  };
+  }
   ```
 
 * Nameof enum obtains the first defined value enums, and won't work if value are aliased.
