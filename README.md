@@ -84,7 +84,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   // color_name -> "BLUE"
   constexpr auto var_type_name = NAMEOF_VAR_TYPE(var); // or nameof::nameof_type<decltype(var)>()
   // var_type_name -> "int"
-  constexpr auto type_name = NAMEOF_VAR_TYPE(T); // or nameof::nameof_type<T>()
+  constexpr auto type_name = NAMEOF_TYPE(T); // or nameof::nameof_type<T>()
   // type_name -> "int"
   ```
 
@@ -117,7 +117,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   ```cpp
   #define NAMEOF_ENUM_RANGE_MIN 0
   #define NAMEOF_ENUM_RANGE_MAX 256
-  #include <NAMEOF_enum.hpp>
+  #include <nameof.hpp>
   ```
 
   If need another range for specific enum type, add specialization `enum_range` for necessary enum type.
@@ -126,7 +126,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
   enum number { one = 100, two = 200, three = 300 };
 
-  namespace NAMEOF_enum {
+  namespace nameof {
   template <>
   struct enum_range<number> {
     static constexpr int min = 100;
