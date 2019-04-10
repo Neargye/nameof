@@ -93,6 +93,8 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 * Nameof expression argument are identified, but do not evaluated.
 
+* Nameof type returns compiler-specific type name.
+
 * Enum value must be in range `[-256, 256]`. If you need another range, add specialization enum_range for necessary enum type.
   ```cpp
   #include <nameof.hpp>
