@@ -71,29 +71,23 @@ struct identity final {
 template <typename... T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
-  std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto prefix = sizeof("std::string_view nameof::detail::nameof_type_impl() [T = <nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">>]") - 1;
+  constexpr std::string_view name{__PRETTY_FUNCTION__ + prefix, sizeof(__PRETTY_FUNCTION__) - prefix - suffix - 1};
 #elif defined(__GNUC__)
-  std::string_view name{__PRETTY_FUNCTION__};
   constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_type_impl() [with T = {nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">}; std::string_view = std::basic_string_view<char>]") - 1;
+  constexpr std::string_view name{__PRETTY_FUNCTION__ + prefix, sizeof(__PRETTY_FUNCTION__) - prefix - suffix - 1};
 #elif defined(_MSC_VER)
-  std::string_view name{__FUNCSIG__};
   constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
   constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
+  constexpr std::string_view name{__FUNCSIG__ + prefix, sizeof(__FUNCSIG__) - prefix - suffix - 1};
 #else
   return {}; // Unsupported compiler.
 #endif
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
-  name.remove_prefix(prefix);
-  name.remove_suffix(suffix);
-  while (name.back() == ' ') {
-    name.remove_suffix(1);
-  }
-
-  return name;
+ return name.substr(0, name.length() - (name.back() == ' ' ? 1 : 0));
 #endif
 }
 
@@ -116,10 +110,10 @@ template <typename E, E V>
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
   constexpr auto prefix = name.find_last_of(" :,-)", name.length() - suffix) + 1;
 
-  if ((name[prefix] >= 'a' && name[prefix] <= 'z') || (name[prefix] >= 'A' && name[prefix] <= 'Z')) {
-    return name.substr(prefix, name.size() - prefix - suffix);
-  } else {
+  if constexpr (name[prefix] >= '0' && name[prefix] <= '9') {
     return {}; // Value does not have name.
+  } else {
+    return name.substr(prefix, name.length() - prefix - suffix);
   }
 #endif
 }
@@ -167,7 +161,7 @@ template <typename T>
     return {}; // Invalid name.
   }
 
-  for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
+  for (std::size_t i = name.length(), h = 0, s = 0; i > 0; --i) {
     if (name[i - 1] == ')') {
       ++h;
       ++s;
@@ -188,7 +182,7 @@ template <typename T>
   }
 
   std::size_t s = 0;
-  for (std::size_t i = name.size(), h = 0; i > 0; --i) {
+  for (std::size_t i = name.length(), h = 0; i > 0; --i) {
     if (name[i - 1] == '>') {
       ++h;
       ++s;
@@ -207,7 +201,7 @@ template <typename T>
     }
   }
 
-  for (std::size_t i = name.size() - s; i > 0; --i) {
+  for (std::size_t i = name.length() - s; i > 0; --i) {
     if (!((name[i - 1] >= '0' && name[i - 1] <= '9') ||
           (name[i - 1] >= 'a' && name[i - 1] <= 'z') ||
           (name[i - 1] >= 'A' && name[i - 1] <= 'Z') ||
