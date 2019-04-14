@@ -121,9 +121,9 @@ template <typename E, E V>
 template <typename E, int O, int... I>
 [[nodiscard]] constexpr decltype(auto) enum_strings_impl(std::integer_sequence<int, I...>) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::detail::enum_strings_impl requires enum type.");
-  constexpr std::array<std::string_view, sizeof...(I)> enum_names{{enum_name_impl<E, static_cast<E>(I + O)>()...}};
+  constexpr std::array<std::string_view, sizeof...(I)> names{{enum_name_impl<E, static_cast<E>(I + O)>()...}};
 
-  return enum_names;
+  return names;
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
