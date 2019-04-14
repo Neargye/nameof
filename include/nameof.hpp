@@ -119,28 +119,11 @@ template <typename E, E V>
 }
 
 template <typename E, int O, int... I>
-[[nodiscard]] constexpr decltype(auto) enum_strings_impl(std::integer_sequence<int, I...>) noexcept {
+[[nodiscard]] constexpr decltype(auto) enum_names_impl(std::integer_sequence<int, I...>) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::detail::enum_strings_impl requires enum type.");
   constexpr std::array<std::string_view, sizeof...(I)> names{{enum_name_impl<E, static_cast<E>(I + O)>()...}};
 
   return names;
-}
-
-template <typename E, typename U = std::underlying_type_t<E>>
-[[nodiscard]] constexpr std::string_view nameof_enum_impl(int value) noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::detail::nameof_enum_impl requires enum type.");
-  static_assert(enum_range<E>::max > enum_range<E>::min, "nameof::enum_range requires max > min.");
-  constexpr int max = enum_range<E>::max < (std::numeric_limits<U>::max)() ? enum_range<E>::max : (std::numeric_limits<U>::max)();
-  constexpr int min = enum_range<E>::min > (std::numeric_limits<U>::min)() ? enum_range<E>::min : (std::numeric_limits<U>::min)();
-  constexpr auto range = std::make_integer_sequence<int, max - min + 1>{};
-  constexpr auto names = enum_strings_impl<E, min>(range);
-  const int i = value - min;
-
-  if (i >= 0 && static_cast<std::size_t>(i) < names.size()) {
-    return names[i];
-  } else {
-    return {}; // Value out of range.
-  }
 }
 
 template <typename T>
@@ -153,6 +136,7 @@ using check_t = typename check<T>::type;
 
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_template_suffix) noexcept {
+  static_assert(std::is_void_v<T>, "nameof::detail::nameof_impl requires void type.");
   if (name.length() >= 1 && (name.front() == '"' || name.front() == '\'')) {
     return {}; // Narrow multibyte string literal.
   } else if (name.length() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
@@ -231,17 +215,28 @@ template <typename T>
 
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_raw_impl(std::string_view name) noexcept {
+  static_assert(std::is_void_v<T>, "nameof::detail::nameof_raw_impl requires void type.");
   return name;
 }
 
 } // namespace nameof::detail
 
 // Obtains simple (unqualified) string enum name of enum variable.
-template <typename E, typename D = std::decay_t<E>, typename = std::enable_if_t<std::is_enum_v<D>>>
+template <typename E, typename D = std::decay_t<E>, typename U = std::underlying_type_t<D>, typename = std::enable_if_t<std::is_enum_v<D>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(E value) noexcept {
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
+  static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
+  constexpr int max = enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)();
+  constexpr int min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
+  constexpr auto range = std::make_integer_sequence<int, max - min + 1>{};
+  constexpr auto names = detail::enum_names_impl<D, min>(range);
+  const int i = static_cast<int>(value) - min;
 
-  return detail::nameof_enum_impl<D>(static_cast<int>(value));
+  if (i >= 0 && static_cast<std::size_t>(i) < names.size()) {
+    return names[i];
+  } else {
+    return {}; // Value out of range.
+  }
 }
 
 // Obtains string name of type.
