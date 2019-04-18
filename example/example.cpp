@@ -39,7 +39,7 @@ std::string operator"" _string(const char* str, std::size_t) {
 struct SomeStruct {
   int somefield = 0;
 
-  void SomeMethod1(const int i) { somefield = i; }
+  void SomeMethod1(int i) { somefield = i; }
 
   int SomeMethod2() const { return somefield; }
 };
