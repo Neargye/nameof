@@ -23,6 +23,8 @@
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
 
+#define NAMEOF_ENUM_RANGE_MIN -120
+#define NAMEOF_ENUM_RANGE_MAX 120
 #include <nameof.hpp>
 
 #include <string>
@@ -31,9 +33,13 @@
 struct SomeStruct {
   int somefield = 0;
 
-  void SomeMethod1(const int i) { somefield = i; }
+  void SomeMethod1(int) {
+    throw std::runtime_error{"should not be called!"};
+   }
 
-  int SomeMethod2() const { return somefield; }
+  int SomeMethod2() const {
+    throw std::runtime_error{"should not be called!"};
+  }
 };
 
 void SomeMethod3() {
@@ -49,14 +55,12 @@ template <typename T>
 class SomeClass {
 public:
   void SomeMethod5() const {
-    std::cout << NAMEOF_TYPE(T) << std::endl;
+    throw std::runtime_error{"should not be called!"};
   }
 
   template <typename C>
   C SomeMethod6() const {
-    C t{};
-    std::cout << NAMEOF_VAR_TYPE(t) << std::endl;
-    return t;
+    throw std::runtime_error{"should not be called!"};
   }
 };
 
@@ -67,9 +71,21 @@ struct Long {
   LL ll;
 };
 
-enum class Color : int { RED = -10, GREEN = 0, BLUE = 10 };
+enum class Color { RED = -12, GREEN = 7, BLUE = 15 };
 
-enum Directions : unsigned int { Up, Down, Right, Left };
+enum class Numbers : char { one = 10, two = 20, three = 30, many = 127 };
+
+enum Directions { Up = 85, Down = -42, Right = 120, Left = -120 };
+
+enum number : unsigned long { zero = 0, one = 100, two = 200, three = 300, four = 400 };
+
+namespace nameof {
+template <>
+struct enum_range<number> {
+  static constexpr int min = 100;
+  static constexpr int max = 300;
+};
+}
 
 SomeStruct struct_var;
 Long othervar;
@@ -207,51 +223,73 @@ TEST_CASE("NAMEOF_RAW") {
 
 TEST_CASE("NAMEOF_ENUM") {
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  constexpr Color color_ = Color::BLUE;
-  Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-
-  REQUIRE(NAMEOF_ENUM(Color::RED) == "RED");
-  REQUIRE(NAMEOF_ENUM(color) == "RED");
-
-  constexpr auto enum_name = NAMEOF_ENUM(color_);
-  REQUIRE(enum_name == "BLUE");
+  constexpr Color cr = Color::RED;
+  constexpr auto cr_name = NAMEOF_ENUM(cr);
+  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  REQUIRE(cr_name == "RED");
   REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
-  REQUIRE(NAMEOF_ENUM(color_) == "BLUE");
+  REQUIRE(NAMEOF_ENUM(cm[1]) == "GREEN");
+  REQUIRE(NAMEOF_ENUM(static_cast<Color>(0)).empty());
 
-  REQUIRE(NAMEOF_ENUM(m[1]) == "GREEN");
+  constexpr Numbers no = Numbers::one;
+  constexpr auto no_name = NAMEOF_ENUM(no);
+  REQUIRE(no_name == "one");
+  REQUIRE(NAMEOF_ENUM(Numbers::two) == "two");
+  REQUIRE(NAMEOF_ENUM(Numbers::three) == "three");
+  REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
+  REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(127)).empty());
 
-  REQUIRE(NAMEOF_ENUM(Directions::Right) == "Right");
-  REQUIRE(NAMEOF_ENUM(directions) == "Right");
+  constexpr Directions dr = Directions::Right;
+  constexpr auto dr_name = NAMEOF_ENUM(dr);
+  REQUIRE(NAMEOF_ENUM(Directions::Up) == "Up");
+  REQUIRE(NAMEOF_ENUM(Directions::Down) == "Down");
+  REQUIRE(dr_name == "Right");
+  REQUIRE(NAMEOF_ENUM(Directions::Left) == "Left");
+  REQUIRE(NAMEOF_ENUM(static_cast<Directions>(0)).empty());
 
-  REQUIRE(NAMEOF_ENUM((Color)-100).empty());
-  REQUIRE(NAMEOF_ENUM((Color)100).empty());
-  REQUIRE(NAMEOF_ENUM((Directions)100).empty());
-  REQUIRE(NAMEOF_ENUM((Directions)100).empty());
+  constexpr number nt = number::three;
+  constexpr auto nt_name = NAMEOF_ENUM(nt);
+  REQUIRE(NAMEOF_ENUM(number::one) == "one");
+  REQUIRE(NAMEOF_ENUM(number::two) == "two");
+  REQUIRE(nt_name == "three");
+  REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
+  REQUIRE(NAMEOF_ENUM(static_cast<number>(400)).empty());
 #endif
 }
 
 TEST_CASE("nameof::nameof_enum") {
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  constexpr Color color_ = Color::BLUE;
-  Color m[3] = {Color::RED, Color::GREEN, Color::BLUE};
-
-  REQUIRE(nameof::nameof_enum(Color::RED) == "RED");
-  REQUIRE(nameof::nameof_enum(color) == "RED");
-
-  constexpr auto enum_name = nameof::nameof_enum(color_);
-  REQUIRE(enum_name == "BLUE");
+  constexpr Color cr = Color::RED;
+  constexpr auto cr_name = nameof::nameof_enum(cr);
+  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  REQUIRE(cr_name == "RED");
   REQUIRE(nameof::nameof_enum(Color::BLUE) == "BLUE");
-  REQUIRE(nameof::nameof_enum(color_) == "BLUE");
+  REQUIRE(nameof::nameof_enum(cm[1]) == "GREEN");
+  REQUIRE(nameof::nameof_enum(static_cast<Color>(0)).empty());
 
-  REQUIRE(nameof::nameof_enum(m[1]) == "GREEN");
+  constexpr Numbers no = Numbers::one;
+  constexpr auto no_name = nameof::nameof_enum(no);
+  REQUIRE(no_name == "one");
+  REQUIRE(nameof::nameof_enum(Numbers::two) == "two");
+  REQUIRE(nameof::nameof_enum(Numbers::three) == "three");
+  REQUIRE(nameof::nameof_enum(static_cast<Numbers>(0)).empty());
+  REQUIRE(nameof::nameof_enum(static_cast<Numbers>(127)).empty());
 
-  REQUIRE(nameof::nameof_enum(Directions::Right) == "Right");
-  REQUIRE(nameof::nameof_enum(directions) == "Right");
+  constexpr Directions dr = Directions::Right;
+  constexpr auto dr_name = nameof::nameof_enum(dr);
+  REQUIRE(nameof::nameof_enum(Directions::Up) == "Up");
+  REQUIRE(nameof::nameof_enum(Directions::Down) == "Down");
+  REQUIRE(dr_name == "Right");
+  REQUIRE(nameof::nameof_enum(Directions::Left) == "Left");
+  REQUIRE(nameof::nameof_enum(static_cast<Directions>(0)).empty());
 
-  REQUIRE(nameof::nameof_enum((Color)-100).empty());
-  REQUIRE(nameof::nameof_enum((Color)100).empty());
-  REQUIRE(nameof::nameof_enum((Directions)100).empty());
-  REQUIRE(nameof::nameof_enum((Directions)100).empty());
+  constexpr number nt = number::three;
+  constexpr auto nt_name = nameof::nameof_enum(nt);
+  REQUIRE(nameof::nameof_enum(number::one) == "one");
+  REQUIRE(nameof::nameof_enum(number::two) == "two");
+  REQUIRE(nt_name == "three");
+  REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
+  REQUIRE(nameof::nameof_enum(static_cast<number>(400)).empty());
 #endif
 }
 
