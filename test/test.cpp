@@ -96,7 +96,6 @@ SomeClass<int> class_var;
 const SomeClass<int> volatile * ptr_c = nullptr;
 
 const Color color = Color::RED;
-const Directions directions = Directions::Right;
 
 TEST_CASE("NAMEOF") {
   SECTION("variable") {
@@ -105,6 +104,7 @@ TEST_CASE("NAMEOF") {
     REQUIRE(NAMEOF(struct_var) == "struct_var");
     REQUIRE(NAMEOF(::struct_var) == "struct_var");
     REQUIRE(NAMEOF(ptr_s) == "ptr_s");
+    REQUIRE(NAMEOF(color) == "color");
   }
 
   SECTION("member") {
@@ -141,6 +141,7 @@ TEST_CASE("NAMEOF_FULL") {
     REQUIRE(NAMEOF_FULL(struct_var) == "struct_var");
     REQUIRE(NAMEOF_FULL(::struct_var) == "struct_var");
     REQUIRE(NAMEOF_FULL(ptr_s) == "ptr_s");
+    REQUIRE(NAMEOF_FULL(color) == "color");
   }
 
   SECTION("member") {
@@ -180,6 +181,7 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(ptr_s) == "ptr_s");
     REQUIRE(NAMEOF_RAW(*ptr_s) == "*ptr_s");
     REQUIRE(NAMEOF_RAW(ptr_s[0]) == "ptr_s[0]");
+    REQUIRE(NAMEOF_RAW(color) == "color");
   }
 
   SECTION("member") {
