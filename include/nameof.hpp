@@ -222,10 +222,12 @@ template <typename T>
 } // namespace nameof::detail
 
 // Obtains simple (unqualified) string enum name of enum variable.
-template <typename E, typename D = std::decay_t<E>, typename U = std::underlying_type_t<D>, typename = std::enable_if_t<std::is_enum_v<D>>>
+template <typename E, typename = std::enable_if_t<std::is_enum_v<std::decay_t<E>>>>
 [[nodiscard]] constexpr std::string_view nameof_enum(E value) noexcept {
+  using D = std::decay_t<E>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
   static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
+  using U = std::underlying_type_t<D>;
   constexpr int max = enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)();
   constexpr int min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
   constexpr auto range = std::make_integer_sequence<int, max - min + 1>{};
