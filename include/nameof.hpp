@@ -233,9 +233,8 @@ template <typename E, typename = std::enable_if_t<std::is_enum_v<std::decay_t<E>
   constexpr int min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
   constexpr auto range = std::make_integer_sequence<int, max - min + 1>{};
   constexpr auto names = detail::enum_names_impl<D, min>(range);
-  const int i = static_cast<int>(value) - min;
 
-  if (i >= 0 && static_cast<std::size_t>(i) < names.size()) {
+  if (int i = static_cast<int>(value) - min; i >= 0 && static_cast<std::size_t>(i) < names.size()) {
     return names[i];
   } else {
     return {}; // Value out of range.
