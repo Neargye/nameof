@@ -82,8 +82,10 @@ enum number : unsigned long { zero = 0, one = 100, two = 200, three = 300, four 
 namespace nameof {
 template <>
 struct enum_range<number> {
+  static_assert(std::is_enum_v<number>, "nameof::enum_range<number> requires enum type.");
   static constexpr int min = 100;
   static constexpr int max = 300;
+  static_assert(max > min, "nameof::enum_range<number> requires max > min.");
 };
 }
 

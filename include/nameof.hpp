@@ -59,6 +59,7 @@ struct enum_range final {
   static_assert(std::is_enum_v<E>, "nameof::enum_range requires enum type.");
   static constexpr int min = std::is_signed_v<std::underlying_type_t<E>> ? NAMEOF_ENUM_RANGE_MIN : 0;
   static constexpr int max = NAMEOF_ENUM_RANGE_MAX;
+  static_assert(max > min, "nameof::enum_range requires max > min.");
 };
 
 namespace detail {
