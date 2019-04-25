@@ -249,7 +249,7 @@ template <typename T>
 
 } // namespace nameof
 
-// NAMEOF obtains simple (unqualified) string name of variable, function, enum, macro.
+// Obtains simple (unqualified) string name of variable, function, enum, macro.
 #define NAMEOF(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, false)
 
 // Obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
