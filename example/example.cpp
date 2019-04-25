@@ -26,7 +26,6 @@
 #include <string>
 #include <sstream>
 #include <stdexcept>
-#include <typeinfo>
 
 constexpr long double operator"" _deg(long double deg) {
   return deg * 3.141592 / 180.0;
