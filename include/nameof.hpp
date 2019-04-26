@@ -223,8 +223,8 @@ template <typename T>
 } // namespace nameof::detail
 
 // Obtains simple (unqualified) string enum name of enum variable.
-template <typename E, typename = std::enable_if_t<std::is_enum_v<std::decay_t<E>>>>
-[[nodiscard]] constexpr std::string_view nameof_enum(E value) noexcept {
+template <typename E>
+[[nodiscard]] constexpr std::enable_if_t<std::is_enum_v<std::decay_t<E>>, std::string_view> nameof_enum(E value) noexcept {
   using D = std::decay_t<E>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
   static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
