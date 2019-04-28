@@ -51,8 +51,8 @@
 
 namespace nameof {
 
-// Enum value must be in range [-NAMEOF_ENUM_RANGE_MAX, NAMEOF_ENUM_RANGE_MIN]. By default  NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 128.
-// If need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MAX and NAMEOF_ENUM_RANGE_MIN.
+// Enum value must be in range [NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]. By default  NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 128.
+// If need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN and NAMEOF_ENUM_RANGE_MAX.
 // If need another range for specific enum type, add specialization enum_range for necessary enum type.
 template <typename E>
 struct enum_range final {
