@@ -90,25 +90,22 @@ template <typename E, E V>
 [[nodiscard]] constexpr std::string_view enum_name_impl() noexcept {
   static_assert(std::is_enum_v<E>, "nameof::enum_name_impl requires enum type.");
 #if defined(__clang__)
-  constexpr std::string_view name{__PRETTY_FUNCTION__};
-  constexpr auto suffix = sizeof("]") - 1;
+  constexpr std::string_view name{__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2};
 #elif defined(__GNUC__) && __GNUC__ >= 9
-  constexpr std::string_view name{__PRETTY_FUNCTION__};
-  constexpr auto suffix = sizeof("; std::string_view = std::basic_string_view<char>]") - 1;
+  constexpr std::string_view name{__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 51};
 #elif defined(_MSC_VER)
-  constexpr std::string_view name{__FUNCSIG__};
-  constexpr auto suffix = sizeof(">(void) noexcept") - 1;
+  constexpr std::string_view name{__FUNCSIG__, sizeof(__FUNCSIG__) - 17};
 #else
   return {}; // Unsupported compiler.
 #endif
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-  constexpr auto prefix = name.find_last_of(" :,-)", name.length() - suffix) + 1;
+  constexpr auto prefix = name.find_last_of(" :,-)") + 1;
 
   if constexpr (name[prefix] >= '0' && name[prefix] <= '9') {
     return {}; // Value does not have name.
   } else {
-    return name.substr(prefix, name.length() - prefix - suffix);
+    return name.substr(prefix, name.length() - prefix);
   }
 #endif
 }
