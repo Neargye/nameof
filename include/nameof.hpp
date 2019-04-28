@@ -87,8 +87,8 @@ template <typename... T>
 }
 
 template <typename E, E V>
-[[nodiscard]] constexpr std::string_view enum_name_impl() noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::enum_name_impl requires enum type.");
+[[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
+  static_assert(std::is_enum_v<E>, "nameof::nameof_enum_impl requires enum type.");
 #if defined(__clang__)
   constexpr std::string_view name{__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2};
 #elif defined(__GNUC__) && __GNUC__ >= 9
@@ -112,8 +112,8 @@ template <typename E, E V>
 
 template <typename E, int O, int... I>
 [[nodiscard]] constexpr decltype(auto) enum_names_impl(std::integer_sequence<int, I...>) noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::detail::enum_strings_impl requires enum type.");
-  constexpr std::array<std::string_view, sizeof...(I)> names{{enum_name_impl<E, static_cast<E>(I + O)>()...}};
+  static_assert(std::is_enum_v<E>, "nameof::detail::enum_names_impl requires enum type.");
+  constexpr std::array<std::string_view, sizeof...(I)> names{{nameof_enum_impl<E, static_cast<E>(I + O)>()...}};
 
   return names;
 }
