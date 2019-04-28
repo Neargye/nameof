@@ -72,17 +72,11 @@ struct identity final {
 template <typename... T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
-  constexpr auto prefix = sizeof("std::string_view nameof::detail::nameof_type_impl() [T = <nameof::detail::identity<") - 1;
-  constexpr auto suffix = sizeof(">>]") - 1;
-  constexpr std::string_view name{__PRETTY_FUNCTION__ + prefix, sizeof(__PRETTY_FUNCTION__) - prefix - suffix - 1};
+  constexpr std::string_view name{__PRETTY_FUNCTION__ + 83, sizeof(__PRETTY_FUNCTION__) - 87};
 #elif defined(__GNUC__)
-  constexpr auto prefix = sizeof("constexpr std::string_view nameof::detail::nameof_type_impl() [with T = {nameof::detail::identity<") - 1;
-  constexpr auto suffix = sizeof(">}; std::string_view = std::basic_string_view<char>]") - 1;
-  constexpr std::string_view name{__PRETTY_FUNCTION__ + prefix, sizeof(__PRETTY_FUNCTION__) - prefix - suffix - 1};
+  constexpr std::string_view name{__PRETTY_FUNCTION__ + 98, sizeof(__PRETTY_FUNCTION__) - 151};
 #elif defined(_MSC_VER)
-  constexpr auto prefix = sizeof("class std::basic_string_view<char,struct std::char_traits<char> > __cdecl nameof::detail::nameof_type_impl<struct nameof::detail::identity<") - 1;
-  constexpr auto suffix = sizeof(">>(void) noexcept") - 1;
-  constexpr std::string_view name{__FUNCSIG__ + prefix, sizeof(__FUNCSIG__) - prefix - suffix - 1};
+  constexpr std::string_view name{__FUNCSIG__ + 139, sizeof(__FUNCSIG__) - 157};
 #else
   return {}; // Unsupported compiler.
 #endif
@@ -217,6 +211,7 @@ template <typename T>
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_raw_impl(std::string_view name) noexcept {
   static_assert(std::is_void_v<T>, "nameof::detail::nameof_raw_impl requires void type.");
+
   return name;
 }
 
