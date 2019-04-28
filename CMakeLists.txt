@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.6)
 
-project(nameof VERSION "0.8.1" LANGUAGES CXX)
+project(nameof VERSION "0.8.2" LANGUAGES CXX)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(IS_TOPLEVEL_PROJECT TRUE)
