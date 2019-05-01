@@ -29,7 +29,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef NAMEOF_HPP
+#define NAMEOF_HPP
 
 #include <array>
 #include <cstddef>
@@ -258,3 +259,5 @@ template <typename T>
 
 // Obtains string name of variable type.
 #define NAMEOF_VAR_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+
+#endif // NAMEOF_HPP
