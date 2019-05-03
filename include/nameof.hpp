@@ -241,7 +241,7 @@ template <auto V>
   using D = std::decay_t<decltype(V)>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
 
-  return nameof_enum_impl<D, V>();
+  return detail::nameof_enum_impl<D, V>();
 }
 
 // Obtains string name of type.
