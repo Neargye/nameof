@@ -234,6 +234,16 @@ template <typename E>
   }
 }
 
+// Obtains simple (unqualified) string enum name of static storage enum variable.
+// This version is much lighter on the compile times and is not restricted to the enum_range limitation.
+template <auto V>
+[[nodiscard]] constexpr std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>, std::string_view> nameof_enum() noexcept {
+  using D = std::decay_t<decltype(V)>;
+  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
+
+  return nameof_enum_impl<D, V>();
+}
+
 // Obtains string name of type.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
@@ -253,6 +263,10 @@ template <typename T>
 
 // Obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
+
+// Obtains simple (unqualified) string enum name of static storage enum variable.
+// This version is much lighter on the compile times and is not restricted to the enum_range limitation.
+#define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
 // Obtains string name of type.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
