@@ -240,8 +240,8 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(no_name == "one");
   REQUIRE(NAMEOF_ENUM(Numbers::two) == "two");
   REQUIRE(NAMEOF_ENUM(Numbers::three) == "three");
+  REQUIRE(NAMEOF_ENUM(Numbers::many).empty());
   REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
-  REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(127)).empty());
 
   constexpr Directions dr = Directions::Right;
   constexpr auto dr_name = NAMEOF_ENUM(dr);
@@ -256,14 +256,14 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(NAMEOF_ENUM(number::one) == "one");
   REQUIRE(NAMEOF_ENUM(number::two) == "two");
   REQUIRE(nt_name == "three");
+  REQUIRE(NAMEOF_ENUM(number::four).empty());
   REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
-  REQUIRE(NAMEOF_ENUM(static_cast<number>(400)).empty());
 }
 
 TEST_CASE("NAMEOF_CONST_ENUM") {
   constexpr Color cr = Color::RED;
   constexpr auto cr_name = NAMEOF_CONST_ENUM(cr);
-  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  constexpr Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
   REQUIRE(cr_name == "RED");
   REQUIRE(NAMEOF_CONST_ENUM(Color::BLUE) == "BLUE");
   REQUIRE(NAMEOF_CONST_ENUM(cm[1]) == "GREEN");
@@ -274,8 +274,8 @@ TEST_CASE("NAMEOF_CONST_ENUM") {
   REQUIRE(no_name == "one");
   REQUIRE(NAMEOF_CONST_ENUM(Numbers::two) == "two");
   REQUIRE(NAMEOF_CONST_ENUM(Numbers::three) == "three");
+  REQUIRE(NAMEOF_CONST_ENUM(Numbers::many) == "many");
   REQUIRE(NAMEOF_CONST_ENUM(static_cast<Numbers>(0)).empty());
-  REQUIRE(NAMEOF_CONST_ENUM(static_cast<Numbers>(127)).empty());
 
   constexpr Directions dr = Directions::Right;
   constexpr auto dr_name = NAMEOF_CONST_ENUM(dr);
@@ -290,8 +290,8 @@ TEST_CASE("NAMEOF_CONST_ENUM") {
   REQUIRE(NAMEOF_CONST_ENUM(number::one) == "one");
   REQUIRE(NAMEOF_CONST_ENUM(number::two) == "two");
   REQUIRE(nt_name == "three");
+  REQUIRE(NAMEOF_CONST_ENUM(number::four) == "four");
   REQUIRE(NAMEOF_CONST_ENUM(static_cast<number>(0)).empty());
-  REQUIRE(NAMEOF_CONST_ENUM(static_cast<number>(400)).empty());
 }
 
 TEST_CASE("nameof_enum") {
