@@ -1,5 +1,3 @@
-# Nameof C++
-
 ```text
  _   _                             __    _____
 | \ | |                           / _|  / ____|_     _
@@ -16,7 +14,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1d06f3f07afe4f34acd29c0c8efa830b)](https://www.codacy.com/app/Neargye/nameof?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Neargye/nameof&amp;utm_campaign=Badge_Grade)
 [![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://wandbox.org/permlink/1biubvidzJXEKr69)
 
-## What is Nameof?
+# Nameof C++
 
 Header-only C++17 library provides nameof macros and functions to obtain simple name of variable, type, function, macro, and enum.
 
