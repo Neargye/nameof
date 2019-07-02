@@ -90,7 +90,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 * Nameof returns `std::string_view`. If argument does not have name, returns empty string.
 
-* Nameof expression argument are identified, but do not evaluated.
+* Nameof expression argument are identified, but are not evaluated.
 
 * Nameof type returns compiler-specific type name.
 
