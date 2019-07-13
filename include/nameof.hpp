@@ -202,7 +202,7 @@ template <typename T>
                             (name.front() == '_'))) {
     return name;
   } else {
-    return {};  // Invalid name.
+    return {}; // Invalid name.
   }
 }
 
