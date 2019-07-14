@@ -63,6 +63,16 @@ struct enum_range final {
   static_assert(max > min, "nameof::enum_range requires max > min.");
 };
 
+static_assert(NAMEOF_ENUM_RANGE_MIN <= 0,
+              "NAMEOF_ENUM_RANGE_MIN must be less or equals than 0.");
+static_assert(NAMEOF_ENUM_RANGE_MIN > (std::numeric_limits<int>::min)(),
+              "NAMEOF_ENUM_RANGE_MIN must be greater than INT_MIN.");
+
+static_assert(NAMEOF_ENUM_RANGE_MAX > 0,
+              "NAMEOF_ENUM_RANGE_MAX must be greater than 0.");
+static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<int>::max)(),
+              "NAMEOF_ENUM_RANGE_MAX must be less than INT_MAX.");
+
 namespace detail {
 
 template <typename T>
@@ -219,8 +229,8 @@ template <typename E>
   constexpr auto range = std::make_integer_sequence<int, max - min + 1>{};
   constexpr auto names = detail::enum_names_impl<D, min>(range);
 
-  if (int i = static_cast<int>(value) - min; i >= 0 && static_cast<std::size_t>(i) < names.size()) {
-    return names[static_cast<std::size_t>(i)];
+  if (auto i = static_cast<std::size_t>(static_cast<int>(value) - min); i < names.size()) {
+    return names[i];
   } else {
     return {}; // Value out of range.
   }
