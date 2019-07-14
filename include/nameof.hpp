@@ -73,6 +73,9 @@ static_assert(NAMEOF_ENUM_RANGE_MAX > 0,
 static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<int>::max)(),
               "NAMEOF_ENUM_RANGE_MAX must be less than INT_MAX.");
 
+static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN,
+              "NAMEOF_ENUM_RANGE_MAX must be greater than NAMEOF_ENUM_RANGE_MIN.");
+
 namespace detail {
 
 template <typename T>
@@ -222,6 +225,8 @@ template <typename E>
 [[nodiscard]] constexpr std::enable_if_t<std::is_enum_v<std::decay_t<E>>, std::string_view> nameof_enum(E value) noexcept {
   using D = std::decay_t<E>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
+  static_assert(enum_range<D>::min > (std::numeric_limits<int>::min)(), "nameof::enum_range requires min must be greater than INT_MIN.");
+  static_assert(enum_range<D>::max < (std::numeric_limits<int>::max)(), "nameof::enum_range requires max must be less than INT_MAX.");
   static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
   using U = std::underlying_type_t<D>;
   constexpr int max = enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)();
