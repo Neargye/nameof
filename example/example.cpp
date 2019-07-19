@@ -27,6 +27,10 @@
 #include <sstream>
 #include <stdexcept>
 
+std::string operator+(std::string_view lhs, std::string_view rhs) {
+  return std::string{lhs.data(), lhs.length()}.append(rhs.data(), rhs.length());
+}
+
 constexpr long double operator"" _deg(long double deg) {
   return deg * 3.141592 / 180.0;
 }
@@ -49,9 +53,7 @@ void SomeMethod3() {
 
 template <typename T, typename U>
 std::string SomeMethod4(U value) {
-  std::stringstream s;
-  s << NAMEOF(SomeMethod4<T, U>) << "<" << NAMEOF_TYPE(T) << ", " << NAMEOF_TYPE(U) << ">(" << NAMEOF_TYPE(U) << " " << NAMEOF(value) << ")";
-  return s.str();
+  return NAMEOF(SomeMethod4<T, U>) + "<" + NAMEOF_TYPE(T) + ", " + NAMEOF_TYPE(U) + ">(" + NAMEOF_TYPE(U) + " " + NAMEOF(value) + ")";
 }
 
 template <typename T>
@@ -135,15 +137,15 @@ int main() {
 
   std::cout << SomeMethod4<int>(structvar) << std::endl; // 'SomeMethod4<int, SomeStruct>(SomeStruct value)'
 
-  const auto div = [](int x, int y) -> int {
+  auto div = [](int x, int y) -> int {
     if (y == 0) {
-      throw std::invalid_argument(std::string(NAMEOF(y)).append(" should not be zero!"));
+      throw std::invalid_argument(NAMEOF(y) + " should not be zero!");
     }
     return x / y;
   };
 
   try {
-    const int z = div(10, 0);
+    auto z = div(10, 0);
     std::cout << z << std::endl;
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl; // 'y should not be zero!'
