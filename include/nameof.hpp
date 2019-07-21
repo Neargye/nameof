@@ -87,7 +87,7 @@ template <typename T>
 using check_t = typename check<T>::type;
 
 template <typename T>
-[[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool with_template_suffix) noexcept {
+[[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool remove_template_suffix = true) noexcept {
   static_assert(std::is_void_v<T>, "nameof::detail::nameof_impl requires void type.");
   if (name.length() >= 1 && (name.front() == '"' || name.front() == '\'')) {
     return {}; // Narrow multibyte string literal.
@@ -154,7 +154,9 @@ template <typename T>
       break;
     }
   }
-  name.remove_suffix(with_template_suffix ? 0 : s);
+  if (remove_template_suffix) {
+    name.remove_suffix(s);
+  }
 
   if (name.length() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
                             (name.front() >= 'A' && name.front() <= 'Z') ||
@@ -176,11 +178,11 @@ template <typename E, E V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
   static_assert(std::is_enum_v<E>, "nameof::nameof_enum_impl requires enum type.");
 #if defined(__clang__)
-  constexpr auto name = nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2}, false);
+  constexpr auto name = nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(__GNUC__) && __GNUC__ >= 9
-  constexpr auto name = nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 51}, false);
+  constexpr auto name = nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 51});
 #elif defined(_MSC_VER)
-  constexpr auto name = nameof_impl<void>({__FUNCSIG__, sizeof(__FUNCSIG__) - 17}, false);
+  constexpr auto name = nameof_impl<void>({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
   constexpr std::string_view name; // Unsupported compiler.
 #endif
@@ -266,10 +268,10 @@ template <typename T>
 } // namespace nameof
 
 // Obtains simple (unqualified) string name of variable, function, enum, macro.
-#define NAMEOF(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, false)
+#define NAMEOF(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
 
 // Obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
-#define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, true)
+#define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, false)
 
 // Obtains raw string name of variable, function, enum, macro.
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
