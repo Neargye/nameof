@@ -63,15 +63,19 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 * Nameof type
   ```cpp
-  using T = int;
+  using T = const int&;
   T var = 42;
   // Name of variable type.
-  NAMEOF_VAR_TYPE(var) -> "int"
+  NAMEOF_TYPE_EXPR(var) -> "int"
+  NAMEOF_FULL_TYPE_EXPR(var) -> "const int&"
   nameof::nameof_type<decltype(var)>() -> "int"
+  nameof::nameof_full_type<decltype(var)>() -> "const int&"
 
   // Name of type.
   NAMEOF_TYPE(T) -> "int"
+  NAMEOF_FULL_TYPE(T) -> "const int&"
   nameof::nameof_type<T>() -> "int"
+  nameof::nameof_full_type<T>() -> "const int&"
   ```
 
 * Compile-time
@@ -80,7 +84,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
   // somevar_name -> "somevar"
   constexpr auto color_name = NAMEOF_ENUM(Color::BLUE); // or nameof::nameof_enum(Color::BLUE)
   // color_name -> "BLUE"
-  constexpr auto var_type_name = NAMEOF_VAR_TYPE(var); // or nameof::nameof_type<decltype(var)>()
+  constexpr auto var_type_name = NAMEOF_TYPE_EXPR(var); // or nameof::nameof_type<decltype(var)>()
   // var_type_name -> "int"
   constexpr auto type_name = NAMEOF_TYPE(T); // or nameof::nameof_type<T>()
   // type_name -> "int"
@@ -92,7 +96,7 @@ Header-only C++17 library provides nameof macros and functions to obtain simple 
 
 * Nameof expression argument are identified, but are not evaluated.
 
-* Nameof type returns compiler-specific type name.
+* Nameof type returns compiler-specific type name. In all cases, reference and cv-qualifiers are ignored by `nameof_type` (that is, `nameof_type<const T&>() == nameof_type<T>()`). If you need detailed name of full type, use `nameof_full_type`.
 
 * If you need name with template suffix, use NAMEOF_FULL.
   ```cpp
