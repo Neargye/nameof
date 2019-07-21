@@ -66,7 +66,7 @@ class SomeClass {
   template <typename C>
   C SomeMethod6() const {
     C t{};
-    std::cout << NAMEOF_VAR_TYPE(t) << std::endl;
+    std::cout << NAMEOF_TYPE_EXPR(t) << std::endl;
     return t;
   }
 };
@@ -116,14 +116,16 @@ int main() {
 
   // Nameof variable type.
   std::cout << nameof::nameof_type<decltype(structvar)>() << std::endl; // 'SomeStruct'
-  std::cout << NAMEOF_VAR_TYPE(structvar) << std::endl; // 'SomeStruct'
-  std::cout << NAMEOF_VAR_TYPE(SomeClass<int>{}) << std::endl; // 'SomeClass<int>'
-  std::cout << NAMEOF_VAR_TYPE(othervar.ll) << std::endl; // 'Long::LL'
+  std::cout << NAMEOF_TYPE_EXPR(structvar) << std::endl; // 'SomeStruct'
+  std::cout << NAMEOF_TYPE_EXPR(othervar.ll) << std::endl; // 'Long::LL'
+  std::cout << NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) << std::endl; // 'SomeClass<int>'
+  std::cout << NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) << std::endl; // 'const SomeClass<int> &&'
 
   // Nameof type.
   std::cout << nameof::nameof_type<SomeClass<int>>() << std::endl; // 'SomeClass<int>'
   std::cout << NAMEOF_TYPE(SomeClass<int>) << std::endl; // 'SomeClass<int>'
   std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // 'Long::LL'
+  std::cout << NAMEOF_FULL_TYPE(const Long::LL&) << std::endl; // 'const Long::LL &'
 
   // Nameof macro.
   std::cout << NAMEOF(__LINE__) << std::endl; // '__LINE__'
