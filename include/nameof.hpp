@@ -251,9 +251,15 @@ template <auto V>
   return detail::nameof_enum_impl<D, V>();
 }
 
-// Obtains string name of type.
+// Obtains string name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
+  return detail::nameof_type_impl<detail::identity<std::remove_cv_t<std::remove_reference_t<T>>>>();
+}
+
+// Obtains string name of full type, with reference and cv-qualifiers.
+template <typename T>
+[[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
   return detail::nameof_type_impl<detail::identity<T>>();
 }
 
@@ -275,10 +281,16 @@ template <typename T>
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 #define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// Obtains string name of type.
+// Obtains string name of type, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// Obtains string name of variable type.
-#define NAMEOF_VAR_TYPE(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+// Obtains string name of full type, with reference and cv-qualifiers.
+#define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
+
+// Obtains string name type of expression, reference and cv-qualifiers are ignored.
+#define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+
+// Obtains string name full type of expression, with reference and cv-qualifiers.
+#define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
 #endif // NEARGYE_NAMEOF_HPP
