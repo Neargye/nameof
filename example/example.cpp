@@ -93,6 +93,7 @@ int main() {
   auto color = Color::RED;
   std::cout << nameof::nameof_enum(color) << std::endl; // 'RED'
   std::cout << NAMEOF_ENUM(color) << std::endl; // 'RED'
+  std::cout << nameof::nameof_enum<Color::GREEN>() << std::endl; // 'GREEN'
 
   // Nameof.
   std::cout << NAMEOF(structvar) << std::endl; // 'structvar'
@@ -114,18 +115,17 @@ int main() {
   std::cout << NAMEOF_FULL(SomeMethod4<int, float>) << std::endl; // 'SomeMethod4<int, float>'
   std::cout << NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // 'SomeMethod6<long int>'
 
+  // Nameof type.
+  std::cout << nameof::nameof_type<const Long::LL&>() << std::endl; // 'Long::LL'
+  std::cout << NAMEOF_TYPE(const Long::LL&) << std::endl; // 'Long::LL'
+  std::cout << nameof::nameof_full_type<const Long::LL&>() << std::endl; // 'const Long::LL &'
+  std::cout << NAMEOF_FULL_TYPE(const Long::LL&) << std::endl; // 'const Long::LL &'
+
   // Nameof variable type.
   std::cout << nameof::nameof_type<decltype(structvar)>() << std::endl; // 'SomeStruct'
   std::cout << NAMEOF_TYPE_EXPR(structvar) << std::endl; // 'SomeStruct'
-  std::cout << NAMEOF_TYPE_EXPR(othervar.ll) << std::endl; // 'Long::LL'
   std::cout << NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) << std::endl; // 'SomeClass<int>'
   std::cout << NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) << std::endl; // 'const SomeClass<int> &&'
-
-  // Nameof type.
-  std::cout << nameof::nameof_type<SomeClass<int>>() << std::endl; // 'SomeClass<int>'
-  std::cout << NAMEOF_TYPE(SomeClass<int>) << std::endl; // 'SomeClass<int>'
-  std::cout << NAMEOF_TYPE(Long::LL) << std::endl; // 'Long::LL'
-  std::cout << NAMEOF_FULL_TYPE(const Long::LL&) << std::endl; // 'const Long::LL &'
 
   // Nameof macro.
   std::cout << NAMEOF(__LINE__) << std::endl; // '__LINE__'
