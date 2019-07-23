@@ -79,12 +79,15 @@ static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN,
 namespace detail {
 
 template <typename T>
-struct check final {
-  using type = void;
+struct identity final {
+  using type = T;
 };
 
 template <typename T>
-using check_t = typename check<T>::type;
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+template <typename T, typename R>
+using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
 
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool remove_template_suffix = true) noexcept {
@@ -162,9 +165,9 @@ template <typename T>
                             (name.front() >= 'A' && name.front() <= 'Z') ||
                             (name.front() == '_'))) {
     return name;
-  } else {
-    return {}; // Invalid name.
   }
+
+  return {}; // Invalid name.
 }
 
 template <typename T>
@@ -198,11 +201,6 @@ template <typename E, int O, int... I>
   return names;
 }
 
-template <typename T>
-struct identity final {
-  using type = T;
-};
-
 template <typename... T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
@@ -224,30 +222,29 @@ template <typename... T>
 
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
-[[nodiscard]] constexpr std::enable_if_t<std::is_enum_v<std::decay_t<E>>, std::string_view> nameof_enum(E value) noexcept {
-  using D = std::decay_t<E>;
+[[nodiscard]] constexpr detail::enable_if_enum_t<E, std::string_view> nameof_enum(E value) noexcept {
+  using D = detail::remove_cvref_t<E>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
   static_assert(enum_range<D>::min > (std::numeric_limits<int>::min)(), "nameof::enum_range requires min must be greater than INT_MIN.");
   static_assert(enum_range<D>::max < (std::numeric_limits<int>::max)(), "nameof::enum_range requires max must be less than INT_MAX.");
   static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
   using U = std::underlying_type_t<D>;
-  constexpr int max = enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)();
-  constexpr int min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
-  constexpr auto range = std::make_integer_sequence<int, max - min + 1>{};
-  constexpr auto names = detail::enum_names_impl<D, min>(range);
+  constexpr auto max = enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)();
+  constexpr auto min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
+  constexpr auto names = detail::enum_names_impl<D, min>(std::make_integer_sequence<int, max - min + 1>{});
 
-  if (auto i = static_cast<std::size_t>(static_cast<int>(value) - min); i < names.size()) {
+  if (auto i = static_cast<std::size_t>((static_cast<int>(value) - min)); i < names.size()) {
     return names[i];
-  } else {
-    return {}; // Value out of range.
   }
+
+  return {}; // Value out of range.
 }
 
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
-[[nodiscard]] constexpr std::enable_if_t<std::is_enum_v<std::decay_t<decltype(V)>>, std::string_view> nameof_enum() noexcept {
-  using D = std::decay_t<decltype(V)>;
+[[nodiscard]] constexpr detail::enable_if_enum_t<decltype(V), std::string_view> nameof_enum() noexcept {
+  using D = detail::remove_cvref_t<decltype(V)>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
 
   return detail::nameof_enum_impl<D, V>();
@@ -256,7 +253,7 @@ template <auto V>
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
-  return detail::nameof_type_impl<detail::identity<std::remove_cv_t<std::remove_reference_t<T>>>>();
+  return detail::nameof_type_impl<detail::identity<detail::remove_cvref_t<T>>>();
 }
 
 // Obtains string name of full type, with reference and cv-qualifiers.
@@ -268,13 +265,13 @@ template <typename T>
 } // namespace nameof
 
 // Obtains simple (unqualified) string name of variable, function, enum, macro.
-#define NAMEOF(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
+#define NAMEOF(...) ::nameof::detail::nameof_impl<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
 
 // Obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
-#define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, false)
+#define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, false)
 
 // Obtains raw string name of variable, function, enum, macro.
-#define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<::nameof::detail::check_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
+#define NAMEOF_RAW(...) ::nameof::detail::nameof_raw_impl<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
 
 // Obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
