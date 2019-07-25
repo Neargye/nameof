@@ -181,40 +181,37 @@ template <typename E, E V>
 [[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
   static_assert(std::is_enum_v<E>, "nameof::nameof_enum_impl requires enum type.");
 #if defined(__clang__)
-  constexpr auto name = nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+  return nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(__GNUC__) && __GNUC__ >= 9
-  constexpr auto name = nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 51});
+  return nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 51});
 #elif defined(_MSC_VER)
-  constexpr auto name = nameof_impl<void>({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+  return nameof_impl<void>({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
-  constexpr std::string_view name; // Unsupported compiler.
+  return {}; // Unsupported compiler.
 #endif
-
-  return name;
 }
 
 template <typename E, int O, int... I>
 [[nodiscard]] constexpr auto enum_names_impl(std::integer_sequence<int, I...>) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::detail::enum_names_impl requires enum type.");
-  constexpr std::array<std::string_view, sizeof...(I)> names{{nameof_enum_impl<E, static_cast<E>(I + O)>()...}};
 
-  return names;
+  return std::array<std::string_view, sizeof...(I)>{{nameof_enum_impl<E, static_cast<E>(I + O)>()...}};
 }
 
 template <typename... T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
-  constexpr std::string_view name{__PRETTY_FUNCTION__ + 83, sizeof(__PRETTY_FUNCTION__) - 87};
+  std::string_view name{__PRETTY_FUNCTION__ + 83, sizeof(__PRETTY_FUNCTION__) - 87};
 #elif defined(__GNUC__)
-  constexpr std::string_view name{__PRETTY_FUNCTION__ + 98, sizeof(__PRETTY_FUNCTION__) - 151};
+  std::string_view name{__PRETTY_FUNCTION__ + 98, sizeof(__PRETTY_FUNCTION__) - 151};
 #elif defined(_MSC_VER)
-  constexpr std::string_view name{__FUNCSIG__ + 139, sizeof(__FUNCSIG__) - 157};
+  std::string_view name{__FUNCSIG__ + 139, sizeof(__FUNCSIG__) - 157};
 #else
   return {}; // Unsupported compiler.
 #endif
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
- return name.substr(0, name.length() - (name.back() == ' ' ? 1 : 0));
+  return name.substr(0, name.length() - (name.back() == ' ' ? 1 : 0));
 #endif
 }
 
