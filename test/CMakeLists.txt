@@ -1,5 +1,7 @@
 ﻿include(CheckCXXCompilerFlag)
 
+find_package(Catch2 REQUIRED)
+
 set(SOURCES test.cpp)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -23,8 +25,8 @@ endif()
 function(make_test target std)
     add_executable(${target} ${SOURCES})
     target_compile_options(${target} PRIVATE ${OPTIONS})
-    target_include_directories(${target} PRIVATE 3rdparty/Catch2)
     target_link_libraries(${target} PRIVATE ${CMAKE_PROJECT_NAME})
+    target_link_libraries(${target} PRIVATE Catch2::Catch2)
     if(std)
         if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
             target_compile_options(${target} PRIVATE /std:${std})
