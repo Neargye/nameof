@@ -107,6 +107,17 @@ install:
   - export CXX=${CXX_COMPILER}
   - JOBS=2 # Travis machines have 2 cores.
   - |
+    # getting Catch2 library
+    git clone https://github.com/catchorg/Catch2.git
+    cd Catch2
+    git checkout v2.9.1
+    mkdir build
+    cd build
+    pwd
+    cmake -DCATCH_BUILD_TESTING=OFF -DCATCH_INSTALL_DOCS=OFF -DCATCH_INSTALL_HELPERS=OFF -DCMAKE_INSTALL_PREFIX=../installed ..
+    cmake --build . --target install --config Release
+    cd ../..
+
     # If linux and clang install the right version of libc++.
     if [[ "${TRAVIS_OS_NAME}" == "linux" && "${CXX%%+*}" == "clang" && -n "$(ls -A ${LLVM_INSTALL})" ]]; then
       LLVM_INSTALL=${DEPS_DIR}/llvm/install
@@ -140,7 +151,8 @@ before_script:
   - rm -rf build
   - mkdir -p build
   - cd build
-  - cmake -G "Unix Makefiles" ..
+  - pwd
+  - cmake -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=../Catch2/installed ..
 
 script:
   - cmake --build . -- -j${JOBS}

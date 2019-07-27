@@ -20,11 +20,26 @@ environment:
   matrix:
     - GENERATOR: "Visual Studio 15 2017"
 
+install:
+  # getting Catch2 library
+  # redirect stderr to fix appveyor handling stderr
+  - ps: $env:GIT_REDIRECT_STDERR = '2>&1'
+  - ps: git clone https://github.com/catchorg/Catch2.git
+  - ps: cd Catch2
+  - ps: git checkout v2.9.1
+  - ps: mkdir build
+  - ps: cd build
+  - ps: pwd
+  - ps: cmake -DCATCH_BUILD_TESTING=OFF -DCATCH_INSTALL_DOCS=OFF -DCATCH_INSTALL_HELPERS=OFF -DCMAKE_INSTALL_PREFIX="$PWD/../installed" ..
+  - ps: cmake --build . --target install --config Release
+  - ps: cd ../..
+
 before_build:
   - if exist build RMDIR /S /Q build
   - if not exist build mkdir build
   - cd build
-  - cmake -G "%GENERATOR%" -A %PLATFORM% ..
+  - pwd
+  - cmake -G "%GENERATOR%" -A %PLATFORM% -DCMAKE_INSTALL_PREFIX="C:/projects/nameof/Catch2/installed" ..
 
 build_script:
   - cmake --build . --config %CONFIGURATION%
