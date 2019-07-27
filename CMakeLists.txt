@@ -2,6 +2,8 @@
 
 project(nameof VERSION "0.9.0" LANGUAGES CXX)
 
+include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
+
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(IS_TOPLEVEL_PROJECT TRUE)
 else()
