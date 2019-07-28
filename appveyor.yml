@@ -3,6 +3,15 @@ build: false
 environment:
     PYTHON: "C:\\Python37"
 
+    CONAN_UPLOAD: "https://api.bintray.com/conan/steakhal/development"
+    CONAN_BUILD_POLICY: "missing"
+    CONAN_USERNAME: "steakhal"
+    CONAN_DOCKER_32_IMAGES: 1
+    CONAN_CHANNEL: "testing"
+    # CONAN_UPLOAD_DEPENDENCIES="all"
+    CONAN_STABLE_BRANCH_PATTERN: "release/*"
+    CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
+
     matrix:
         - MINGW_CONFIGURATIONS: '7@x86_64@seh@posix, 7@x86@seh@posix, 8@x86_64@seh@posix, 8@x86@seh@posix'
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
