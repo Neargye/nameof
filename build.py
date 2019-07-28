@@ -4,14 +4,10 @@
 from cpt.packager import ConanMultiPackager
 
 if __name__ == "__main__":
+    options = { 'nameof:build_tests': True, 'nameof:build_examples': True }
+    always_true = lambda build: True
+
     builder = ConanMultiPackager()
     builder.add_common_builds()
-    updated_builds = []
-    for settings, options, env_vars, build_requires, reference in builder.items:
-        options['prometheus-cpp:mode'] = 'pull'
-        updated_builds.append([settings, options, env_vars, build_requires])
-        options = options.copy()
-        options['prometheus-cpp:mode'] = 'push'
-        updated_builds.append([settings, options, env_vars, build_requires])
-    builder.builds = updated_builds
+    builder.update_build_if(always_true, new_options = options)
     builder.run()

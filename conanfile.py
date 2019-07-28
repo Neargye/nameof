@@ -3,7 +3,7 @@
 
 from conans import ConanFile, tools, CMake
 from conans.model.version import Version
-from conans.errors import ConanException
+from conans.errors import ConanInvalidConfiguration
 
 class NameofConan(ConanFile):
     name = 'nameof'
@@ -12,6 +12,11 @@ class NameofConan(ConanFile):
     topics = (
         'conan',
         'nameof',
+        'cplusplus',
+        'enum-to-string',
+        'serialization',
+        'reflection',
+        'header-only',
         'introspection',
         'compile-time'
     )
@@ -22,6 +27,7 @@ class NameofConan(ConanFile):
     exports_sources = ['example/*','include/*','test/*','CMakeLists.txt','LICENSE']
     exports = ['LICENSE.md']
     _build_subfolder = 'build_subfolder'
+    build_requires = []
     settings = ('os', 'compiler', 'build_type', 'arch')
     options = {
         'build_tests': [True, False],
@@ -50,21 +56,11 @@ class NameofConan(ConanFile):
 
     def requirements(self):
         if self.options.build_tests:
-            self.requires('Catch2/2.9.1@catchorg/stable')
+            self.build_requires.append('Catch2/2.9.1@catchorg/stable')
 
     def configure(self):
         if not self.supports_string_view:
-            raise ConanException('The specified compiler must support C++17')
-
-    def config_options(self):
-        needs_build = self.options.build_tests or self.options.build_examples
-
-        # remove all build settings since it is a header-only library
-        if not needs_build:
-            del self.options.os
-            del self.options.compiler
-            del self.options.build_type
-            del self.options.arch
+            raise ConanInvalidConfiguration('The specified compiler must support C++17')
 
     def configure_cmake(self):
         cmake = CMake(self)
@@ -82,3 +78,6 @@ class NameofConan(ConanFile):
     def package(self):
         cmake = self.configure_cmake()
         cmake.install()
+
+    def package_id(self):
+        self.info.header_only()
