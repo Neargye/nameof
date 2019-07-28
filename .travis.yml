@@ -3,11 +3,8 @@ env:
      - CONAN_UPLOAD:  "https://api.bintray.com/conan/steakhal/development"
      - CONAN_BUILD_POLICY: "missing"
      - CONAN_USERNAME: "steakhal"
-     - CONAN_DOCKER_32_IMAGES: 1
      - CONAN_CHANNEL: "testing"
-     #- CONAN_UPLOAD_DEPENDENCIES="all"
-     - CONAN_STABLE_BRANCH_PATTERN: "release/*"
-     - CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
+     - CONAN_UPLOAD_ONLY_WHEN_TAG: 1
 
 linux: &linux
    os: linux
