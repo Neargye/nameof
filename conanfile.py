@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from conans import ConanFile, CMake
+from conans import ConanFile, tools, CMake
 from conans.model.version import Version
 from conans.errors import ConanException
 
@@ -76,7 +76,7 @@ class NameofConan(ConanFile):
     def build(self):
         cmake = self.configure_cmake()
         cmake.build()
-        if self.options.build_tests:
+        if self.options.build_tests and not tools.cross_building(self.settings):
             cmake.test()
 
     def package(self):
