@@ -13,7 +13,7 @@ environment:
     CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
 
     matrix:
-        - MINGW_CONFIGURATIONS: '7@x86_64@seh@posix, 7@x86@seh@posix, 8@x86_64@seh@posix, 8@x86@seh@posix'
+        - MINGW_CONFIGURATIONS: '7@x86_64@seh@posix, 7@x86@dwarf2@posix, 8@x86_64@seh@posix, 8@x86@dwarf2@posix'
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
           CONAN_VISUAL_VERSIONS: 15
           CONAN_BUILD_TYPES: Release
