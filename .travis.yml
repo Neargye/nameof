@@ -1,9 +1,9 @@
 env:
    global:
-     - CONAN_UPLOAD:  "https://api.bintray.com/conan/steakhal/development"
+     - CONAN_UPLOAD: "https://api.bintray.com/conan/steakhal/maintained"
      - CONAN_BUILD_POLICY: "missing"
      - CONAN_USERNAME: "steakhal"
-     - CONAN_CHANNEL: "testing"
+     - CONAN_CHANNEL: "stable"
      - CONAN_UPLOAD_ONLY_WHEN_TAG: 1
 
 linux: &linux
