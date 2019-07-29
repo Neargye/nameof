@@ -9,4 +9,4 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
     pyenv activate conan
 fi
 
-python build.py
+python .ci/build.py
