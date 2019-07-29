@@ -22,7 +22,7 @@ target_compile_options(test-17
       /W4 /WX>
 )
 
-if(HAS_CPP20)
+if(HAS_CPP20 AND (cxx_std_20 IN_LIST CMAKE_CXX_COMPILE_FEATURES))
   add_executable(test-20 test.cpp)
   target_link_libraries(test-20 PRIVATE Catch2::Catch2 nameof::nameof)
   set_target_properties(test-20 PROPERTIES CXX_EXTENSIONS OFF)
