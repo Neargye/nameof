@@ -24,7 +24,7 @@ class NameofConan(ConanFile):
     author = 'Daniil Goncharov <neargye@gmail.com>'
     license = 'MIT'
     generators = 'cmake_find_package'
-    exports_sources = ['example/*','include/*','test/*','CMakeLists.txt','LICENSE']
+    exports_sources = ['example/*', 'include/*', 'test/*', 'CMakeLists.txt', 'LICENSE']
     exports = ['LICENSE.md']
     _build_subfolder = 'build_subfolder'
     build_requires = []
