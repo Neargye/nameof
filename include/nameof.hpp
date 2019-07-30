@@ -230,7 +230,7 @@ template <typename E>
   constexpr auto min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
   constexpr auto names = detail::enum_names_impl<D, min>(std::make_integer_sequence<int, max - min + 1>{});
 
-  if (auto i = static_cast<std::size_t>((static_cast<int>(value) - min)); i < names.size()) {
+  if (auto i = static_cast<std::size_t>(static_cast<int>(value) - min); i < names.size()) {
     return names[i];
   }
 
