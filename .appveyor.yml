@@ -1,3 +1,5 @@
+version: "{branch} #{build}"
+
 build: false
 
 environment:
