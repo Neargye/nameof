@@ -1,6 +1,4 @@
-﻿# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-find_package(Catch2 REQUIRED)
+﻿find_package(Catch2 REQUIRED)
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-std=c++20 HAS_GNU_CPP20_FLAG)
