@@ -21,6 +21,26 @@ osx: &osx
 
 matrix:
    include:
+      - <<: *osx
+        osx_image: xcode9.2
+        env: CONAN_APPLE_CLANG_VERSIONS=9.0
+
+      - <<: *osx
+        osx_image: xcode9.4
+        env: CONAN_APPLE_CLANG_VERSIONS=9.1
+
+      - <<: *osx
+        osx_image: xcode10.1
+        env: CONAN_APPLE_CLANG_VERSIONS=10.0
+
+      - <<: *osx
+        osx_image: xcode10.2
+        env: CONAN_APPLE_CLANG_VERSIONS=10.0
+
+      - <<: *osx
+        osx_image: xcode11
+        env: CONAN_APPLE_CLANG_VERSIONS=11.0
+
       - <<: *linux
         env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=conanio/gcc7
 
@@ -41,26 +61,6 @@ matrix:
 
       - <<: *linux
         env: CONAN_CLANG_VERSIONS=8 CONAN_DOCKER_IMAGE=conanio/clang8
-
-      - <<: *osx
-        osx_image: xcode9.2
-        env: CONAN_APPLE_CLANG_VERSIONS=9.0
-
-      - <<: *osx
-        osx_image: xcode9.4
-        env: CONAN_APPLE_CLANG_VERSIONS=9.1
-
-      - <<: *osx
-        osx_image: xcode10.1
-        env: CONAN_APPLE_CLANG_VERSIONS=10.0
-
-      - <<: *osx
-        osx_image: xcode10.2
-        env: CONAN_APPLE_CLANG_VERSIONS=10.0
-
-      - <<: *osx
-        osx_image: xcode11
-        env: CONAN_APPLE_CLANG_VERSIONS=11.0
 
 install:
   - chmod +x .ci/install.sh
