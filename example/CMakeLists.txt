@@ -1,6 +1,4 @@
-﻿# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-add_executable(example example.cpp)
+﻿add_executable(example example.cpp)
 target_link_libraries(example PRIVATE nameof::nameof)
 set_target_properties(example PROPERTIES CXX_EXTENSIONS OFF)
 
