@@ -4,14 +4,8 @@ project(nameof VERSION "0.9.0" LANGUAGES CXX)
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    set(IS_TOPLEVEL_PROJECT TRUE)
-else()
-    set(IS_TOPLEVEL_PROJECT FALSE)
-endif()
-
-option(NAMEOF_OPT_BUILD_EXAMPLES "Build nameof examples" ${IS_TOPLEVEL_PROJECT})
-option(NAMEOF_OPT_BUILD_TESTS "Build and perform nameof tests" ${IS_TOPLEVEL_PROJECT})
+option(NAMEOF_OPT_BUILD_EXAMPLES "Build nameof examples" OFF)
+option(NAMEOF_OPT_BUILD_TESTS "Build and perform nameof tests" OFF)
 
 if(NAMEOF_OPT_BUILD_EXAMPLES)
     add_subdirectory(example)
