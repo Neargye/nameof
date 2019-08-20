@@ -8,6 +8,8 @@
 ```
 
 [![Github releases](https://img.shields.io/github/release/Neargye/nameof.svg)](https://github.com/Neargye/nameof/releases)
+[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://bintray.com/steakhal/maintained/nameof:steakhal)
+[![Vcpkg package](https://img.shields.io/badge/Vcpkg-package-blueviolet)](https://github.com/microsoft/vcpkg/tree/master/ports/nameof)
 [![License](https://img.shields.io/github/license/Neargye/nameof.svg)](LICENSE)
 [![Build status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)
 [![Build status](https://ci.appveyor.com/api/projects/status/yq5fk0d9mwljbubt/branch/master?svg=true)](https://ci.appveyor.com/project/Neargye/nameof/branch/master)
