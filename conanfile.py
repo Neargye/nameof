@@ -39,7 +39,7 @@ class NameofConan(ConanFile):
     }
 
     @property
-    def supports_string_view(self):
+    def supports_compiler(self):
         compiler = str(self.settings.compiler)
         version = Version(str(self.settings.compiler.version))
         if compiler == 'Visual Studio' and version >= Version('15'):
@@ -59,7 +59,7 @@ class NameofConan(ConanFile):
             self.build_requires.append('Catch2/2.9.1@catchorg/stable')
 
     def configure(self):
-        if not self.supports_string_view:
+        if not self.supports_compiler:
             raise ConanInvalidConfiguration('The specified compiler must support C++17')
 
     def configure_cmake(self):
