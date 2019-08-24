@@ -201,17 +201,13 @@ template <typename E, int O, int... I>
 template <typename... T>
 [[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
 #if defined(__clang__)
-  std::string_view name{__PRETTY_FUNCTION__ + 83, sizeof(__PRETTY_FUNCTION__) - 87};
+  return {__PRETTY_FUNCTION__ + 83, sizeof(__PRETTY_FUNCTION__) - 87 - (__PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 5] == ' ' ? 1 : 0)};
 #elif defined(__GNUC__)
-  std::string_view name{__PRETTY_FUNCTION__ + 98, sizeof(__PRETTY_FUNCTION__) - 151};
+  return {__PRETTY_FUNCTION__ + 98, sizeof(__PRETTY_FUNCTION__) - 151 - (__PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 54] == ' ' ? 1 : 0)};
 #elif defined(_MSC_VER)
-  std::string_view name{__FUNCSIG__ + 139, sizeof(__FUNCSIG__) - 157};
+  return {__FUNCSIG__ + 139, sizeof(__FUNCSIG__) - 157 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #else
   return {}; // Unsupported compiler.
-#endif
-
-#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
-  return name.substr(0, name.length() - (name.back() == ' ' ? 1 : 0));
 #endif
 }
 
