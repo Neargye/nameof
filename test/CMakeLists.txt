@@ -1,27 +1,45 @@
-﻿find_package(Catch2 REQUIRED)
+﻿include(CheckCXXCompilerFlag)
 
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-std=c++20 HAS_GNU_CPP20_FLAG)
-check_cxx_compiler_flag(/std:c++20 HAS_MSVC_CPP20_FLAG)
-set(HAS_CPP20 (HAS_GNU_CPP20_FLAG OR HAS_MSVC_CPP20_FLAG))
+set(SOURCES test.cpp)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(OPTIONS /W4 /WX)
+    check_cxx_compiler_flag(/permissive HAS_PERMISSIVE_FLAG)
+    if(HAS_PERMISSIVE_FLAG)
+        set(OPTIONS ${OPTIONS} /permissive-)
+    endif()
+
+    check_cxx_compiler_flag(/std:c++20 HAS_CPP20_FLAG)
+    check_cxx_compiler_flag(/std:c++latest HAS_CPPLATEST_FLAG)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_VERBOSE_MAKEFILE ON)
+    set(OPTIONS -Wall -Wextra -pedantic-errors -Werror)
+
+    check_cxx_compiler_flag(-std=c++20 HAS_CPP20_FLAG)
+endif()
 
 function(make_test target std)
-  add_executable(${target} test.cpp)
-  target_link_libraries(${target} PRIVATE Catch2::Catch2 nameof::nameof)
-  set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
-  target_compile_features(${target} PRIVATE ${std})
-
-  target_compile_options(${target}
-    PRIVATE
-      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall -Wextra -pedantic-errors -Werror>
-      $<$<CXX_COMPILER_ID:MSVC>:
-        /W4 /WX>
-  )
+    add_executable(${target} ${SOURCES})
+    target_compile_options(${target} PRIVATE ${OPTIONS})
+    target_include_directories(${target} PRIVATE 3rdparty/Catch2)
+    target_link_libraries(${target} PRIVATE ${CMAKE_PROJECT_NAME})
+    set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+    if(std)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+            target_compile_options(${target} PRIVATE /std:${std})
+        else()
+            target_compile_options(${target} PRIVATE -std=${std})
+        endif()
+    endif()
+    add_test(NAME ${target} COMMAND ${target})
 endfunction()
 
-make_test(nameof-cpp17.t cxx_std_17)
+make_test(${CMAKE_PROJECT_NAME}-cpp17.t c++17)
 
-if(HAS_CPP20 AND (cxx_std_20 IN_LIST CMAKE_CXX_COMPILE_FEATURES))
-  make_test(nameof-cpp20.t cxx_std_20)
+if(HAS_CPP20_FLAG)
+    make_test(${CMAKE_PROJECT_NAME}-cpp20.t c++20)
+endif()
+
+if(HAS_CPPLATEST_FLAG)
+    make_test(${CMAKE_PROJECT_NAME}-cpplatest.t c++latest)
 endif()

@@ -1,74 +1,100 @@
-env:
-   global:
-     - CONAN_UPLOAD: "https://api.bintray.com/conan/steakhal/maintained"
-     - CONAN_BUILD_POLICY: "missing"
-     - CONAN_USERNAME: "steakhal"
-     - CONAN_CHANNEL: "stable"
-     - CONAN_UPLOAD_ONLY_WHEN_TAG: 1
+os: linux # Use linux unless specified otherwise.
+dist: xenial
+sudo: required
 
-linux: &linux
-   os: linux
-   dist: xenial
-   sudo: required
-   language: python
-   python: "3.6"
-   services:
-     - docker
-
-osx: &osx
-   os: osx
-   language: generic
+language: cpp
 
 matrix:
-   include:
-      - <<: *osx
-        osx_image: xcode9.2
-        env: CONAN_APPLE_CLANG_VERSIONS=9.0
+  include:
+    - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-9
+      env:
+        - CXX_COMPILER=g++-9 CC_COMPILER=gcc-9
 
-      - <<: *osx
-        osx_image: xcode9.4
-        env: CONAN_APPLE_CLANG_VERSIONS=9.1
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-5.0
+          packages:
+            - clang-5.0
+            - g++-7
+      env:
+        - CXX_COMPILER=clang++-5.0 CC_COMPILER=clang-5.0
 
-      - <<: *osx
-        osx_image: xcode10.1
-        env: CONAN_APPLE_CLANG_VERSIONS=10.0
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-6.0
+          packages:
+            - clang-6.0
+            - g++-7
+      env:
+        - CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0
 
-      - <<: *osx
-        osx_image: xcode10.2
-        env: CONAN_APPLE_CLANG_VERSIONS=10.0
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-7
+          packages:
+            - clang-7
+            - g++-7
+      env:
+        - CXX_COMPILER=clang++-7 CC_COMPILER=clang-7
 
-      - <<: *osx
-        osx_image: xcode11
-        env: CONAN_APPLE_CLANG_VERSIONS=11.0
+    - os: linux
+      compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-8
+          packages:
+            - clang-8
+            - g++-7
+      env:
+        - CXX_COMPILER=clang++-8 CC_COMPILER=clang-8
 
-      - <<: *linux
-        env: CONAN_GCC_VERSIONS=7 CONAN_DOCKER_IMAGE=conanio/gcc7
+    - os: osx
+      compiler: clang++
+      osx_image: xcode10.3
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
-      - <<: *linux
-        env: CONAN_GCC_VERSIONS=8 CONAN_DOCKER_IMAGE=conanio/gcc8
-
-      - <<: *linux
-        env: CONAN_GCC_VERSIONS=9 CONAN_DOCKER_IMAGE=conanio/gcc9
-
-      - <<: *linux
-        env: CONAN_CLANG_VERSIONS=5.0 CONAN_DOCKER_IMAGE=conanio/clang50
-
-      - <<: *linux
-        env: CONAN_CLANG_VERSIONS=6.0 CONAN_DOCKER_IMAGE=conanio/clang60
-
-      - <<: *linux
-        env: CONAN_CLANG_VERSIONS=7.0 CONAN_DOCKER_IMAGE=conanio/clang7
-
-      - <<: *linux
-        env: CONAN_CLANG_VERSIONS=8 CONAN_DOCKER_IMAGE=conanio/clang8
+    - os: osx
+      compiler: clang++
+      osx_image: xcode11
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
 
 install:
-  - chmod +x .ci/install.sh
-  - ./.ci/install.sh
+  - export CC=${CC_COMPILER}
+  - export CXX=${CXX_COMPILER}
+  - JOBS=2 # Travis machines have 2 cores.
+
+before_script:
+  - rm -rf build
+  - mkdir -p build
+  - cd build
+  - cmake -G "Unix Makefiles" ..
 
 script:
-  - chmod +x .ci/run.sh
-  - ./.ci/run.sh
+  - cmake --build . -- -j${JOBS}
+  - ctest --output-on-failure -j${JOBS}
 
 notifications:
   email: false

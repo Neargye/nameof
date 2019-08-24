@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <catch.hpp>
 
 #define NAMEOF_ENUM_RANGE_MIN -120
 #define NAMEOF_ENUM_RANGE_MAX 120
