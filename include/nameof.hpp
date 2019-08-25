@@ -83,13 +83,16 @@ struct identity final {
   using type = T;
 };
 
+template <typename... T>
+struct always_false final : std::false_type {};
+
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T, typename R>
 using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
 
-template <typename T>
+template <typename T = void>
 [[nodiscard]] constexpr std::string_view nameof_impl(std::string_view name, bool remove_template_suffix = true) noexcept {
   static_assert(std::is_void_v<T>, "nameof::detail::nameof_impl requires void type.");
   if (name.length() >= 1 && (name.front() == '"' || name.front() == '\'')) {
@@ -178,16 +181,15 @@ template <typename T>
 }
 
 template <typename E, E V>
-[[nodiscard]] constexpr std::string_view nameof_enum_impl() noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::nameof_enum_impl requires enum type.");
-#if defined(__clang__)
-  return nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
-#elif defined(__GNUC__) && __GNUC__ >= 9
-  return nameof_impl<void>({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 51});
+[[nodiscard]] constexpr auto nameof_enum_impl() noexcept {
+  static_assert(std::is_enum_v<E>, "nameof::detail::nameof_enum_impl requires enum type.");
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9
+  return nameof_impl({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
-  return nameof_impl<void>({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+  return nameof_impl({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
-  return {}; // Unsupported compiler.
+  static_assert(always_false<E>{}, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return std::string_view{}; // Unsupported compiler.
 #endif
 }
 
@@ -199,15 +201,16 @@ template <typename E, int O, int... I>
 }
 
 template <typename... T>
-[[nodiscard]] constexpr std::string_view nameof_type_impl() noexcept {
+[[nodiscard]] constexpr auto nameof_type_impl() noexcept {
 #if defined(__clang__)
-  return {__PRETTY_FUNCTION__ + 83, sizeof(__PRETTY_FUNCTION__) - 87 - (__PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 5] == ' ' ? 1 : 0)};
+  return std::string_view{__PRETTY_FUNCTION__ + 46, sizeof(__PRETTY_FUNCTION__) - 49};
 #elif defined(__GNUC__)
-  return {__PRETTY_FUNCTION__ + 98, sizeof(__PRETTY_FUNCTION__) - 151 - (__PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 54] == ' ' ? 1 : 0)};
+  return std::string_view{__PRETTY_FUNCTION__ + 61, sizeof(__PRETTY_FUNCTION__) - 64};
 #elif defined(_MSC_VER)
-  return {__FUNCSIG__ + 139, sizeof(__FUNCSIG__) - 157 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
+  return std::string_view{__FUNCSIG__ + 78, sizeof(__FUNCSIG__) - 96 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #else
-  return {}; // Unsupported compiler.
+  static_assert(always_false<T...>{}, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return std::string_view{}; // Unsupported compiler.
 #endif
 }
 
@@ -243,22 +246,26 @@ template <auto V>
   return detail::nameof_enum_impl<D, V>();
 }
 
-// Obtains string name of type, reference and cv-qualifiers are ignored.
-template <typename T>
-[[nodiscard]] constexpr std::string_view nameof_type() noexcept {
-  return detail::nameof_type_impl<detail::identity<detail::remove_cvref_t<T>>>();
-}
-
 // Obtains string name of full type, with reference and cv-qualifiers.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
+#if defined(_MSC_VER)
   return detail::nameof_type_impl<detail::identity<T>>();
+#else
+  return detail::nameof_type_impl<T>();
+#endif
+}
+
+// Obtains string name of type, reference and cv-qualifiers are ignored.
+template <typename T>
+[[nodiscard]] constexpr std::string_view nameof_type() noexcept {
+  return nameof_full_type<detail::remove_cvref_t<T>>();
 }
 
 } // namespace nameof
 
 // Obtains simple (unqualified) string name of variable, function, enum, macro.
-#define NAMEOF(...) ::nameof::detail::nameof_impl<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
+#define NAMEOF(...) ::nameof::detail::nameof_impl<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, true)
 
 // Obtains simple (unqualified) full (with template suffix) string name of variable, function, enum, macro.
 #define NAMEOF_FULL(...) ::nameof::detail::nameof_impl<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__, false)
