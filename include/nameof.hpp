@@ -99,6 +99,26 @@ struct nameof_enum_supported final
     : std::false_type {};
 #endif
 
+template <std::size_t N>
+struct static_string final {
+  constexpr static_string(std::string_view str) noexcept : static_string(str, std::make_index_sequence<N>{}) {}
+
+  constexpr operator std::string_view() const noexcept { return {chars.data(), chars.size()}; }
+
+ private:
+  template <std::size_t... I>
+  constexpr static_string(std::string_view str, std::index_sequence<I...>) noexcept : chars{{str[I]...}} {}
+
+  const std::array<char, N> chars;
+};
+
+template <>
+struct static_string<0> final {
+  constexpr static_string(std::string_view) noexcept {}
+
+  constexpr operator std::string_view() const noexcept { return {}; }
+};
+
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
@@ -108,23 +128,23 @@ using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
 template <typename T = void>
 [[nodiscard]] constexpr std::string_view nameof(std::string_view name, bool remove_template_suffix = true) noexcept {
   static_assert(std::is_void_v<T>, "nameof::detail::nameof requires void type.");
-  if (name.length() >= 1 && (name.front() == '"' || name.front() == '\'')) {
+  if (name.size() >= 1 && (name.front() == '"' || name.front() == '\'')) {
     return {}; // Narrow multibyte string literal.
-  } else if (name.length() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
+  } else if (name.size() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
     return {}; // Raw string literal.
-  } else if (name.length() >= 2 && name[0] == 'L' && (name[1] == '"' || name[1] == '\'')) {
+  } else if (name.size() >= 2 && name[0] == 'L' && (name[1] == '"' || name[1] == '\'')) {
     return {}; // Wide string literal.
-  } else if (name.length() >= 2 && name[0] == 'U' && (name[1] == '"' || name[1] == '\'')) {
+  } else if (name.size() >= 2 && name[0] == 'U' && (name[1] == '"' || name[1] == '\'')) {
     return {}; // UTF-32 encoded string literal.
-  } else if (name.length() >= 2 && name[0] == 'u' && (name[1] == '"' || name[1] == '\'')) {
+  } else if (name.size() >= 2 && name[0] == 'u' && (name[1] == '"' || name[1] == '\'')) {
     return {}; // UTF-16 encoded string literal.
-  } else if (name.length() >= 3 && name[0] == 'u' && name[1] == '8' && (name[2] == '"' || name[2] == '\'')) {
+  } else if (name.size() >= 3 && name[0] == 'u' && name[1] == '8' && (name[2] == '"' || name[2] == '\'')) {
     return {}; // UTF-8 encoded string literal.
-  } else if (name.length() >= 1 && (name.front() >= '0' && name.front() <= '9')) {
+  } else if (name.size() >= 1 && (name.front() >= '0' && name.front() <= '9')) {
     return {}; // Invalid name.
   }
 
-  for (std::size_t i = name.length(), h = 0, s = 0; i > 0; --i) {
+  for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
     if (name[i - 1] == ')') {
       ++h;
       ++s;
@@ -145,7 +165,7 @@ template <typename T = void>
   }
 
   std::size_t s = 0;
-  for (std::size_t i = name.length(), h = 0; i > 0; --i) {
+  for (std::size_t i = name.size(), h = 0; i > 0; --i) {
     if (name[i - 1] == '>') {
       ++h;
       ++s;
@@ -164,7 +184,7 @@ template <typename T = void>
     }
   }
 
-  for (std::size_t i = name.length() - s; i > 0; --i) {
+  for (std::size_t i = name.size() - s; i > 0; --i) {
     if (!((name[i - 1] >= '0' && name[i - 1] <= '9') ||
           (name[i - 1] >= 'a' && name[i - 1] <= 'z') ||
           (name[i - 1] >= 'A' && name[i - 1] <= 'Z') ||
@@ -177,9 +197,9 @@ template <typename T = void>
     name.remove_suffix(s);
   }
 
-  if (name.length() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
-                            (name.front() >= 'A' && name.front() <= 'Z') ||
-                            (name.front() == '_'))) {
+  if (name.size() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
+                          (name.front() >= 'A' && name.front() <= 'Z') ||
+                          (name.front() == '_'))) {
     return name;
   }
 
@@ -197,38 +217,58 @@ template <typename E, E V>
 [[nodiscard]] constexpr auto n() noexcept {
   static_assert(std::is_enum_v<E>, "nameof::detail::nameof_enum requires enum type.");
 #if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9
-  return nameof({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+  constexpr auto name = nameof({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
-  return nameof({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+  constexpr auto name = nameof({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
   return std::string_view{}; // Unsupported compiler.
 #endif
+
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
+  return static_string<name.size()>{name};
+#endif
 }
+
+template <typename E, E V>
+inline constexpr auto nameof_enum_v = n<E, V>();
 
 template <typename E, int O, int... I>
 [[nodiscard]] constexpr auto enum_names(std::integer_sequence<int, I...>) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::detail::enum_names requires enum type.");
 
-  return std::array<std::string_view, sizeof...(I)>{{n<E, static_cast<E>(I + O)>()...}};
+  return std::array<std::string_view, sizeof...(I)>{{nameof_enum_v<E, static_cast<E>(I + O)>...}};
 }
 
 template <typename... T>
 [[nodiscard]] constexpr auto n() noexcept {
 #if defined(__clang__)
-  return std::string_view{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
+  constexpr std::string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
 #elif defined(__GNUC__)
-  return std::string_view{__PRETTY_FUNCTION__ + 46, sizeof(__PRETTY_FUNCTION__) - 49};
+  constexpr std::string_view name{__PRETTY_FUNCTION__ + 46, sizeof(__PRETTY_FUNCTION__) - 49};
 #elif defined(_MSC_VER)
-  return std::string_view{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
+  constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #else
   return std::string_view{}; // Unsupported compiler.
 #endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+  return static_string<name.size()>{name};
+#endif
 }
+
+#if defined(_MSC_VER)
+template <typename U, typename T = identity<U>>
+#else
+template <typename T>
+#endif
+inline constexpr auto nameof_type_v = n<T>();
 
 } // namespace nameof::detail
 
+// Checks is nameof_type supported compiler.
 inline constexpr auto is_nameof_type_supported = detail::nameof_type_supported<void>::value;
 
+// Checks is nameof_enum supported compiler.
 inline constexpr auto is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
 
 // Obtains simple (unqualified) string enum name of enum variable.
@@ -260,25 +300,21 @@ template <auto V>
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
 
-  return detail::n<D, V>();
-}
-
-// Obtains string name of full type, with reference and cv-qualifiers.
-template <typename T>
-[[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
-  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-#if defined(_MSC_VER)
-  return detail::n<detail::identity<T>>();
-#else
-  return detail::n<T>();
-#endif
+  return detail::nameof_enum_v<D, V>;
 }
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  return nameof_full_type<detail::remove_cvref_t<T>>();
+  return detail::nameof_type_v<detail::remove_cvref_t<T>>;
+}
+
+// Obtains string name of full type, with reference and cv-qualifiers.
+template <typename T>
+[[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
+  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return detail::nameof_type_v<T>;
 }
 
 } // namespace nameof
