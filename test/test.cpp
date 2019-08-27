@@ -89,6 +89,14 @@ struct enum_range<number> {
 };
 }
 
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
+static_assert(nameof::is_nameof_enum_supported, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+#endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+static_assert(nameof::is_nameof_type_supported, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+#endif
+
 SomeStruct struct_var;
 Long othervar;
 SomeStruct * ptr_s = &struct_var;

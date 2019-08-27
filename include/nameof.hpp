@@ -266,10 +266,10 @@ inline constexpr auto nameof_type_v = n<T>();
 } // namespace nameof::detail
 
 // Checks is nameof_type supported compiler.
-inline constexpr auto is_nameof_type_supported = detail::nameof_type_supported<void>::value;
+inline constexpr bool is_nameof_type_supported = detail::nameof_type_supported<void>::value;
 
 // Checks is nameof_enum supported compiler.
-inline constexpr auto is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
+inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
 
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
