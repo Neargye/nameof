@@ -85,7 +85,7 @@ struct identity final {
 
 template <typename T>
 struct nameof_type_supported final
-#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
     : std::true_type {};
 #else
     : std::false_type {};
@@ -93,7 +93,7 @@ struct nameof_type_supported final
 
 template <typename T>
 struct nameof_enum_supported final
-#if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9 || defined(_MSC_VER)
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9 || defined(_MSC_VER) || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
     : std::true_type {};
 #else
     : std::false_type {};
@@ -307,6 +307,7 @@ template <auto V>
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+
   return detail::nameof_type_v<detail::remove_cvref_t<T>>;
 }
 
@@ -314,6 +315,7 @@ template <typename T>
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+
   return detail::nameof_type_v<T>;
 }
 
