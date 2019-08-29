@@ -8,7 +8,7 @@
 ```
 
 [![Github releases](https://img.shields.io/github/release/Neargye/nameof.svg)](https://github.com/Neargye/nameof/releases)
-[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://bintray.com/steakhal/maintained/nameof:steakhal)
+[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://bintray.com/neargye/conan-packages/nameof:neargye)
 [![Vcpkg package](https://img.shields.io/badge/Vcpkg-package-blueviolet)](https://github.com/microsoft/vcpkg/tree/master/ports/nameof)
 [![License](https://img.shields.io/github/license/Neargye/nameof.svg)](LICENSE)
 [![Build status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)
@@ -186,6 +186,10 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 ## Integration
 
 You should add required file [nameof.hpp](include/nameof.hpp).
+
+If you are using [vcpkg](https://github.com/Microsoft/vcpkg/) on your project for external dependencies, then you can use the [nameof package](https://github.com/microsoft/vcpkg/tree/master/ports/nameof).
+
+If you are using [Conan](https://www.conan.io/) to manage your dependencies, merely add `nameof/x.y.z@neargye/stable` to your conan's requires, where `x.y.z` is the release version you want to use.
 
 ## Compiler compatibility
 
