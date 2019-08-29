@@ -281,11 +281,15 @@ template <typename E>
   static_assert(enum_range<D>::max < (std::numeric_limits<int>::max)(), "nameof::enum_range requires max must be less than INT_MAX.");
   static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
   using U = std::underlying_type_t<D>;
-  constexpr auto max = enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)();
-  constexpr auto min = enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)();
+  constexpr int max = static_cast<int>(enum_range<D>::max < (std::numeric_limits<U>::max)() ? enum_range<D>::max : (std::numeric_limits<U>::max)());
+  constexpr int min = static_cast<int>(enum_range<D>::min > (std::numeric_limits<U>::min)() ? enum_range<D>::min : (std::numeric_limits<U>::min)());
   constexpr auto names = detail::enum_names<D, min>(std::make_integer_sequence<int, max - min + 1>{});
 
-  if (auto i = static_cast<std::size_t>(static_cast<int>(value) - min); i < names.size()) {
+  if (static_cast<U>(value) > static_cast<U>(max) || static_cast<U>(value) < static_cast<U>(min)) {
+    return {}; // Value out of range.
+  }
+
+  if (auto i = static_cast<std::size_t>(static_cast<U>(value) - min); i < names.size()) {
     return names[i];
   }
 
