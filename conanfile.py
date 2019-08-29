@@ -23,6 +23,7 @@ class NameofConan(ConanFile):
     license = "MIT"
     exports_sources = ["include/*", "LICENCE"]
     exports = ["LICENSE"]
+    settings = "compiler"
     no_copy_source = True
 
     @property
