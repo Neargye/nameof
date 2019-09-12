@@ -83,7 +83,7 @@ struct identity final {
   using type = T;
 };
 
-template <typename T>
+template <typename... T>
 struct nameof_type_supported final
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
     : std::true_type {};
@@ -123,7 +123,7 @@ template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T, typename R>
-using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
+using enable_if_enum_t = std::enable_if_t<std::is_enum_v<T>, R>;
 
 template <typename T = void>
 [[nodiscard]] constexpr std::string_view nameof(std::string_view name, bool remove_template_suffix = true) noexcept {
@@ -221,6 +221,7 @@ template <typename E, E V>
 #elif defined(_MSC_VER)
   constexpr auto name = nameof({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
+  static_assert(nameof_enum_supported<E>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return std::string_view{}; // Unsupported compiler.
 #endif
 
@@ -248,6 +249,7 @@ template <typename... T>
 #elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #else
+  static_assert(nameof_type_supported<T...>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return std::string_view{}; // Unsupported compiler.
 #endif
 
@@ -273,10 +275,8 @@ inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<v
 
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
-[[nodiscard]] constexpr detail::enable_if_enum_t<E, std::string_view> nameof_enum(E value) noexcept {
+[[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
   using D = detail::remove_cvref_t<E>;
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
   static_assert(enum_range<D>::min > (std::numeric_limits<int>::min)(), "nameof::enum_range requires min must be greater than INT_MIN.");
   static_assert(enum_range<D>::max < (std::numeric_limits<int>::max)(), "nameof::enum_range requires max must be less than INT_MAX.");
   static_assert(enum_range<D>::max > enum_range<D>::min, "nameof::enum_range requires max > min.");
@@ -299,27 +299,19 @@ template <typename E>
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
-[[nodiscard]] constexpr detail::enable_if_enum_t<decltype(V), std::string_view> nameof_enum() noexcept {
-  using D = detail::remove_cvref_t<decltype(V)>;
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
-
-  return detail::nameof_enum_v<D, V>;
+[[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
+  return detail::nameof_enum_v<detail::remove_cvref_t<decltype(V)>, V>;
 }
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
-  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-
   return detail::nameof_type_v<detail::remove_cvref_t<T>>;
 }
 
 // Obtains string name of full type, with reference and cv-qualifiers.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
-  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-
   return detail::nameof_type_v<T>;
 }
 
@@ -335,7 +327,7 @@ template <typename T>
 #define NAMEOF_RAW(...) ::nameof::detail::nameof_raw<::std::void_t<decltype(__VA_ARGS__)>>(#__VA_ARGS__)
 
 // Obtains simple (unqualified) string enum name of enum variable.
-#define NAMEOF_ENUM(...) ::nameof::nameof_enum<decltype(__VA_ARGS__)>(__VA_ARGS__)
+#define NAMEOF_ENUM(...) ::nameof::nameof_enum(__VA_ARGS__)
 
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
