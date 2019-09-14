@@ -27,18 +27,6 @@
 #include <sstream>
 #include <stdexcept>
 
-std::string operator+(std::string_view lhs, std::string_view rhs) {
-  return std::string{lhs.data(), lhs.length()}.append(rhs.data(), rhs.length());
-}
-
-constexpr long double operator"" _deg(long double deg) {
-  return deg * 3.141592 / 180.0;
-}
-
-std::string operator"" _string(const char* str, std::size_t) {
-  return std::string{str};
-}
-
 struct SomeStruct {
   int somefield = 0;
 
@@ -53,7 +41,18 @@ void SomeMethod3() {
 
 template <typename T, typename U>
 std::string SomeMethod4(U value) {
-  return NAMEOF(SomeMethod4<T, U>) + "<" + NAMEOF_TYPE(T) + ", " + NAMEOF_TYPE(U) + ">(" + NAMEOF_TYPE(U) + " " + NAMEOF(value) + ")";
+  auto function_name = std::string{NAMEOF(SomeMethod4<T, U>)}
+                           .append("<")
+                           .append(NAMEOF_TYPE(T))
+                           .append(", ")
+                           .append(NAMEOF_TYPE(U))
+                           .append(">(")
+                           .append(NAMEOF_TYPE(U))
+                           .append(" ")
+                           .append(NAMEOF(value).data())
+                           .append(")");
+
+  return function_name;
 }
 
 template <typename T>
@@ -89,11 +88,13 @@ int main() {
   constexpr auto name = NAMEOF(structvar);
   static_assert("structvar" == name);
 
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
   // Nameof enum variable.
   auto color = Color::RED;
   std::cout << nameof::nameof_enum(color) << std::endl; // 'RED'
   std::cout << NAMEOF_ENUM(color) << std::endl; // 'RED'
   std::cout << nameof::nameof_enum<Color::GREEN>() << std::endl; // 'GREEN'
+#endif
 
   // Nameof.
   std::cout << NAMEOF(structvar) << std::endl; // 'structvar'
@@ -129,7 +130,6 @@ int main() {
 
   // Nameof macro.
   std::cout << NAMEOF(__LINE__) << std::endl; // '__LINE__'
-  std::cout << NAMEOF(NAMEOF(structvar)) << std::endl; // 'NAMEOF'
 
   // Nameof raw.
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // 'structvar.somefield'
@@ -141,7 +141,7 @@ int main() {
 
   auto div = [](int x, int y) -> int {
     if (y == 0) {
-      throw std::invalid_argument(NAMEOF(y) + " should not be zero!");
+      throw std::invalid_argument(std::string{NAMEOF(y)} + " should not be zero!");
     }
     return x / y;
   };
