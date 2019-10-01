@@ -235,6 +235,9 @@ using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 template <typename T, typename R>
 using enable_if_enum_t = std::enable_if_t<std::is_enum_v<T>, R>;
 
+template <typename E>
+inline constexpr bool is_enum_v = std::is_enum_v<E> && std::is_same_v<E, std::decay_t<E>>;
+
 constexpr std::string_view pretty_name(std::string_view name, bool remove_template_suffix = true) noexcept {
   if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
     return {}; // Narrow multibyte string literal.
@@ -316,7 +319,7 @@ constexpr std::string_view pretty_name(std::string_view name, bool remove_templa
 
 template <typename E, E V>
 constexpr auto n() noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::detail::n requires enum type.");
+  static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
 #if defined(__clang__) || defined(__GNUC__)
   constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
@@ -335,9 +338,6 @@ template <typename E, E V>
 inline constexpr auto enum_name_v = n<E, V>();
 
 namespace enums {
-
-template <typename E>
-inline constexpr bool is_enum_v = std::is_enum_v<E> && std::is_same_v<E, std::decay_t<E>>;
 
 template <typename E>
 inline constexpr int reflected_min_v = static_cast<int>(enum_range<E>::min > (std::numeric_limits<std::underlying_type_t<E>>::min)()
@@ -472,30 +472,30 @@ constexpr auto strings() noexcept {
 }
 
 template <typename E>
-struct enum_traits {
-  static constexpr std::string_view name(E value) noexcept {
-    if (static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
-      if constexpr (sparsity_v<E>) {
-        if (auto i = indexes[static_cast<U>(value) - min_v<E>]; i != invalid_index_v<E>) {
-          return strings[i];
-        }
-      } else {
-        return strings[static_cast<U>(value) - min_v<E>];
-      }
-    }
-
-    return {}; // Value out of range.
-  }
-
- private:
+class enum_traits final {
   static_assert(is_enum_v<E>, "nameof::enum_traits requires enum type.");
   static_assert(enum_range<E>::min > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
   static_assert(enum_range<E>::max < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires max must be less than INT16_MAX.");
   static_assert(enum_range<E>::max > enum_range<E>::min, "nameof::enum_range requires max > min.");
   static_assert(count_v<E> > 0, "nameof::enum_range requires enum implementation or valid max and min.");
   using U = std::underlying_type_t<E>;
-  inline static constexpr auto strings = strings<E>();
-  inline static constexpr auto indexes = indexes<E>(range_v<E>);
+  inline static constexpr auto strings_ = strings<E>();
+  inline static constexpr auto indexes_ = indexes<E>(range_v<E>);
+
+ public:
+  static constexpr std::string_view name(E value) noexcept {
+    if (static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
+      if constexpr (sparsity_v<E>) {
+        if (auto i = indexes_[static_cast<U>(value) - min_v<E>]; i != invalid_index_v<E>) {
+          return strings_[i];
+        }
+      } else {
+        return strings_[static_cast<U>(value) - min_v<E>];
+      }
+    }
+
+    return {}; // Value out of range.
+  }
 };
 
 } // namespace nameof::detail::enums
