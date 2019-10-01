@@ -73,7 +73,7 @@ struct Long {
 
 enum class Color { RED = -12, GREEN = 7, BLUE = 15 };
 
-enum class Numbers : char { one = 10, two = 20, three = 30, many = 127 };
+enum class Numbers : int { one = 1, two, three, many = 127 };
 
 enum Directions { Up = 85, Down = -42, Right = 120, Left = -120 };
 
@@ -88,14 +88,6 @@ struct enum_range<number> {
   static_assert(max > min, "nameof::enum_range<number> requires max > min.");
 };
 }
-
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
-static_assert(nameof::is_nameof_enum_supported, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-#endif
-
-#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
-static_assert(nameof::is_nameof_type_supported, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-#endif
 
 SomeStruct struct_var;
 Long othervar;
@@ -234,6 +226,9 @@ TEST_CASE("NAMEOF_RAW") {
 }
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
+
+static_assert(nameof::is_nameof_enum_supported, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+
 TEST_CASE("NAMEOF_ENUM") {
   constexpr Color cr = Color::RED;
   constexpr auto cr_name = NAMEOF_ENUM(cr);
@@ -371,7 +366,12 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum<static_cast<number>(0)>().empty());
   }
 }
+
 #endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+
+static_assert(nameof::is_nameof_type_supported, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
 TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
   constexpr auto type_name = NAMEOF_FULL_TYPE_EXPR(struct_var);
@@ -690,3 +690,5 @@ TEST_CASE("nameof::nameof_type") {
   REQUIRE(nameof::nameof_type<Color>() == "Color");
 #endif
 }
+
+#endif
