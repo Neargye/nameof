@@ -146,18 +146,18 @@ struct [[nodiscard]] static_string final {
 };
 
 template <>
-struct static_string<0> final {
+struct [[nodiscard]] static_string<0> final {
   constexpr static_string(std::string_view) noexcept {}
 
-  constexpr const char* data() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const char* data() const noexcept { return nullptr; }
 
-  constexpr std::size_t size() const noexcept { return 0; }
+  [[nodiscard]] constexpr std::size_t size() const noexcept { return 0; }
 
   [[nodiscard]] constexpr int compare(std::string_view str) const noexcept {
     return std::string_view{}.compare(str);
   }
 
-  constexpr operator std::string_view() const noexcept { return {}; }
+  [[nodiscard]] constexpr operator std::string_view() const noexcept { return {}; }
 };
 
 template <std::size_t N>
