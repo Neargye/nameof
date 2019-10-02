@@ -5,7 +5,7 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// vesion 0.9.0
+// vesion 0.9.1
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
@@ -39,6 +39,16 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+
+// Checks nameof_type compiler compatibility.
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+#  define NAMEOF_TYPE_SUPPORTED 1
+#endif
+
+// Checks nameof_enum compiler compatibility.
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9 || defined(_MSC_VER)
+#  define NAMEOF_ENUM_SUPPORTED 1
+#endif
 
 // Enum value must be greater or equals than NAMEOF_ENUM_RANGE_MIN. By default NAMEOF_ENUM_RANGE_MIN = -128.
 // If need another min range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN.
@@ -82,7 +92,7 @@ struct identity final {
 
 template <typename... T>
 struct nameof_type_supported final
-#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
     : std::true_type {};
 #else
     : std::false_type {};
@@ -90,7 +100,7 @@ struct nameof_type_supported final
 
 template <typename T>
 struct nameof_enum_supported final
-#if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9 || defined(_MSC_VER) || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
     : std::true_type {};
 #else
     : std::false_type {};
@@ -320,18 +330,17 @@ constexpr std::string_view pretty_name(std::string_view name, bool remove_templa
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
-#if defined(__clang__) || defined(__GNUC__)
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
+#  if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9
   constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
-#elif defined(_MSC_VER)
+#  elif defined(_MSC_VER)
   constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+#  endif
+  return static_string<name.size()>{name};
+#else
+  static_assert(nameof_enum_supported<E>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return std::string_view{}; // Unsupported compiler.
 #endif
-
-  if constexpr (nameof_enum_supported<E>::value) {
-    return static_string<name.size()>{name};
-  } else {
-    static_assert(nameof_enum_supported<E>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-    return std::string_view{}; // Unsupported compiler.
-  }
 }
 
 template <typename E, E V>
@@ -465,7 +474,7 @@ constexpr auto strings() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
   if constexpr (sparsity_v<E>) {
-    return strings<E>(std::make_index_sequence<count_v<E>>{});
+    return strings<E>(sequence_v<E>);
   } else {
     return strings<E>(range_v<E>);
   }
@@ -502,20 +511,19 @@ class enum_traits final {
 
 template <typename... T>
 constexpr auto n() noexcept {
-#if defined(__clang__)
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
+#  if defined(__clang__)
   constexpr std::string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
-#elif defined(__GNUC__)
+#  elif defined(__GNUC__)
   constexpr std::string_view name{__PRETTY_FUNCTION__ + 46, sizeof(__PRETTY_FUNCTION__) - 49};
-#elif defined(_MSC_VER)
+#  elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
+#  endif
+  return static_string<name.size()>{name};
+#else
+  static_assert(nameof_type_supported<T...>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return std::string_view{}; // Unsupported compiler.
 #endif
-
-  if constexpr (nameof_type_supported<T...>::value) {
-    return static_string<name.size()>{name};
-  } else {
-    static_assert(nameof_type_supported<T...>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-    return std::string_view{}; // Unsupported compiler.
-  }
 }
 
 } // namespace nameof::detail

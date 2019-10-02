@@ -88,7 +88,7 @@ int main() {
   constexpr auto name = NAMEOF(structvar);
   static_assert("structvar" == name);
 
-#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
+#if defined(NAMEOF_ENUM_SUPPORTED)
   // Nameof enum variable.
   auto color = Color::RED;
   std::cout << nameof::nameof_enum(color) << std::endl; // 'RED'

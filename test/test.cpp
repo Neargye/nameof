@@ -225,7 +225,7 @@ TEST_CASE("NAMEOF_RAW") {
   }
 }
 
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9) || defined(_MSC_VER)
+#if defined(NAMEOF_ENUM_SUPPORTED)
 
 static_assert(nameof::is_nameof_enum_supported, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
@@ -369,7 +369,7 @@ TEST_CASE("nameof_enum") {
 
 #endif
 
-#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+#if defined(NAMEOF_TYPE_SUPPORTED)
 
 static_assert(nameof::is_nameof_type_supported, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
