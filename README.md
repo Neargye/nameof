@@ -36,7 +36,8 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 ## Documentation
 
 * [Reference](doc/reference.md)
-* [limitations](doc/limitations.md)
+* [Limitations](doc/limitations.md)
+* [Integration](#Integration)
 
 ## [Examples](example/example.cpp)
 
