@@ -14,6 +14,16 @@
 * [`NAMEOF_TYPE_EXPR` macro that obtains string name type of expression, reference and cv-qualifiers are ignored.](#NAMEOF_TYPE_EXPR)
 * [`NAMEOF_FULL_TYPE_EXPR` macro that obtains string name full type of expression, with reference and cv-qualifiers.](#NAMEOF_FULL_TYPE_EXPR)
 
+## Synopsis
+
+* Before use, read the [limitations](limitations.md) of functionality.
+
+* All functions `constexpr` and `noexcept`.
+
+* To check is nameof_type supported compiler use macro `NAMEOF_TYPE_SUPPORTED` or constexpr constant `nameof::is_nameof_type_supported`.
+
+* To check is nameof_enum supported compiler use macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.
+
 ## `NAMEOF`
 
 * Macro that obtains simple (unqualified) string name of variable, function, macro.

@@ -4,15 +4,17 @@
 
 # Nameof Type
 
+* To check is nameof_type supported compiler use macro `NAMEOF_TYPE_SUPPORTED` or constexpr constant `nameof::is_nameof_type_supported`.
+
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 7.
 
 * Nameof type returns compiler-specific type name.
 
-* In all cases, reference and cv-qualifiers are ignored by `nameof_type` (that is, `nameof_type<const T&>() == nameof_type<T>()`).
-
-* If you need detailed name of full type, use `nameof_full_type`.
+* If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
 # Nameof Enum
+
+* To check is nameof_enum supported compiler use macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.
 
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 9.
 
