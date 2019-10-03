@@ -83,32 +83,11 @@ static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<std::int16_t>::max)()
 
 static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_MAX must be greater than NAMEOF_ENUM_RANGE_MIN.");
 
-namespace detail {
-
-template <typename T>
-struct identity final {
-  using type = T;
-};
-
-template <typename... T>
-struct nameof_type_supported final
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
-template <typename T>
-struct nameof_enum_supported final
-#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
 template <std::size_t N>
-struct [[nodiscard]] static_string final {
-  constexpr static_string(std::string_view str) noexcept : static_string{str, std::make_index_sequence<N>{}} {}
+struct [[nodiscard]] cstring final {
+  static_assert(N > 0, "Expression does not have a name.");
+
+  constexpr cstring(std::string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {}
 
   [[nodiscard]] constexpr auto data() const noexcept { return chars.data(); }
 
@@ -150,88 +129,73 @@ struct [[nodiscard]] static_string final {
 
  private:
   template <std::size_t... I>
-  constexpr static_string(std::string_view str, std::index_sequence<I...>) noexcept : chars{{str[I]..., '\0'}} {}
+  constexpr cstring(std::string_view str, std::index_sequence<I...>) noexcept : chars{{str[I]..., '\0'}} {}
 
   const std::array<char, N + 1> chars;
 };
 
-template <>
-struct [[nodiscard]] static_string<0> final {
-  constexpr static_string(std::string_view) noexcept {}
-
-  [[nodiscard]] constexpr const char* data() const noexcept { return nullptr; }
-
-  [[nodiscard]] constexpr std::size_t size() const noexcept { return 0; }
-
-  [[nodiscard]] constexpr int compare(std::string_view str) const noexcept {
-    return std::string_view{}.compare(str);
-  }
-
-  [[nodiscard]] constexpr operator std::string_view() const noexcept { return {}; }
-};
-
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator==(const static_string<N>& lhs, std::string_view rhs) noexcept {
+[[nodiscard]] constexpr bool operator==(const cstring<N>& lhs, std::string_view rhs) noexcept {
   return lhs.compare(rhs) == 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator==(std::string_view lhs, const static_string<N>& rhs) noexcept {
+[[nodiscard]] constexpr bool operator==(std::string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) == 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator!=(const static_string<N>& lhs, std::string_view rhs) noexcept {
+[[nodiscard]] constexpr bool operator!=(const cstring<N>& lhs, std::string_view rhs) noexcept {
   return lhs.compare(rhs) != 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator!=(std::string_view lhs, const static_string<N>& rhs) noexcept {
+[[nodiscard]] constexpr bool operator!=(std::string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) != 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator>(const static_string<N>& lhs, std::string_view rhs) noexcept {
+[[nodiscard]] constexpr bool operator>(const cstring<N>& lhs, std::string_view rhs) noexcept {
   return lhs.compare(rhs) > 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator>(std::string_view lhs, const static_string<N>& rhs) noexcept {
+[[nodiscard]] constexpr bool operator>(std::string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) > 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator>=(const static_string<N>& lhs, std::string_view rhs) noexcept {
+[[nodiscard]] constexpr bool operator>=(const cstring<N>& lhs, std::string_view rhs) noexcept {
   return lhs.compare(rhs) >= 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator>=(std::string_view lhs, const static_string<N>& rhs) noexcept {
+[[nodiscard]] constexpr bool operator>=(std::string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) >= 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator<(const static_string<N>& lhs, std::string_view rhs) noexcept {
+[[nodiscard]] constexpr bool operator<(const cstring<N>& lhs, std::string_view rhs) noexcept {
   return lhs.compare(rhs) < 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator<(std::string_view lhs, const static_string<N>& rhs) noexcept {
+[[nodiscard]] constexpr bool operator<(std::string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) < 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator<=(const static_string<N>& lhs, std::string_view rhs) noexcept {
+[[nodiscard]] constexpr bool operator<=(const cstring<N>& lhs, std::string_view rhs) noexcept {
   return lhs.compare(rhs) <= 0;
 }
 
 template <std::size_t N>
-[[nodiscard]] constexpr bool operator<=(std::string_view lhs, const static_string<N>& rhs) noexcept {
+[[nodiscard]] constexpr bool operator<=(std::string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) <= 0;
 }
 
 template <typename Char, typename Traits, std::size_t N>
-std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const static_string<N>& srt) {
+std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& srt) {
   for (auto c : std::string_view{srt}) {
     os.put(c);
   }
@@ -239,14 +203,65 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   return os;
 }
 
+namespace detail {
+
+template <typename T>
+struct identity final {
+  using type = T;
+};
+
+template <typename... T>
+struct nameof_type_supported final
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
+template <typename T>
+struct nameof_enum_supported final
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
+template <std::size_t N>
+struct static_string final {
+  constexpr static_string(std::string_view str) noexcept : static_string{str, std::make_index_sequence<N>{}} {}
+
+  constexpr const char* data() const noexcept { return chars.data(); }
+
+  constexpr std::size_t size() const noexcept { return chars.size(); }
+
+  constexpr operator std::string_view() const noexcept { return {data(), size()}; }
+
+ private:
+  template <std::size_t... I>
+  constexpr static_string(std::string_view str, std::index_sequence<I...>) noexcept : chars{{str[I]...}} {}
+
+  const std::array<char, N> chars;
+};
+
+template <>
+struct static_string<0> final {
+  constexpr static_string(std::string_view) noexcept {}
+
+  constexpr const char* data() const noexcept { return nullptr; }
+
+  constexpr std::size_t size() const noexcept { return 0; }
+
+  constexpr operator std::string_view() const noexcept { return {}; }
+};
+
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T, typename R>
 using enable_if_enum_t = std::enable_if_t<std::is_enum_v<T>, R>;
 
-template <typename E>
-inline constexpr bool is_enum_v = std::is_enum_v<E> && std::is_same_v<E, std::decay_t<E>>;
+template <typename T>
+inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::decay_t<T>>;
 
 constexpr std::string_view pretty_name(std::string_view name, bool remove_template_suffix = true) noexcept {
   if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
@@ -360,12 +375,13 @@ inline constexpr int reflected_max_v = static_cast<int>(enum_range<E>::max < (st
 
 template <typename E>
 constexpr std::size_t reflected_size() {
-  static_assert(is_enum_v<E>, "nameof::detail::range_size requires enum type.");
+  static_assert(is_enum_v<E>, "nameof::detail::reflected_size requires enum type.");
   static_assert(reflected_min_v<E> > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
   static_assert(reflected_max_v<E> < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires max must be less than INT16_MAX.");
   static_assert(reflected_max_v<E> > reflected_min_v<E>, "nameof::enum_range requires max > min.");
   constexpr auto size = reflected_max_v<E> - reflected_min_v<E> + 1;
   static_assert(size > 0, "nameof::enum_range requires valid size.");
+  static_assert(size < (std::numeric_limits<std::int16_t>::max)(), "magic_enum::enum_range requires valid size.");
 
   return static_cast<std::size_t>(size);
 }
@@ -399,6 +415,7 @@ constexpr std::size_t range_size() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::range_size requires enum type.");
   constexpr auto size = max_v<E> - min_v<E> + 1;
   static_assert(size > 0, "nameof::enum_range requires valid size.");
+  static_assert(size < (std::numeric_limits<std::int16_t>::max)(), "magic_enum::enum_range requires valid size.");
 
   return static_cast<std::size_t>(size);
 }
@@ -519,7 +536,7 @@ constexpr auto n() noexcept {
 #  elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #  endif
-  return static_string<name.size()>{name};
+  return cstring<name.size()>{name};
 #else
   static_assert(nameof_type_supported<T...>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return std::string_view{}; // Unsupported compiler.
@@ -575,7 +592,7 @@ template <typename T>
   constexpr auto name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
   static_assert(!name.empty(), "Expression does not have a name.");        \
   constexpr auto size = name.size();                                       \
-  return ::nameof::detail::static_string<size>{name}; }()
+  return ::nameof::cstring<size>{name}; }()
 
 // Obtains simple (unqualified) full (with template suffix) string name of variable, function, macro.
 #define NAMEOF_FULL(...) []() constexpr noexcept {                          \
@@ -583,7 +600,7 @@ template <typename T>
   constexpr auto name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
   static_assert(!name.empty(), "Expression does not have a name.");         \
   constexpr auto size = name.size();                                        \
-  return ::nameof::detail::static_string<size>{name}; }()
+  return ::nameof::cstring<size>{name}; }()
 
 // Obtains raw string name of variable, function, macro.
 #define NAMEOF_RAW(...) []() constexpr noexcept {                   \
@@ -591,7 +608,7 @@ template <typename T>
   constexpr auto name = ::std::string_view{#__VA_ARGS__};           \
   static_assert(!name.empty(), "Expression does not have a name."); \
   constexpr auto size = name.size();                                \
-  return ::nameof::detail::static_string<size>{name}; }()
+  return ::nameof::cstring<size>{name}; }()
 
 // Obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum(__VA_ARGS__)
