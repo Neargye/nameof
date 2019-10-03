@@ -14,7 +14,7 @@
 * [`NAMEOF_TYPE_EXPR` macro that obtains string name type of expression, reference and cv-qualifiers are ignored.](#NAMEOF_TYPE_EXPR)
 * [`NAMEOF_FULL_TYPE_EXPR` macro that obtains string name full type of expression, with reference and cv-qualifiers.](#NAMEOF_FULL_TYPE_EXPR)
 
-## Synopsis
+# Synopsis
 
 * Before use, read the [limitations](limitations.md) of functionality.
 

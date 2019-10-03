@@ -381,7 +381,7 @@ constexpr std::size_t reflected_size() {
   static_assert(reflected_max_v<E> > reflected_min_v<E>, "nameof::enum_range requires max > min.");
   constexpr auto size = reflected_max_v<E> - reflected_min_v<E> + 1;
   static_assert(size > 0, "nameof::enum_range requires valid size.");
-  static_assert(size < (std::numeric_limits<std::int16_t>::max)(), "magic_enum::enum_range requires valid size.");
+  static_assert(size < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires valid size.");
 
   return static_cast<std::size_t>(size);
 }
@@ -415,7 +415,7 @@ constexpr std::size_t range_size() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::range_size requires enum type.");
   constexpr auto size = max_v<E> - min_v<E> + 1;
   static_assert(size > 0, "nameof::enum_range requires valid size.");
-  static_assert(size < (std::numeric_limits<std::int16_t>::max)(), "magic_enum::enum_range requires valid size.");
+  static_assert(size < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires valid size.");
 
   return static_cast<std::size_t>(size);
 }
