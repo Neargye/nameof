@@ -33,6 +33,11 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * Name of macro
 * Enum to string
 
+## Documentation
+
+* [Reference](doc/reference.md)
+* [limitations](doc/limitations.md)
+
 ## [Examples](example/example.cpp)
 
 * Nameof
@@ -95,92 +100,6 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   // var_type_name -> "int"
   constexpr auto type_name = NAMEOF_TYPE(T); // or nameof::nameof_type<T>()
   // type_name -> "int"
-  ```
-
-## Remarks
-
-* Nameof returns `std::string_view`. If argument does not have name, returns empty string.
-
-* Nameof expression argument are identified, but are not evaluated.
-
-* Nameof type returns compiler-specific type name. In all cases, reference and cv-qualifiers are ignored by `nameof_type` (that is, `nameof_type<const T&>() == nameof_type<T>()`). If you need detailed name of full type, use `nameof_full_type`.
-
-* If you need name with template suffix, use NAMEOF_FULL.
-  ```cpp
-  // Full name of template function.
-  NAMEOF_FULL(foo<int, float>()) -> "foo<int, float>"
-
-  // Full name of template member function.
-  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
-  ```
-
-* If you need raw fully-qualified name, use NAMEOF_RAW.
-  ```cpp
-  NAMEOF_RAW(::somevar.somefield) -> "::somevar.somefield"
-  NAMEOF_RAW(&some_class::some_method<int>) -> "&some_class::some_method<int>"
-  ```
-
-* Enum value must be in range `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`. By default `NAMEOF_ENUM_RANGE_MIN = -128`, `NAMEOF_ENUM_RANGE_MAX = 128`.
-
-  If need another range for all enum types by default, redefine the macro `NAMEOF_ENUM_RANGE_MIN` and `NAMEOF_ENUM_RANGE_MAX`.
-  ```cpp
-  #define NAMEOF_ENUM_RANGE_MIN 0
-  #define NAMEOF_ENUM_RANGE_MAX 256
-  #include <nameof.hpp>
-  ```
-
-  If need another range for specific enum type, add specialization `enum_range` for necessary enum type.
-  ```cpp
-  #include <nameof.hpp>
-
-  enum number { one = 100, two = 200, three = 300 };
-
-  namespace nameof {
-  template <>
-  struct enum_range<number> {
-    static constexpr int min = 100;
-    static constexpr int max = 300;
-  };
-  }
-  ```
-
-* Nameof enum obtains the first defined value enums, and won't work if value are aliased.
-  ```cpp
-  enum ShapeKind {
-    ConvexBegin = 0,
-    Box = 0, // Won't work.
-    Sphere = 1,
-    ConvexEnd = 2,
-    Donut = 2, // Won't work too.
-    Banana = 3,
-    COUNT = 4,
-  };
-  // NAMEOF_ENUM(ShapeKind::Box) -> "ConvexBegin"
-  // nameof::nameof_enum(ShapeKind::Box) -> "ConvexBegin"
-  ```
-  Work around the issue:
-  ```cpp
-  enum ShapeKind {
-    // Convex shapes, see ConvexBegin and ConvexEnd below.
-    Box = 0,
-    Sphere = 1,
-
-    // Non-convex shapes.
-    Donut = 2,
-    Banana = 3,
-
-    COUNT = Banana + 1,
-
-    // Non-reflected aliases.
-    ConvexBegin = Box,
-    ConvexEnd = Sphere + 1,
-  };
-  // NAMEOF_ENUM(ShapeKind::Box) -> "Box"
-  // nameof::nameof_enum(ShapeKind::Box) -> "Box"
-
-  // Non-reflected aliases.
-  // NAMEOF_ENUM(ShapeKind::ConvexBegin) -> "Box"
-  // nameof::nameof_enum(ShapeKind::ConvexBegin) -> "Box"
   ```
 
 ## Integration
