@@ -212,7 +212,7 @@ struct identity final {
 
 template <typename... T>
 struct nameof_type_supported final
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
     : std::true_type {};
 #else
     : std::false_type {};
@@ -220,7 +220,7 @@ struct nameof_type_supported final
 
 template <typename T>
 struct nameof_enum_supported final
-#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
     : std::true_type {};
 #else
     : std::false_type {};
