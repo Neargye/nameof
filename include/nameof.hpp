@@ -35,6 +35,7 @@
 #include <array>
 #include <cstddef>
 #include <iosfwd>
+#include <iterator>
 #include <limits>
 #include <string_view>
 #include <type_traits>
