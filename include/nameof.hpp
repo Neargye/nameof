@@ -259,7 +259,7 @@ template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T, typename R>
-using enable_if_enum_t = std::enable_if_t<std::is_enum_v<T>, R>;
+using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
 
 template <typename T>
 inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::decay_t<T>>;
