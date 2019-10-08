@@ -85,7 +85,7 @@ static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<std::int16_t>::max)()
 static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_MAX must be greater than NAMEOF_ENUM_RANGE_MIN.");
 
 template <std::size_t N>
-struct [[nodiscard]] cstring final {
+struct [[nodiscard]] cstring {
   static_assert(N > 0, "Expression does not have a name.");
 
   constexpr cstring(std::string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {}
