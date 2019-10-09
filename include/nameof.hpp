@@ -69,7 +69,7 @@ namespace nameof {
 // If need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN and NAMEOF_ENUM_RANGE_MAX.
 // If need another range for specific enum type, add specialization enum_range for necessary enum type.
 template <typename E>
-struct enum_range final {
+struct enum_range {
   static_assert(std::is_enum_v<E>, "nameof::enum_range requires enum type.");
   inline static constexpr int min = NAMEOF_ENUM_RANGE_MIN;
   inline static constexpr int max = NAMEOF_ENUM_RANGE_MAX;
@@ -207,12 +207,12 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 namespace detail {
 
 template <typename T>
-struct identity final {
+struct identity {
   using type = T;
 };
 
 template <typename... T>
-struct nameof_type_supported final
+struct nameof_type_supported
 #if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
     : std::true_type {};
 #else
@@ -220,7 +220,7 @@ struct nameof_type_supported final
 #endif
 
 template <typename T>
-struct nameof_enum_supported final
+struct nameof_enum_supported
 #if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
     : std::true_type {};
 #else
@@ -228,7 +228,7 @@ struct nameof_enum_supported final
 #endif
 
 template <std::size_t N>
-struct static_string final {
+struct static_string {
   constexpr static_string(std::string_view str) noexcept : static_string{str, std::make_index_sequence<N>{}} {}
 
   constexpr const char* data() const noexcept { return chars.data(); }
@@ -245,7 +245,7 @@ struct static_string final {
 };
 
 template <>
-struct static_string<0> final {
+struct static_string<0> {
   constexpr static_string(std::string_view) noexcept {}
 
   constexpr const char* data() const noexcept { return nullptr; }
@@ -499,7 +499,7 @@ constexpr auto strings() noexcept {
 }
 
 template <typename E>
-class enum_traits final {
+class enum_traits {
   static_assert(is_enum_v<E>, "nameof::enum_traits requires enum type.");
   static_assert(enum_range<E>::min > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
   static_assert(enum_range<E>::max < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires max must be less than INT16_MAX.");
