@@ -83,10 +83,26 @@ SomeStruct structvar;
 Long othervar;
 SomeStruct* ptrvar = &structvar;
 
+void name_to_str(const char* name) {
+  std::cout << name << std::endl;
+}
+
+void name_to_string(const std::string& name) {
+  std::cout << name << std::endl;
+}
+
+void name_to_string_view(std::string_view name) {
+  std::cout << name << std::endl;
+}
+
 int main() {
   // Compile-time.
   constexpr auto name = NAMEOF(structvar);
   static_assert("structvar" == name);
+
+  name_to_str(name.data()); // 'structvar'
+  name_to_string(std::string{name}); // 'structvar'
+  name_to_string_view(name); // 'structvar'
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
   // Nameof enum variable.
