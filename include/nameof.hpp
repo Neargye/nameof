@@ -86,7 +86,7 @@ static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_
 
 template <std::size_t N>
 struct [[nodiscard]] cstring {
-  static_assert(N > 0, "Expression does not have a name.");
+  static_assert(N > 0, "nameof::cstring requires size greater than 0.");
 
   constexpr cstring(std::string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {}
 
@@ -537,6 +537,8 @@ constexpr auto n() noexcept {
 #  elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #  endif
+  static_assert(!name.empty(), "Type does not have a name.");
+
   return cstring<name.size()>{name};
 #else
   static_assert(nameof_type_supported<T...>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
