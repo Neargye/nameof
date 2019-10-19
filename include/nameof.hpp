@@ -5,7 +5,6 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// vesion 0.9.1
 // vesion 0.9.2
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
