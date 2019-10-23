@@ -33,6 +33,7 @@
 #define NEARGYE_NAMEOF_HPP
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstddef>
 #include <iosfwd>
@@ -86,54 +87,84 @@ static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<std::int16_t>::max)()
 static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_MAX must be greater than NAMEOF_ENUM_RANGE_MIN.");
 
 template <std::size_t N>
-struct [[nodiscard]] cstring {
+class [[nodiscard]] cstring {
   static_assert(N > 0, "nameof::cstring requires size greater than 0.");
 
-  constexpr cstring(std::string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {}
+  std::array<char, N + 1> chars_;
 
-  [[nodiscard]] constexpr auto data() const noexcept { return chars.data(); }
+ public:
+  using value_type      = char;
+  using size_type       = std::size_t;
+  using difference_type = std::ptrdiff_t;
+  using pointer         = char*;
+  using const_pointer   = const char*;
+  using reference       = char&;
+  using const_reference = const char&;
 
-  [[nodiscard]] constexpr auto size() const noexcept { return N; }
+  using iterator       = char*;
+  using const_iterator = const char*;
 
-  [[nodiscard]] constexpr auto begin() const noexcept { return data(); }
+  using reverse_iterator       = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  [[nodiscard]] constexpr auto end() const noexcept { return data() + size(); }
+  explicit constexpr cstring(std::string_view str) noexcept : chars_{} {
+    assert(str.size() == N);
+    for (std::size_t i = 0; i < N; ++i) {
+      chars_[i] = str[i];
+    }
+  }
 
-  [[nodiscard]] constexpr auto cbegin() const noexcept { return begin(); }
+  constexpr cstring() = delete;
 
-  [[nodiscard]] constexpr auto cend() const noexcept { return end(); }
+  constexpr cstring(const cstring&) = default;
 
-  [[nodiscard]] constexpr auto rbegin() const noexcept { return std::reverse_iterator<decltype(end())>{end()}; }
+  constexpr cstring(cstring&&) = default;
 
-  [[nodiscard]] constexpr auto rend() const noexcept { return std::reverse_iterator<decltype(begin())>{begin()}; }
+  ~cstring() = default;
 
-  [[nodiscard]] constexpr auto crbegin() const noexcept { return rbegin(); }
+  constexpr cstring& operator=(const cstring&) = default;
 
-  [[nodiscard]] constexpr auto crend() const noexcept { return rend(); }
+  constexpr cstring& operator=(cstring&&) = default;
 
-  [[nodiscard]] constexpr auto operator[](std::size_t i) const noexcept { return chars[i]; }
+  [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_.data(); }
 
-  [[nodiscard]] constexpr auto at(std::size_t i) const { return chars.at(i); }
+  [[nodiscard]] constexpr size_type size() const noexcept { return N; }
 
-  [[nodiscard]] constexpr auto front() const noexcept { return chars[0]; }
+  [[nodiscard]] constexpr const_iterator begin() const noexcept { return data(); }
 
-  [[nodiscard]] constexpr auto back() const noexcept { return chars[N]; }
+  [[nodiscard]] constexpr const_iterator end() const noexcept { return data() + size(); }
 
-  [[nodiscard]] constexpr auto length() const noexcept { return size(); }
+  [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
 
-  [[nodiscard]] constexpr auto empty() const noexcept { return false; }
+  [[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
 
-  [[nodiscard]] constexpr auto compare(std::string_view str) const noexcept {
+  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return end(); }
+
+  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return begin(); }
+
+  [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+
+  [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+
+  [[nodiscard]] constexpr const_reference operator[](std::size_t i) const noexcept { return chars_[i]; }
+
+  [[nodiscard]] constexpr const_reference at(std::size_t i) const { return chars_.at(i); }
+
+  [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
+
+  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[N]; }
+
+  [[nodiscard]] constexpr size_type length() const noexcept { return size(); }
+
+  [[nodiscard]] constexpr bool empty() const noexcept { return false; }
+
+  [[nodiscard]] constexpr int compare(std::string_view str) const noexcept {
     return std::string_view{data(), size()}.compare(str);
   }
 
   [[nodiscard]] constexpr operator std::string_view() const noexcept { return {data(), size()}; }
 
- private:
-  template <std::size_t... I>
-  constexpr cstring(std::string_view str, std::index_sequence<I...>) noexcept : chars{{str[I]..., '\0'}} {}
 
-  const std::array<char, N + 1> chars;
 };
 
 template <std::size_t N>
