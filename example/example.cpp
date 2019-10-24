@@ -102,8 +102,11 @@ int main() {
   static_assert("structvar"sv == name);
 
   name_to_chars(name.c_str()); // 'structvar'
-  name_to_string(std::string{name}); // 'structvar'
+  // Note: c_str() return name as null-terminated C string, no memory allocation.
+  name_to_string(name.to_string()); // 'structvar'
+  // Note: to_string() occure memory allocation to copy name to std::string.
   name_to_string_view(name); // 'structvar'
+  // Note: Implicit cast to std::string_view, no memory allocation.
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
   // Nameof enum variable.
