@@ -166,9 +166,15 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
+  template<typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
+  [[nodiscard]] std::basic_string<Char, Traits, Allocator> to_string() const { return {begin(), end()}; }
+
   [[nodiscard]] constexpr operator std::string_view() const noexcept { return {data(), size()}; }
 
   [[nodiscard]] constexpr explicit operator const char*() const noexcept { return data(); }
+
+  template<typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
+  [[nodiscard]] explicit operator std::basic_string<Char, Traits, Allocator>() const { return {begin(), end()}; }
 };
 
 template <std::size_t N>
