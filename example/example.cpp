@@ -83,7 +83,7 @@ SomeStruct structvar;
 Long othervar;
 SomeStruct* ptrvar = &structvar;
 
-void name_to_str(const char* name) {
+void name_to_chars(const char* name) {
   std::cout << name << std::endl;
 }
 
@@ -98,9 +98,10 @@ void name_to_string_view(std::string_view name) {
 int main() {
   // Compile-time.
   constexpr auto name = NAMEOF(structvar);
-  static_assert("structvar" == name);
+  using namespace std::literals::string_view_literals;
+  static_assert("structvar"sv == name);
 
-  name_to_str(name.data()); // 'structvar'
+  name_to_chars(name.c_str()); // 'structvar'
   name_to_string(std::string{name}); // 'structvar'
   name_to_string_view(name); // 'structvar'
 

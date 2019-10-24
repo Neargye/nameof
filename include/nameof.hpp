@@ -162,9 +162,13 @@ class [[nodiscard]] cstring {
     return std::string_view{data(), size()}.compare(str);
   }
 
+  [[nodiscard]] constexpr std::string_view to_string_view() const noexcept { return {data(), size()}; }
+
+  [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
+
   [[nodiscard]] constexpr operator std::string_view() const noexcept { return {data(), size()}; }
 
-
+  [[nodiscard]] constexpr explicit operator const char*() const noexcept { return data(); }
 };
 
 template <std::size_t N>
