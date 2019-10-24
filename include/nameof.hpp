@@ -107,7 +107,7 @@ class [[nodiscard]] cstring {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  explicit constexpr cstring(std::string_view str) noexcept : chars_{} {
+  constexpr explicit cstring(std::string_view str) noexcept : chars_{} {
     assert(str.size() == N);
     for (std::size_t i = 0; i < N; ++i) {
       chars_[i] = str[i];
