@@ -146,9 +146,9 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[](std::size_t i) const noexcept { return chars_[i]; }
+  [[nodiscard]] constexpr const_reference operator[](std::size_t i) const noexcept { return assert(i < N), chars_[i]; }
 
-  [[nodiscard]] constexpr const_reference at(std::size_t i) const { return chars_.at(i); }
+  [[nodiscard]] constexpr const_reference at(std::size_t i) const { return assert(i < N), chars_.at(i); }
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
 
