@@ -162,12 +162,10 @@ class [[nodiscard]] cstring {
     return std::string_view{data(), size()}.compare(str);
   }
 
-  [[nodiscard]] constexpr std::string_view to_string_view() const noexcept { return {data(), size()}; }
-
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
   template<typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
-  [[nodiscard]] std::basic_string<Char, Traits, Allocator> to_string() const { return {begin(), end()}; }
+  [[nodiscard]] std::basic_string<Char, Traits, Allocator> str() const { return {begin(), end()}; }
 
   [[nodiscard]] constexpr operator std::string_view() const noexcept { return {data(), size()}; }
 
