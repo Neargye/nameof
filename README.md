@@ -115,7 +115,7 @@ If you are using [Conan](https://www.conan.io/) to manage your dependencies, mer
 
 * Clang/LLVM >= 5
 * Visual C++ >= 15.3 / Visual Studio >= 2017
-* Xcode >= 9
+* Xcode >= 10
 * GCC >= 7 (GCC >= 9 for NAMEOF_ENUM)
 
 ## Licensed under the [MIT License](LICENSE)

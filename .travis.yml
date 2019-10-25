@@ -109,13 +109,6 @@ matrix:
       env:
         - CXX_COMPILER=clang++-9 CC_COMPILER=clang-9
 
-
-    - os: osx
-      compiler: clang++
-      osx_image: xcode9.4
-      env:
-        - CXX_COMPILER=clang++ CC_COMPILER=clang
-
     - os: osx
       compiler: clang++
       osx_image: xcode10.3
