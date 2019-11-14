@@ -267,36 +267,6 @@ struct nameof_enum_supported
     : std::false_type {};
 #endif
 
-template <std::size_t N>
-struct static_string {
-  constexpr explicit static_string(std::string_view str) noexcept : chars{} {
-    assert(str.size() == N);
-    for (std::size_t i = 0; i < N; ++i) {
-      chars[i] = str[i];
-    }
-  }
-
-  constexpr const char* data() const noexcept { return chars.data(); }
-
-  constexpr std::size_t size() const noexcept { return N; }
-
-  constexpr operator std::string_view() const noexcept { return {data(), size()}; }
-
- private:
-  std::array<char, N + 1> chars;
-};
-
-template <>
-struct static_string<0> {
-  constexpr static_string(std::string_view) noexcept {}
-
-  constexpr const char* data() const noexcept { return nullptr; }
-
-  constexpr std::size_t size() const noexcept { return 0; }
-
-  constexpr operator std::string_view() const noexcept { return {}; }
-};
-
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
@@ -394,7 +364,11 @@ constexpr auto n() noexcept {
 #  elif defined(_MSC_VER)
   constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #  endif
-  return static_string<name.size()>{name};
+  if constexpr (name.size() > 0) {
+    return cstring<name.size()>{name};
+  } else {
+    return std::string_view{};
+  }
 #else
   static_assert(nameof_enum_supported<E>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return std::string_view{}; // Unsupported compiler.
