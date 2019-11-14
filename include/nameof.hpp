@@ -269,7 +269,12 @@ struct nameof_enum_supported
 
 template <std::size_t N>
 struct static_string {
-  constexpr static_string(std::string_view str) noexcept : static_string{str, std::make_index_sequence<N>{}} {}
+  constexpr explicit static_string(std::string_view str) noexcept : chars{} {
+    assert(str.size() == N);
+    for (std::size_t i = 0; i < N; ++i) {
+      chars[i] = str[i];
+    }
+  }
 
   constexpr const char* data() const noexcept { return chars.data(); }
 
@@ -278,10 +283,7 @@ struct static_string {
   constexpr operator std::string_view() const noexcept { return {data(), size()}; }
 
  private:
-  template <std::size_t... I>
-  constexpr static_string(std::string_view str, std::index_sequence<I...>) noexcept : chars{{str[I]..., '\0'}} {}
-
-  const std::array<char, N + 1> chars;
+  std::array<char, N + 1> chars;
 };
 
 template <>
