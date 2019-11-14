@@ -113,7 +113,7 @@ If you are using [Conan](https://www.conan.io/) to manage your dependencies, mer
 
 ## Compiler compatibility
 
-* Clang/LLVM >= 5
+* Clang/LLVM >= 7
 * Visual C++ >= 15.3 / Visual Studio >= 2017
 * Xcode >= 10
 * GCC >= 7 (GCC >= 9 for NAMEOF_ENUM)
