@@ -270,7 +270,6 @@ TEST_CASE("NAMEOF_CONST_ENUM") {
   REQUIRE(cr_name == "RED");
   REQUIRE(NAMEOF_CONST_ENUM(Color::BLUE) == "BLUE");
   REQUIRE(NAMEOF_CONST_ENUM(cm[1]) == "GREEN");
-  REQUIRE(NAMEOF_CONST_ENUM(static_cast<Color>(0)).empty());
 
   constexpr Numbers no = Numbers::one;
   constexpr auto no_name = NAMEOF_CONST_ENUM(no);
@@ -278,7 +277,6 @@ TEST_CASE("NAMEOF_CONST_ENUM") {
   REQUIRE(NAMEOF_CONST_ENUM(Numbers::two) == "two");
   REQUIRE(NAMEOF_CONST_ENUM(Numbers::three) == "three");
   REQUIRE(NAMEOF_CONST_ENUM(Numbers::many) == "many");
-  REQUIRE(NAMEOF_CONST_ENUM(static_cast<Numbers>(0)).empty());
 
   constexpr Directions dr = Directions::Right;
   constexpr auto dr_name = NAMEOF_CONST_ENUM(dr);
@@ -286,7 +284,6 @@ TEST_CASE("NAMEOF_CONST_ENUM") {
   REQUIRE(NAMEOF_CONST_ENUM(Directions::Down) == "Down");
   REQUIRE(dr_name == "Right");
   REQUIRE(NAMEOF_CONST_ENUM(Directions::Left) == "Left");
-  REQUIRE(NAMEOF_CONST_ENUM(static_cast<Directions>(0)).empty());
 
   constexpr number nt = number::three;
   constexpr auto nt_name = NAMEOF_CONST_ENUM(nt);
@@ -294,7 +291,6 @@ TEST_CASE("NAMEOF_CONST_ENUM") {
   REQUIRE(NAMEOF_CONST_ENUM(number::two) == "two");
   REQUIRE(nt_name == "three");
   REQUIRE(NAMEOF_CONST_ENUM(number::four) == "four");
-  REQUIRE(NAMEOF_CONST_ENUM(static_cast<number>(0)).empty());
 }
 
 TEST_CASE("nameof_enum") {
@@ -339,7 +335,6 @@ TEST_CASE("nameof_enum") {
     REQUIRE(cr_name == "RED");
     REQUIRE(nameof::nameof_enum<Color::BLUE>() == "BLUE");
     REQUIRE(nameof::nameof_enum<cm[1]>() == "GREEN");
-    REQUIRE(nameof::nameof_enum<static_cast<Color>(0)>().empty());
 
     constexpr Numbers no = Numbers::one;
     constexpr auto no_name = nameof::nameof_enum<no>();
@@ -347,7 +342,6 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum<Numbers::two>() == "two");
     REQUIRE(nameof::nameof_enum<Numbers::three>() == "three");
     REQUIRE(nameof::nameof_enum<Numbers::many>() == "many");
-    REQUIRE(nameof::nameof_enum<static_cast<Numbers>(0)>().empty());
 
     constexpr Directions dr = Directions::Right;
     constexpr auto dr_name = nameof::nameof_enum<dr>();
@@ -355,7 +349,6 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum<Directions::Down>() == "Down");
     REQUIRE(dr_name == "Right");
     REQUIRE(nameof::nameof_enum<Directions::Left>() == "Left");
-    REQUIRE(nameof::nameof_enum<static_cast<Directions>(0)>().empty());
 
     constexpr number nt = number::three;
     constexpr auto nt_name = nameof::nameof_enum<nt>();
@@ -363,7 +356,6 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum<number::two>() == "two");
     REQUIRE(nt_name == "three");
     REQUIRE(nameof::nameof_enum<number::four>() == "four");
-    REQUIRE(nameof::nameof_enum<static_cast<number>(0)>().empty());
   }
 }
 

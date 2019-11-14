@@ -578,7 +578,7 @@ constexpr auto n() noexcept {
 #  elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #  endif
-  static_assert(!name.empty(), "Type does not have a name.");
+  static_assert(name.size() > 0, "Type does not have a name.");
 
   return cstring<name.size()>{name};
 #else
@@ -604,8 +604,13 @@ template <typename E>
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
-[[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
-  return detail::enum_name_v<detail::remove_cvref_t<decltype(V)>, V>;
+[[nodiscard]] constexpr auto nameof_enum() noexcept {
+  using D = detail::remove_cvref_t<decltype(V)>;
+  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
+  constexpr auto name = detail::n<D, V>();
+  static_assert(name.size() > 0, "Enum value does not have a name.");
+
+  return cstring<name.size()>{name};
 }
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
@@ -634,7 +639,7 @@ template <typename T>
 #define NAMEOF(...) []() constexpr noexcept {                              \
   ::std::void_t<decltype(__VA_ARGS__)>();                                  \
   constexpr auto name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
-  static_assert(!name.empty(), "Expression does not have a name.");        \
+  static_assert(name.size() > 0, "Expression does not have a name.");      \
   constexpr auto size = name.size();                                       \
   return ::nameof::cstring<size>{name}; }()
 
@@ -642,16 +647,16 @@ template <typename T>
 #define NAMEOF_FULL(...) []() constexpr noexcept {                          \
   ::std::void_t<decltype(__VA_ARGS__)>();                                   \
   constexpr auto name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(!name.empty(), "Expression does not have a name.");         \
+  static_assert(name.size() > 0, "Expression does not have a name.");       \
   constexpr auto size = name.size();                                        \
   return ::nameof::cstring<size>{name}; }()
 
 // Obtains raw string name of variable, function, macro.
-#define NAMEOF_RAW(...) []() constexpr noexcept {                   \
-  ::std::void_t<decltype(__VA_ARGS__)>();                           \
-  constexpr auto name = ::std::string_view{#__VA_ARGS__};           \
-  static_assert(!name.empty(), "Expression does not have a name."); \
-  constexpr auto size = name.size();                                \
+#define NAMEOF_RAW(...) []() constexpr noexcept {                     \
+  ::std::void_t<decltype(__VA_ARGS__)>();                             \
+  constexpr auto name = ::std::string_view{#__VA_ARGS__};             \
+  static_assert(name.size() > 0, "Expression does not have a name."); \
+  constexpr auto size = name.size();                                  \
   return ::nameof::cstring<size>{name}; }()
 
 // Obtains simple (unqualified) string enum name of enum variable.
