@@ -610,7 +610,7 @@ template <auto V>
   constexpr auto name = detail::n<D, V>();
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
-  return cstring<name.size()>{name};
+  return name;
 }
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
