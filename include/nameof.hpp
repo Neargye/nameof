@@ -579,10 +579,8 @@ template <typename E>
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
-[[nodiscard]] constexpr auto nameof_enum() noexcept {
-  using D = detail::remove_cvref_t<decltype(V)>;
-  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires enum type.");
-  constexpr auto name = detail::n<D, V>();
+[[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
+  constexpr std::string_view name = detail::enum_name_v<detail::remove_cvref_t<decltype(V)>, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
   return name;
