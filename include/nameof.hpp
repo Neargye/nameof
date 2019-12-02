@@ -554,6 +554,7 @@ constexpr auto n() noexcept {
 #  elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #  endif
+  static_assert(name.size() > 0, "Type does not have a name.");
 
   return cstring<name.size()>{name};
 #else
@@ -561,6 +562,9 @@ constexpr auto n() noexcept {
   return std::string_view{}; // Unsupported compiler.
 #endif
 }
+
+template <typename... T>
+inline constexpr auto type_name_v = n<T...>();
 
 } // namespace nameof::detail
 
@@ -588,28 +592,22 @@ template <auto V>
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 template <typename T>
-[[nodiscard]] constexpr auto nameof_type() noexcept {
+[[nodiscard]] constexpr std::string_view nameof_type() noexcept {
 #if defined(_MSC_VER)
-  constexpr auto name = detail::n<detail::identity<detail::remove_cvref_t<T>>>();
+  return detail::type_name_v<detail::identity<detail::remove_cvref_t<T>>>;
 #else
-  constexpr auto name = detail::n<detail::remove_cvref_t<T>>();
+  return detail::type_name_v<detail::remove_cvref_t<T>>;
 #endif
-  static_assert(name.size() > 0, "Type does not have a name.");
-
-  return name;
 }
 
 // Obtains string name of full type, with reference and cv-qualifiers.
 template <typename T>
-[[nodiscard]] constexpr auto nameof_full_type() noexcept {
+[[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
 #if defined(_MSC_VER)
-  constexpr auto name = detail::n<detail::identity<T>>();
+  return detail::type_name_v<detail::identity<T>>;
 #else
-  constexpr auto name = detail::n<T>();
+  return detail::type_name_v<T>;
 #endif
-  static_assert(name.size() > 0, "Type does not have a name.");
-
-  return name;
 }
 
 } // namespace nameof
