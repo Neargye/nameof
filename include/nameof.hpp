@@ -94,6 +94,15 @@ class [[nodiscard]] cstring {
 
   std::array<char, N + 1> chars_;
 
+  constexpr auto to_chars(std::string_view str) noexcept {
+    assert(str.size() == N);
+    decltype(chars_) chars = {};
+    for (std::size_t i = 0; i < str.size() && i < N; ++i) {
+      chars[i] = str[i];
+    }
+    return chars;
+  }
+
  public:
   using value_type      = char;
   using size_type       = std::size_t;
@@ -109,12 +118,7 @@ class [[nodiscard]] cstring {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  constexpr explicit cstring(std::string_view str) noexcept : chars_{} {
-    assert(str.size() == N);
-    for (std::size_t i = 0; i < N; ++i) {
-      chars_[i] = str[i];
-    }
-  }
+  constexpr explicit cstring(std::string_view str) noexcept : chars_{to_chars(str)} {}
 
   constexpr cstring() = delete;
 
