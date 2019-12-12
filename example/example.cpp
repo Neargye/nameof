@@ -41,7 +41,7 @@ void SomeMethod3() {
 
 template <typename T, typename U>
 std::string SomeMethod4(U value) {
-  auto function_name = std::string{NAMEOF(SomeMethod4<T, U>)}
+  auto function_name = NAMEOF(SomeMethod4<T, U>).str()
                            .append("<")
                            .append(NAMEOF_TYPE(T))
                            .append(", ")
@@ -102,9 +102,15 @@ int main() {
   static_assert("structvar"sv == name);
 
   name_to_chars(name.c_str()); // 'structvar'
+  // or name_to_chars(name.data());
   // Note: c_str() return name as null-terminated C string, no memory allocation.
+
   name_to_string(name.str()); // 'structvar'
   // Note: str() occure memory allocation to copy name to std::string.
+  // or name_to_string(std::string{name});
+  // or name_to_string(static_cast<std::string>(name));
+  // Note: cast to std::string occure memory allocation to copy name to std::string.
+
   name_to_string_view(name); // 'structvar'
   // Note: Implicit cast to std::string_view, no memory allocation.
 
@@ -161,7 +167,7 @@ int main() {
 
   auto div = [](int x, int y) -> int {
     if (y == 0) {
-      throw std::invalid_argument(std::string{NAMEOF(y)} + " should not be zero!");
+      throw std::invalid_argument(NAMEOF(y).str() + " should not be zero!");
     }
     return x / y;
   };
