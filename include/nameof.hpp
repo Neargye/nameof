@@ -43,6 +43,12 @@
 #include <type_traits>
 #include <utility>
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 26495) // Variable 'nameof::cstring<N>::chars_' is uninitialized.
+#  pragma warning(disable : 26451) // Arithmetic overflow: 'strings_[static_cast<U>(value) - min_v<E>]' and 'indexes_[static_cast<U>(value) - min_v<E>]' using operator '-' on a 4 byte value and then casting the result to a 8 byte value.
+#endif
+
 // Checks nameof_type compiler compatibility.
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
 #  undef NAMEOF_TYPE_SUPPORTED
@@ -94,14 +100,8 @@ class [[nodiscard]] cstring {
 
   std::array<char, N + 1> chars_;
 
-  constexpr auto to_chars(std::string_view str) noexcept {
-    assert(str.size() == N);
-    decltype(chars_) chars = {};
-    for (std::size_t i = 0; i < str.size() && i < N; ++i) {
-      chars[i] = str[i];
-    }
-    return chars;
-  }
+  template <std::size_t... I>
+  constexpr cstring(std::string_view str, std::index_sequence<I...>) noexcept : chars_{{str[I]..., '\0'}} {}
 
  public:
   using value_type      = char;
@@ -118,7 +118,9 @@ class [[nodiscard]] cstring {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  constexpr explicit cstring(std::string_view str) noexcept : chars_{to_chars(str)} {}
+  constexpr explicit cstring(std::string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {
+    assert(str.size() == N);
+  }
 
   constexpr cstring() = delete;
 
@@ -661,5 +663,9 @@ template <typename T>
 
 // Obtains string name full type of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif
 
 #endif // NEARGYE_NAMEOF_HPP
