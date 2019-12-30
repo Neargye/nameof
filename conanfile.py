@@ -5,7 +5,7 @@ from conans.errors import ConanInvalidConfiguration
 
 class NameofConan(ConanFile):
     name = "nameof"
-    version = "0.9.2"
+    version = "0.9.3"
     description = "Header-only C++17 library provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum."
     topics = (
         "conan",
