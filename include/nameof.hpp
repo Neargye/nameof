@@ -172,14 +172,14 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
-  template<typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
+  template <typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
   [[nodiscard]] std::basic_string<Char, Traits, Allocator> str() const { return {begin(), end()}; }
 
   [[nodiscard]] constexpr operator std::string_view() const noexcept { return {data(), size()}; }
 
   [[nodiscard]] constexpr explicit operator const char*() const noexcept { return data(); }
 
-  template<typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
+  template <typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
   [[nodiscard]] explicit operator std::basic_string<Char, Traits, Allocator>() const { return {begin(), end()}; }
 };
 
@@ -245,7 +245,7 @@ template <std::size_t N>
 
 template <typename Char, typename Traits, std::size_t N>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& srt) {
-  for (auto c : std::string_view{srt}) {
+  for (const auto c : std::string_view{srt}) {
     os.put(c);
   }
 
@@ -536,7 +536,7 @@ class enum_traits {
   static constexpr std::string_view name(E value) noexcept {
     if (static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
       if constexpr (sparsity_v<E>) {
-        if (auto i = indexes_[static_cast<U>(value) - min_v<E>]; i != invalid_index_v<E>) {
+        if (const auto i = indexes_[static_cast<U>(value) - min_v<E>]; i != invalid_index_v<E>) {
           return strings_[i];
         }
       } else {
