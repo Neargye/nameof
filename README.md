@@ -42,6 +42,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 ## [Examples](example/example.cpp)
 
 * Nameof
+
   ```cpp
   // Name of variable.
   NAMEOF(somevar) -> "somevar"
@@ -62,6 +63,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   ```
 
 * Nameof enum
+
   ```cpp
   auto color = Color::RED;
   // Name of enum variable.
@@ -75,6 +77,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   ```
 
 * Nameof type
+
   ```cpp
   using T = const int&;
   T var = 42;
@@ -92,6 +95,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   ```
 
 * Compile-time
+
   ```cpp
   constexpr auto somevar_name = NAMEOF(somevar);
   // somevar_name -> "somevar"
@@ -102,6 +106,10 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   constexpr auto type_name = NAMEOF_TYPE(T); // or nameof::nameof_type<T>()
   // type_name -> "int"
   ```
+
+## Remarks
+
+* Before use, read the [limitations](doc/limitations.md) of functionality.
 
 ## Integration
 
