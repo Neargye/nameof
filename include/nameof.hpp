@@ -56,7 +56,7 @@
 #endif
 
 // Checks nameof_enum compiler compatibility.
-#if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9 || defined(_MSC_VER)
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
 #  undef NAMEOF_ENUM_SUPPORTED
 #  define NAMEOF_ENUM_SUPPORTED 1
 #endif
@@ -367,7 +367,7 @@ template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
 #if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
-#  if defined(__clang__) || defined(__GNUC__) && __GNUC__>= 9
+#  if defined(__clang__) || defined(__GNUC__)
   constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #  elif defined(_MSC_VER)
   constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
