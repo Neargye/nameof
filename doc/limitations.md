@@ -38,12 +38,12 @@
     #include <nameof.hpp>
     ```
 
-  * If need another range for specific enum type, add specialization `enum_range` for necessary enum type.
+  * If need another range for specific enum type, add specialization `enum_range` for necessary enum type. Specialization of `enum_range` must be injected in `namespace nameof`.
 
     ```cpp
     #include <nameof.hpp>
 
-    enum number { one = 100, two = 200, three = 300 };
+    enum class number { one = 100, two = 200, three = 300 };
 
     namespace nameof {
     template <>
@@ -51,7 +51,7 @@
       static constexpr int min = 100;
       static constexpr int max = 300;
     };
-    }
+    } // namespace nameof
     ```
 
 * If you hit a message like this:

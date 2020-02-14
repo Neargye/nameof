@@ -87,7 +87,7 @@ struct enum_range<number> {
   static constexpr int max = 300;
   static_assert(max > min, "nameof::enum_range<number> requires max > min.");
 };
-}
+} // namespace nameof
 
 SomeStruct struct_var;
 Long othervar;
