@@ -51,13 +51,13 @@
 
 // Checks nameof_type compiler compatibility.
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
-#  undef NAMEOF_TYPE_SUPPORTED
+#  undef  NAMEOF_TYPE_SUPPORTED
 #  define NAMEOF_TYPE_SUPPORTED 1
 #endif
 
 // Checks nameof_enum compiler compatibility.
 #if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
-#  undef NAMEOF_ENUM_SUPPORTED
+#  undef  NAMEOF_ENUM_SUPPORTED
 #  define NAMEOF_ENUM_SUPPORTED 1
 #endif
 
@@ -378,7 +378,6 @@ constexpr auto n() noexcept {
     return std::string_view{};
   }
 #else
-  static_assert(nameof_enum_supported<E>::value, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return std::string_view{}; // Unsupported compiler.
 #endif
 }
@@ -527,7 +526,7 @@ constexpr auto strings() noexcept {
 template <typename E>
 class enum_traits {
   static_assert(is_enum_v<E>, "nameof::enum_traits requires enum type.");
-  static_assert(count_v<E> > 0, "nameof::enum_range requires enum implementation or valid max and min.");
+  static_assert(count_v<E> > 0, "nameof::enum_range requires enum implementation and valid max and min.");
   using U = std::underlying_type_t<E>;
   inline static constexpr auto strings_ = strings<E>();
   inline static constexpr auto indexes_ = indexes<E>(std::make_integer_sequence<int, range_size_v<E>>{});
@@ -560,11 +559,9 @@ constexpr auto n() noexcept {
 #  elif defined(_MSC_VER)
   constexpr std::string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #  endif
-  static_assert(name.size() > 0, "Type does not have a name.");
 
   return cstring<name.size()>{name};
 #else
-  static_assert(nameof_type_supported<T...>::value, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return std::string_view{}; // Unsupported compiler.
 #endif
 }
@@ -583,6 +580,7 @@ inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<v
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
+  static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::enums::enum_traits<detail::remove_cvref_t<E>>::name(value);
 }
 
@@ -590,7 +588,9 @@ template <typename E>
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
-  constexpr std::string_view name = detail::enum_name_v<detail::remove_cvref_t<decltype(V)>, V>;
+  using E = detail::remove_cvref_t<decltype(V)>;
+  static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  constexpr std::string_view name = detail::enum_name_v<E, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
   return name;
@@ -599,21 +599,31 @@ template <auto V>
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
+  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 #if defined(_MSC_VER)
-  return detail::type_name_v<detail::identity<detail::remove_cvref_t<T>>>;
+  using U = detail::identity<detail::remove_cvref_t<T>>;
 #else
-  return detail::type_name_v<detail::remove_cvref_t<T>>;
+  using U = detail::remove_cvref_t<T>;
 #endif
+  constexpr std::string_view name = detail::type_name_v<U>;
+  static_assert(name.size() > 0, "Type does not have a name.");
+
+  return name;
 }
 
 // Obtains string name of full type, with reference and cv-qualifiers.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
+  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 #if defined(_MSC_VER)
-  return detail::type_name_v<detail::identity<T>>;
+  using U = detail::identity<T>;
 #else
-  return detail::type_name_v<T>;
+  using U = T;
 #endif
+  constexpr std::string_view name = detail::type_name_v<U>;
+  static_assert(name.size() > 0, "Type does not have a name.");
+
+  return name;
 }
 
 } // namespace nameof
