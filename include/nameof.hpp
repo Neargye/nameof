@@ -388,18 +388,18 @@ inline constexpr auto enum_name_v = n<E, V>();
 namespace enums {
 
 template <typename L, typename R>
-constexpr bool mixed_sign_less(L lhs, R rhs) noexcept {
-  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::mixed_sign_less requires integral type.");
+constexpr bool cmp_less(L lhs, R rhs) noexcept {
+  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral type.");
 
-  if constexpr (std::is_signed_v<L> && std::is_unsigned_v<R>) {
-    // If 'left' is negative, then result is 'true', otherwise cast & compare.
-    return lhs < 0 || static_cast<std::make_unsigned_t<L>>(lhs) < rhs;
-  } else if constexpr (std::is_unsigned_v<L> && std::is_signed_v<R>) {
-    // If 'right' is negative, then result is 'false', otherwise cast & compare.
-    return rhs >= 0 && lhs < static_cast<std::make_unsigned_t<R>>(rhs);
-  } else {
+  if constexpr (std::is_signed_v<L> == std::is_signed_v<R>) {
     // If same signedness (both signed or both unsigned).
     return lhs < rhs;
+  } else if constexpr (std::is_signed_v<R>) {
+    // If 'right' is negative, then result is 'false', otherwise cast & compare.
+    return rhs > 0 && lhs < static_cast<std::make_unsigned_t<R>>(rhs);
+  } else {
+    // If 'left' is negative, then result is 'true', otherwise cast & compare.
+    return lhs < 0 || static_cast<std::make_unsigned_t<L>>(lhs) < rhs;
   }
 }
 
@@ -410,7 +410,7 @@ constexpr int reflected_min() noexcept {
   static_assert(lhs > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
   constexpr auto rhs = (std::numeric_limits<std::underlying_type_t<E>>::min)();
 
-  return mixed_sign_less(lhs, rhs) ? rhs : lhs;
+  return cmp_less(lhs, rhs) ? rhs : lhs;
 }
 
 template <typename E>
@@ -420,7 +420,7 @@ constexpr int reflected_max() noexcept {
   static_assert(lhs < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires max must be less than INT16_MAX.");
   constexpr auto rhs = (std::numeric_limits<std::underlying_type_t<E>>::max)();
 
-  return mixed_sign_less(lhs, rhs) ? lhs : rhs;
+  return cmp_less(lhs, rhs) ? lhs : rhs;
 }
 
 template <typename E>
