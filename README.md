@@ -125,7 +125,7 @@ Alternatively, you can use something like [CPM](https://github.com/TheLartians/C
 CPMAddPackage(
     NAME nameof
     GITHUB_REPOSITORY Neargye/nameof
-    GIT_TAG 0.9.3 # Where `x.y.z` is the release version you want to use.
+    GIT_TAG x.y.z # Where `x.y.z` is the release version you want to use.
 )
 
 ## Compiler compatibility
