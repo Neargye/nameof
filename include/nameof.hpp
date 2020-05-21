@@ -46,7 +46,6 @@
 #if defined(_MSC_VER)
 #  pragma warning(push)
 #  pragma warning(disable : 26495) // Variable 'nameof::cstring<N>::chars_' is uninitialized.
-#  pragma warning(disable : 26451) // Arithmetic overflow: 'strings_[static_cast<U>(value) - min_v<E>]' and 'indexes_[static_cast<U>(value) - min_v<E>]' using operator '-' on a 4 byte value and then casting the result to a 8 byte value.
 #endif
 
 // Checks nameof_type compiler compatibility.
@@ -557,13 +556,13 @@ template <typename E>
   static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
 
-  if (static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
+  if (const auto i = static_cast<int>(value) - min_v<D>; static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
     if constexpr (sparsity_v<D>) {
-      if (const auto i = indexes_v<D>[static_cast<int>(value) - min_v<D>]; i != invalid_index_v<D>) {
-        return strings_v<D>[i];
+      if (const auto idx = indexes_v<D>[i]; idx != invalid_index_v<D>) {
+        return strings_v<D>[idx];
       }
     } else {
-      return strings_v<D>[static_cast<int>(value) - min_v<D>];
+      return strings_v<D>[i];
     }
   }
 
@@ -575,7 +574,6 @@ template <typename E>
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
   using E = detail::remove_cvref_t<decltype(V)>;
-  static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr std::string_view name = detail::enum_name_v<E, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
@@ -642,7 +640,7 @@ template <typename T>
   return nameof_raw; }()
 
 // Obtains simple (unqualified) string enum name of enum variable.
-#define NAMEOF_ENUM(...) ::nameof::nameof_enum<std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
+#define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
