@@ -553,10 +553,10 @@ template <typename E>
   using namespace detail::enums;
   using D = detail::remove_cvref_t<E>;
   using U = std::underlying_type_t<D>;
-  static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
 
-  if (const auto i = static_cast<int>(value) - min_v<D>; static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
+  if (const auto i = static_cast<int>(value) - min_v<D>; static_cast<U>(value) >= static_cast<U>(min_v<D>) && static_cast<U>(value) <= static_cast<U>(max_v<D>)) {
     if constexpr (sparsity_v<D>) {
       if (const auto idx = indexes_v<D>[i]; idx != invalid_index_v<D>) {
         return strings_v<D>[idx];
