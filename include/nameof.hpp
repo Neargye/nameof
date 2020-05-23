@@ -46,7 +46,6 @@
 #if defined(_MSC_VER)
 #  pragma warning(push)
 #  pragma warning(disable : 26495) // Variable 'nameof::cstring<N>::chars_' is uninitialized.
-#  pragma warning(disable : 26451) // Arithmetic overflow: 'strings_[static_cast<U>(value) - min_v<E>]' and 'indexes_[static_cast<U>(value) - min_v<E>]' using operator '-' on a 4 byte value and then casting the result to a 8 byte value.
 #endif
 
 // Checks nameof_type compiler compatibility.
@@ -485,7 +484,7 @@ constexpr auto indexes(std::integer_sequence<int, I...>) noexcept {
 }
 
 template <typename E>
-inline constexpr bool sparsity_v = (sizeof(const char*) * range_size_v<E>) > (sizeof(index_t<E>) * range_size_v<E> + sizeof(const char*) * count_v<E>);
+inline constexpr auto indexes_v = indexes<E>(std::make_integer_sequence<int, range_size_v<E>>{});
 
 template <typename E, int... I>
 constexpr auto strings(std::integer_sequence<int, I...>) noexcept {
@@ -502,6 +501,9 @@ constexpr auto strings(std::index_sequence<I...>) noexcept {
 }
 
 template <typename E>
+inline constexpr bool sparsity_v = (sizeof(const char*) * range_size_v<E>) > (sizeof(index_t<E>) * range_size_v<E> + sizeof(const char*) * count_v<E>);
+
+template <typename E>
 constexpr auto strings() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
@@ -513,28 +515,7 @@ constexpr auto strings() noexcept {
 }
 
 template <typename E>
-class enum_traits {
-  static_assert(is_enum_v<E>, "nameof::enum_traits requires enum type.");
-  static_assert(count_v<E> > 0, "nameof::enum_range requires enum implementation and valid max and min.");
-  using U = std::underlying_type_t<E>;
-  inline static constexpr auto strings_ = strings<E>();
-  inline static constexpr auto indexes_ = indexes<E>(std::make_integer_sequence<int, range_size_v<E>>{});
-
- public:
-  static constexpr std::string_view name(E value) noexcept {
-    if (static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
-      if constexpr (sparsity_v<E>) {
-        if (const auto i = indexes_[static_cast<U>(value) - min_v<E>]; i != invalid_index_v<E>) {
-          return strings_[i];
-        }
-      } else {
-        return strings_[static_cast<U>(value) - min_v<E>];
-      }
-    }
-
-    return {}; // Value out of range.
-  }
-};
+inline static constexpr auto strings_v = strings<E>();
 
 } // namespace nameof::detail::enums
 
@@ -569,8 +550,23 @@ inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<v
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
+  using namespace detail::enums;
+  using D = detail::remove_cvref_t<E>;
+  using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  return detail::enums::enum_traits<detail::remove_cvref_t<E>>::name(value);
+  static_assert(count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
+
+  if (const auto i = static_cast<int>(value) - min_v<D>; static_cast<U>(value) >= static_cast<U>(min_v<E>) && static_cast<U>(value) <= static_cast<U>(max_v<E>)) {
+    if constexpr (sparsity_v<D>) {
+      if (const auto idx = indexes_v<D>[i]; idx != invalid_index_v<D>) {
+        return strings_v<D>[idx];
+      }
+    } else {
+      return strings_v<D>[i];
+    }
+  }
+
+  return {}; // Value out of range.
 }
 
 // Obtains simple (unqualified) string enum name of static storage enum variable.
@@ -578,7 +574,6 @@ template <typename E>
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
   using E = detail::remove_cvref_t<decltype(V)>;
-  static_assert(detail::nameof_enum_supported<E>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr std::string_view name = detail::enum_name_v<E, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
@@ -645,7 +640,7 @@ template <typename T>
   return nameof_raw; }()
 
 // Obtains simple (unqualified) string enum name of enum variable.
-#define NAMEOF_ENUM(...) ::nameof::nameof_enum(__VA_ARGS__)
+#define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
