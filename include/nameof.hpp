@@ -103,15 +103,15 @@ class [[nodiscard]] cstring {
   constexpr cstring(std::string_view str, std::index_sequence<I...>) noexcept : chars_{{str[I]..., '\0'}} {}
 
  public:
-  using value_type      = char;
+  using value_type      = const char;
   using size_type       = std::size_t;
   using difference_type = std::ptrdiff_t;
-  using pointer         = char*;
+  using pointer         = const char*;
   using const_pointer   = const char*;
-  using reference       = char&;
+  using reference       = const char&;
   using const_reference = const char&;
 
-  using iterator       = char*;
+  using iterator       = const char*;
   using const_iterator = const char*;
 
   using reverse_iterator       = std::reverse_iterator<iterator>;
@@ -153,9 +153,9 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[](std::size_t i) const noexcept { return assert(i < size()), chars_[i]; }
+  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return assert(i < size()), chars_[i]; }
 
-  [[nodiscard]] constexpr const_reference at(std::size_t i) const { return assert(i < size()), chars_.at(i); }
+  [[nodiscard]] constexpr const_reference at(size_type i) const { return assert(i < size()), chars_.at(i); }
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
 
