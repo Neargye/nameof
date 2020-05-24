@@ -384,8 +384,6 @@ constexpr auto n() noexcept {
 template <typename E, E V>
 inline constexpr auto enum_name_v = n<E, V>();
 
-namespace enums {
-
 template <typename L, typename R>
 constexpr bool cmp_less(L lhs, R rhs) noexcept {
   static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral type.");
@@ -517,8 +515,6 @@ constexpr auto strings() noexcept {
 template <typename E>
 inline static constexpr auto strings_v = strings<E>();
 
-} // namespace nameof::detail::enums
-
 template <typename... T>
 constexpr auto n() noexcept {
 #if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
@@ -550,19 +546,19 @@ inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<v
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
-  using namespace detail::enums;
   using D = detail::remove_cvref_t<E>;
   using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
+  static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
 
-  if (const auto i = static_cast<int>(value) - min_v<D>; static_cast<U>(value) >= static_cast<U>(min_v<D>) && static_cast<U>(value) <= static_cast<U>(max_v<D>)) {
-    if constexpr (sparsity_v<D>) {
-      if (const auto idx = indexes_v<D>[i]; idx != invalid_index_v<D>) {
-        return strings_v<D>[idx];
+  if (const auto i = static_cast<int>(value) - detail::min_v<D>; static_cast<U>(value) >= static_cast<U>(detail::min_v<D>) &&
+                                                                 static_cast<U>(value) <= static_cast<U>(detail::max_v<D>)) {
+    if constexpr (detail::sparsity_v<D>) {
+      if (const auto idx = detail::indexes_v<D>[i]; idx != detail::invalid_index_v<D>) {
+        return detail::strings_v<D>[idx];
       }
     } else {
-      return strings_v<D>[i];
+      return detail::strings_v<D>[i];
     }
   }
 
