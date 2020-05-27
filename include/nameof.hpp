@@ -278,7 +278,7 @@ template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T, typename R>
-using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
+using enable_if_enum_t = std::enable_if_t<std::is_enum_v<std::decay_t<T>>, R>;
 
 template <typename T>
 inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::decay_t<T>>;
@@ -546,7 +546,7 @@ inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<v
 // Obtains simple (unqualified) string enum name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
-  using D = detail::remove_cvref_t<E>;
+  using D = std::decay_t<E>;
   using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
@@ -569,7 +569,7 @@ template <typename E>
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
-  using E = detail::remove_cvref_t<decltype(V)>;
+  using E = std::decay_t<decltype(V)>;
   constexpr std::string_view name = detail::enum_name_v<E, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
