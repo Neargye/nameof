@@ -127,6 +127,7 @@ CPMAddPackage(
     GITHUB_REPOSITORY Neargye/nameof
     GIT_TAG x.y.z # Where `x.y.z` is the release version you want to use.
 )
+```
 
 ## Compiler compatibility
 
