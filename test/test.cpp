@@ -684,3 +684,18 @@ TEST_CASE("nameof::nameof_type") {
 }
 
 #endif
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
+TEST_CASE("NAMEOF_TYPE_RTTI") {
+#if defined(__clang__)
+  REQUIRE(NAMEOF_TYPE_RTTI(std::string) == "std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >");
+  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "Color");
+#elif defined(_MSC_VER)
+  REQUIRE(NAMEOF_TYPE_RTTI(std::string) == "class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >");
+  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "enum Color");
+#elif defined(__GNUC__)
+  REQUIRE(NAMEOF_TYPE_RTTI(std::string) == "std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >");
+  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "Color");
+#endif
+}
+#endif

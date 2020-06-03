@@ -60,6 +60,11 @@
 #  define NAMEOF_TYPE_SUPPORTED 1
 #endif
 
+#if defined(__cpp_rtti) || defined(_CPPRTTI) || defined(__GXX_RTTI)
+#  undef  NAMEOF_TYPE_RTTI_SUPPORTED
+#  define NAMEOF_TYPE_RTTI_SUPPORTED 1
+#endif
+
 // Checks nameof_enum compiler compatibility.
 #if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
 #  undef  NAMEOF_ENUM_SUPPORTED
@@ -672,10 +677,10 @@ template <typename T>
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
 // Obtains string name of type using RTTI.
-#if defined(__cpp_rtti) || defined(_CPPRTTI) || defined(__GXX_RTTI)
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
 #  define NAMEOF_TYPE_RTTI(...) ::nameof::detail::n(typeid(__VA_ARGS__).name())
 #else
-#  define NAMEOF_TYPE_RTTI(...)
+#  define NAMEOF_TYPE_RTTI(...) static_assert(sizeof(__VA_ARGS__) < 0, "NAMEOF_TYPE_RTTI unsupported compiler.");
 #endif
 
 #if defined(_MSC_VER)
