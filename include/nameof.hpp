@@ -55,18 +55,31 @@
 #endif
 
 // Checks nameof_type compiler compatibility.
-#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7 || defined(_MSC_VER) && _MSC_VER >= 1910
 #  undef  NAMEOF_TYPE_SUPPORTED
 #  define NAMEOF_TYPE_SUPPORTED 1
 #endif
 
-#if defined(__cpp_rtti) || defined(_CPPRTTI) || defined(__GXX_RTTI)
-#  undef  NAMEOF_TYPE_RTTI_SUPPORTED
-#  define NAMEOF_TYPE_RTTI_SUPPORTED 1
+// Checks nameof_type_rtti compiler compatibility.
+#if defined(__clang__)
+#  if __has_feature(cxx_rtti)
+#    undef  NAMEOF_TYPE_RTTI_SUPPORTED
+#    define NAMEOF_TYPE_RTTI_SUPPORTED 1
+#  endif
+#elif defined(__GNUC__)
+#  if defined(__GXX_RTTI)
+#    undef  NAMEOF_TYPE_RTTI_SUPPORTED
+#    define NAMEOF_TYPE_RTTI_SUPPORTED 1
+#  endif
+#elif defined(_MSC_VER)
+#  if defined(_CPPRTTI)
+#    undef  NAMEOF_TYPE_RTTI_SUPPORTED
+#    define NAMEOF_TYPE_RTTI_SUPPORTED 1
+#  endif
 #endif
 
 // Checks nameof_enum compiler compatibility.
-#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER)
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
 #  undef  NAMEOF_ENUM_SUPPORTED
 #  define NAMEOF_ENUM_SUPPORTED 1
 #endif
