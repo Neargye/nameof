@@ -43,6 +43,12 @@
 #include <type_traits>
 #include <utility>
 
+#if __has_include(<cxxabi.h>)
+#include <cxxabi.h>
+#include <cstdlib>
+#include <string>
+#endif
+
 #if defined(_MSC_VER)
 #  pragma warning(push)
 #  pragma warning(disable : 26495) // Variable 'nameof::cstring<N>::chars_' is uninitialized.
@@ -535,6 +541,17 @@ constexpr auto n() noexcept {
 template <typename... T>
 inline constexpr auto type_name_v = n<T...>();
 
+inline auto n(const char* tn) {
+#if __has_include(<cxxabi.h>)
+  auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
+  auto r = std::string{dmg != nullptr ? dmg : tn};
+  std::free(dmg);
+  return r;
+#else
+  return std::string_view{tn};
+#endif
+}
+
 } // namespace nameof::detail
 
 // Checks is nameof_type supported compiler.
@@ -653,6 +670,13 @@ template <typename T>
 
 // Obtains string name full type of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
+
+// Obtains string name of type using RTTI.
+#if defined(__cpp_rtti) || defined(_CPPRTTI) || defined(__GXX_RTTI)
+#  define NAMEOF_TYPE_RTTI(...) ::nameof::detail::n(typeid(__VA_ARGS__).name())
+#else
+#  define NAMEOF_TYPE_RTTI(...)
+#endif
 
 #if defined(_MSC_VER)
 #  pragma warning(pop)
