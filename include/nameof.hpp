@@ -604,8 +604,9 @@ template <typename E>
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
-  using E = std::decay_t<decltype(V)>;
-  constexpr std::string_view name = detail::enum_name_v<E, V>;
+  using D = std::decay_t<decltype(V)>;
+  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  constexpr std::string_view name = detail::enum_name_v<D, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
   return name;
@@ -690,11 +691,7 @@ template <typename T>
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
 // Obtains string name of type using RTTI.
-#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
-#  define NAMEOF_TYPE_RTTI(...) ::nameof::detail::n(typeid(__VA_ARGS__).name())
-#else
-#  define NAMEOF_TYPE_RTTI(...) static_assert(sizeof(__VA_ARGS__) < 0, "NAMEOF_TYPE_RTTI unsupported compiler.");
-#endif
+#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::n(typeid(__VA_ARGS__).name())
 
 #if defined(_MSC_VER)
 #  pragma warning(pop)
