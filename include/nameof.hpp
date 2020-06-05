@@ -559,16 +559,18 @@ constexpr auto n() noexcept {
 template <typename... T>
 inline constexpr auto type_name_v = n<T...>();
 
-inline auto n(const char* tn) {
 #if __has_include(<cxxabi.h>)
+inline std::string demangle(const char* tn) {
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   auto r = std::string{dmg != nullptr ? dmg : tn};
   std::free(dmg);
   return r;
-#else
-  return std::string_view{tn};
-#endif
 }
+#else
+constexpr std::string_view demangle(const char* tn) noexcept {
+  return std::string_view{tn};
+}
+#endif
 
 } // namespace nameof::detail
 
@@ -691,7 +693,7 @@ template <typename T>
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
 // Obtains string name of type using RTTI.
-#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::n(typeid(__VA_ARGS__).name())
+#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::demangle(typeid(__VA_ARGS__).name())
 
 #if defined(_MSC_VER)
 #  pragma warning(pop)
