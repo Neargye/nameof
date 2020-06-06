@@ -27,6 +27,10 @@
 #include <sstream>
 #include <stdexcept>
 
+struct Base { virtual void foo() {} };
+
+struct Derived : Base {};
+
 struct SomeStruct {
   int somefield = 0;
 
@@ -160,6 +164,13 @@ int main() {
   // Nameof raw.
   std::cout << NAMEOF_RAW(structvar.somefield) << std::endl; // 'structvar.somefield'
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // '&SomeStruct::SomeMethod1'
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  // Nameof type using RTTI.
+  Base* ptr = new Derived();
+  std::cout << NAMEOF_TYPE_RTTI(ptr) << std::endl; // "Base *"
+  std::cout << NAMEOF_TYPE_RTTI(*ptr) << std::endl; // "Derived"
+#endif
 
   // Some more complex example.
 

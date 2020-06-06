@@ -568,6 +568,10 @@ inline constexpr auto type_name_v = n<T...>();
 
 #if __has_include(<cxxabi.h>)
 inline std::string demangle(const char* tn) {
+  if (tn == nullptr) {
+    return {};
+  }
+
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   auto r = std::string{dmg != nullptr ? dmg : tn};
   std::free(dmg);
@@ -575,7 +579,7 @@ inline std::string demangle(const char* tn) {
 }
 #else
 constexpr std::string_view demangle(const char* tn) noexcept {
-  return std::string_view{tn};
+  return {tn};
 }
 #endif
 
@@ -699,7 +703,7 @@ template <typename T>
 // Obtains string name full type of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
-// Obtains string name of type using RTTI.
+// Obtains string name of type, using RTTI.
 #define NAMEOF_TYPE_RTTI(...) ::nameof::detail::demangle(typeid(__VA_ARGS__).name())
 
 #if defined(_MSC_VER)

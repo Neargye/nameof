@@ -12,6 +12,7 @@
 * [`NAMEOF_FULL_TYPE` macro that obtains string name of full type, with reference and cv-qualifiers.](#nameof_full_type-1)
 * [`NAMEOF_TYPE_EXPR` macro that obtains string name type of expression, reference and cv-qualifiers are ignored.](#nameof_type_expr)
 * [`NAMEOF_FULL_TYPE_EXPR` macro that obtains string name full type of expression, with reference and cv-qualifiers.](#nameof_full_type_expr)
+* [`NAMEOF_TYPE_RTTI` macro that obtains string name type, using RTTI.](#nameof_type_rtti)
 
 ## Synopsis
 
@@ -255,4 +256,21 @@
   using T = const int&;
   T var = 42;
   NAMEOF_FULL_TYPE_EXPR(var) -> "const int&"
+  ```
+
+## `NAMEOF_TYPE_RTTI`
+
+* Macro macro that obtains string name of type, using RTTI.
+
+* Returns demangled RTTI type name.
+
+* Examples
+
+  ```cpp
+  struct Base { virtual void foo() {} };
+  struct Derived : Base {};
+
+  Base* ptr = new Derived();
+  NAMEOF_TYPE_RTTI(ptr)  -> "Base *"
+  NAMEOF_TYPE_RTTI(*ptr) -> "Derived"
   ```
