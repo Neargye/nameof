@@ -153,9 +153,9 @@ class [[nodiscard]] cstring {
 
   ~cstring() = default;
 
-  constexpr cstring& operator=(const cstring&) = default;
+  cstring& operator=(const cstring&) = default;
 
-  constexpr cstring& operator=(cstring&&) = default;
+  cstring& operator=(cstring&&) = default;
 
   [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_.data(); }
 
@@ -408,6 +408,13 @@ constexpr auto n() noexcept {
 template <typename E, E V>
 inline constexpr auto enum_name_v = n<E, V>();
 
+template <typename E, auto V>
+constexpr bool is_valid() noexcept {
+  static_assert(is_enum_v<E>, "nameof::detail::is_valid requires enum type.");
+
+  return n<E, static_cast<E>(V)>().size() != 0;
+}
+
 template <typename L, typename R>
 constexpr bool cmp_less(L lhs, R rhs) noexcept {
   static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral type.");
@@ -463,7 +470,7 @@ inline constexpr int reflected_max_v = reflected_max<E>();
 template <typename E, int... I>
 constexpr auto values(std::integer_sequence<int, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::values requires enum type.");
-  constexpr std::array<bool, sizeof...(I)> valid{{(n<E, static_cast<E>(I + reflected_min_v<E>)>().size() != 0)...}};
+  constexpr std::array<bool, sizeof...(I)> valid{{is_valid<E, I + reflected_min_v<E>>()...}};
   constexpr int count = ((valid[I] ? 1 : 0) + ...);
 
   std::array<E, count> values{};
@@ -483,10 +490,10 @@ template <typename E>
 inline constexpr std::size_t count_v = values_v<E>.size();
 
 template <typename E>
-inline constexpr int min_v = values_v<E>.empty() ? 0 : static_cast<int>(values_v<E>.front());
+inline constexpr int min_v = static_cast<int>(values_v<E>.front());
 
 template <typename E>
-inline constexpr int max_v = values_v<E>.empty() ? 0 : static_cast<int>(values_v<E>.back());
+inline constexpr int max_v = static_cast<int>(values_v<E>.back());
 
 template <typename E>
 inline constexpr std::size_t range_size_v = range_size<E, min_v<E>, max_v<E>>();
@@ -500,9 +507,9 @@ inline constexpr auto invalid_index_v = (std::numeric_limits<index_t<E>>::max)()
 template <typename E, int... I>
 constexpr auto indexes(std::integer_sequence<int, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::indexes requires enum type.");
-  index_t<E> i = 0;
+  [[maybe_unused]] index_t<E> i = 0;
 
-  return std::array<index_t<E>, sizeof...(I)>{{((n<E, static_cast<E>(I + min_v<E>)>().size() != 0) ? i++ : invalid_index_v<E>)...}};
+  return std::array<index_t<E>, sizeof...(I)>{{(is_valid<E, I + min_v<E>>() ? i++ : invalid_index_v<E>)...}};
 }
 
 template <typename E>
