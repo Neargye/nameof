@@ -27,7 +27,7 @@
 #include <sstream>
 #include <stdexcept>
 
-struct Base { virtual void foo() {} };
+struct Base { virtual ~Base() = default; };
 
 struct Derived : Base {};
 

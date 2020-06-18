@@ -49,9 +49,15 @@
 #include <string>
 #endif
 
-#if defined(_MSC_VER)
+#if defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wsign-conversion" // Implicit conversion changes signedness: 'int' to 'size_t'.
+#elif defined(__GNUC__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wsign-conversion" // Implicit conversion changes signedness: 'int' to 'size_t'.
+#elif defined(_MSC_VER)
 #  pragma warning(push)
-#  pragma warning(disable : 26495) // Variable 'nameof::cstring<N>::chars_' is uninitialized.
+#  pragma warning(disable : 26495) // Variable 'cstring<N>::chars_' is uninitialized.
 #endif
 
 // Checks nameof_type compiler compatibility.
@@ -658,31 +664,31 @@ template <typename T>
 } // namespace nameof
 
 // Obtains simple (unqualified) string name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept {                              \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                  \
-  constexpr auto name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
-  static_assert(name.size() > 0, "Expression does not have a name.");      \
-  constexpr auto size = name.size();                                       \
-  constexpr auto nameof = ::nameof::cstring<size>{name};                   \
-  return nameof; }()
+#define NAMEOF(...) []() constexpr noexcept {                                \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                    \
+  constexpr auto __name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
+  static_assert(__name.size() > 0, "Expression does not have a name.");      \
+  constexpr auto __size = __name.size();                                     \
+  constexpr auto __nameof = ::nameof::cstring<__size>{__name};               \
+  return __nameof; }()
 
 // Obtains simple (unqualified) full (with template suffix) string name of variable, function, macro.
-#define NAMEOF_FULL(...) []() constexpr noexcept {                          \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                   \
-  constexpr auto name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(name.size() > 0, "Expression does not have a name.");       \
-  constexpr auto size = name.size();                                        \
-  constexpr auto nameof_full = ::nameof::cstring<size>{name};               \
-  return nameof_full; }()
+#define NAMEOF_FULL(...) []() constexpr noexcept {                            \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                     \
+  constexpr auto __name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
+  static_assert(__name.size() > 0, "Expression does not have a name.");       \
+  constexpr auto __size = __name.size();                                      \
+  constexpr auto __nameof_full = ::nameof::cstring<__size>{__name};           \
+  return __nameof_full; }()
 
 // Obtains raw string name of variable, function, macro.
-#define NAMEOF_RAW(...) []() constexpr noexcept {                     \
-  ::std::void_t<decltype(__VA_ARGS__)>();                             \
-  constexpr auto name = ::std::string_view{#__VA_ARGS__};             \
-  static_assert(name.size() > 0, "Expression does not have a name."); \
-  constexpr auto size = name.size();                                  \
-  constexpr auto nameof_raw = ::nameof::cstring<size>{name};          \
-  return nameof_raw; }()
+#define NAMEOF_RAW(...) []() constexpr noexcept {                       \
+  ::std::void_t<decltype(__VA_ARGS__)>();                               \
+  constexpr auto __name = ::std::string_view{#__VA_ARGS__};             \
+  static_assert(__name.size() > 0, "Expression does not have a name."); \
+  constexpr auto __size = __name.size();                                \
+  constexpr auto __nameof_raw = ::nameof::cstring<__size>{__name};      \
+  return __nameof_raw; }()
 
 // Obtains simple (unqualified) string enum name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
@@ -706,7 +712,11 @@ template <typename T>
 // Obtains string name of type, using RTTI.
 #define NAMEOF_TYPE_RTTI(...) ::nameof::detail::demangle(typeid(__VA_ARGS__).name())
 
-#if defined(_MSC_VER)
+#if defined(__clang__)
+#  pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#  pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
 #  pragma warning(pop)
 #endif
 
