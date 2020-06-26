@@ -66,6 +66,8 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * Nameof enum
 
   ```cpp
+  enum class Color { RED = 2, BLUE = 4, GREEN = 8 };
+
   auto color = Color::RED;
   // Name of enum variable.
   NAMEOF_ENUM(color) -> "RED"
