@@ -91,8 +91,8 @@ struct enum_range<number> {
 
 SomeStruct struct_var;
 Long othervar;
-SomeStruct * ptr_s = &struct_var;
-SomeStruct & ref_s = struct_var;
+SomeStruct* ptr_s = &struct_var;
+SomeStruct& ref_s = struct_var;
 
 SomeClass<int> class_var;
 const SomeClass<int> volatile * ptr_c = nullptr;
