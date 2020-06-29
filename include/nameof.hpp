@@ -494,16 +494,16 @@ template <typename E>
 inline constexpr auto values_v = values<E>(std::make_integer_sequence<int, range_size<E, reflected_min_v<E>, reflected_max_v<E>>()>{});
 
 template <typename E>
-inline constexpr std::size_t count_v = values_v<E>.size();
+inline constexpr auto count_v = values_v<E>.size();
 
 template <typename E>
-inline constexpr int min_v = static_cast<int>(values_v<E>.front());
+inline constexpr auto min_v = static_cast<int>(values_v<E>.front());
 
 template <typename E>
-inline constexpr int max_v = static_cast<int>(values_v<E>.back());
+inline constexpr auto max_v = static_cast<int>(values_v<E>.back());
 
 template <typename E>
-inline constexpr std::size_t range_size_v = range_size<E, min_v<E>, max_v<E>>();
+inline constexpr auto range_size_v = range_size<E, min_v<E>, max_v<E>>();
 
 template <typename E>
 using index_t = std::conditional_t<range_size_v<E> < (std::numeric_limits<std::uint8_t>::max)(), std::uint8_t, std::uint16_t>;
@@ -566,55 +566,37 @@ constexpr std::uint8_t log2_64(std::uint64_t x) noexcept {
       62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21,
       56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5}};
 
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
-    x |= x >> 32;
-    x = ((x - (x >> 1)) * 0x07EDD5E59A4E28C2) >> 58;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  x |= x >> 32;
+  x = ((x - (x >> 1)) * 0x07EDD5E59A4E28C2) >> 58;
 
-    return tab[x];
+  return tab[x];
 }
 
 template <typename E>
-constexpr auto flags_value(std::underlying_type_t<E> v) {
+constexpr auto flag_value(std::underlying_type_t<E> v) noexcept {
   return static_cast<E>(static_cast<std::underlying_type_t<E>>(0x1) << v);
 }
 
 template <typename E, std::underlying_type_t<E>... I>
-constexpr auto flags_values(std::integer_sequence<std::underlying_type_t<E>, I...>) noexcept {
+constexpr auto flags_count(std::integer_sequence<std::underlying_type_t<E>, I...>) noexcept {
   static_assert(is_enum_v<E>, "magic_enum::flags::detail::values requires enum type.");
-  constexpr std::array<bool, sizeof...(I)> valid{{is_valid<E, flags_value<E>(I)>()...}};
-  constexpr int count = (valid[I] + ...);
 
-  std::array<E, count> values{};
-  for (int i = 0, v = 0; v < count; ++i) {
-    if (valid[i]) {
-      values[v++] = flags_value<E>(i);
-    }
-  }
-
-  return values;
+  return (is_valid<E, flag_value<E>(I)>() + ...);
 }
 
 template <typename E>
-inline constexpr auto flags_values_v = flags_values<E>(std::make_integer_sequence<std::underlying_type_t<E>, std::numeric_limits<std::underlying_type_t<E>>::digits>{});
-
-template <typename E>
-inline constexpr std::size_t flags_count_v = flags_values_v<E>.size();
-
-template <typename E>
-inline constexpr std::underlying_type_t<E> flags_min_v = flags_values_v<E>.front();
-
-template <typename E>
-inline constexpr std::underlying_type_t<E> flags_max_v = flags_values_v<E>.back();
+inline constexpr auto flags_count_v = flags_count<E>(std::make_integer_sequence<std::underlying_type_t<E>, std::numeric_limits<std::underlying_type_t<E>>::digits>{});
 
 template <typename E, std::underlying_type_t<E>... I>
 constexpr auto flags_strings(std::integer_sequence<std::underlying_type_t<E>, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::flags_strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, flags_value<E>(I)>.data()...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I)>.data()...}};
 }
 
 template <typename E>
@@ -688,7 +670,7 @@ template <typename E>
 }
 
 template <typename E>
-[[nodiscard]] auto nameof_enum_flag(E value) noexcept -> detail::enable_if_enum_t<E, std::string> {
+[[nodiscard]] auto nameof_enum_flags(E value) -> detail::enable_if_enum_t<E, std::string> {
   using D = std::decay_t<E>;
   using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -701,8 +683,8 @@ template <typename E>
   }
 
   auto name = std::string{};
-  for (int i = 0; i < std::numeric_limits<U>::digits; ++i) {
-    if (const auto v = (0x1 << i); (static_cast<U>(value) & v) != 0) {
+  for (U i = 0; i < std::numeric_limits<U>::digits; ++i) {
+    if (const auto v = (static_cast<U>(0x1) << i); (static_cast<U>(value) & v) != 0) {
       if (const auto n = detail::flags_strings_v<D>[i]; n != nullptr) {
         if (name.empty()) {
           name = n;
@@ -795,6 +777,8 @@ template <typename T>
 // Obtains simple (unqualified) string enum name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 #define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
+
+#define NAMEOF_ENUM_FLAGS(...) ::nameof::nameof_enum_flags<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()

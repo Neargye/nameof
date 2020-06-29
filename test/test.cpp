@@ -79,6 +79,20 @@ enum Directions { Up = 85, Down = -42, Right = 120, Left = -120 };
 
 enum number : unsigned long { one = 100, two = 200, three = 300, four = 400 };
 
+enum class AnimalFlags {
+  HasClaws = 1,
+  CanFly = 2,
+  EatsFish = 4,
+  Endangered = 8,
+};
+
+enum class BigFlags : std::uint64_t {
+  A = 1,
+  B = (static_cast<std::uint64_t>(0x1) << 20),
+  C = (static_cast<std::uint64_t>(0x1) << 40),
+  D = (static_cast<std::uint64_t>(0x1) << 60),
+};
+
 namespace nameof {
 template <>
 struct enum_range<number> {

@@ -83,6 +83,8 @@ struct Long {
 
 enum class Color { RED, GREEN, BLUE };
 
+enum AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
+
 SomeStruct structvar;
 Long othervar;
 SomeStruct* ptrvar = &structvar;
@@ -124,6 +126,11 @@ int main() {
   std::cout << nameof::nameof_enum(color) << std::endl; // 'RED'
   std::cout << NAMEOF_ENUM(color) << std::endl; // 'RED'
   std::cout << nameof::nameof_enum<Color::GREEN>() << std::endl; // 'GREEN'
+
+  // Nameof enum flags.
+  AnimalFlags flag = static_cast<AnimalFlags>(AnimalFlags::CanFly | AnimalFlags::EatsFish);
+  std::cout << nameof::nameof_enum_flags(flag) << std::endl; // 'CanFly|EatsFish'
+  std::cout << NAMEOF_ENUM_FLAGS(flag) << std::endl; // 'CanFly|EatsFish'
 #endif
 
   // Nameof.
