@@ -32,6 +32,10 @@
 #ifndef NEARGYE_NAMEOF_HPP
 #define NEARGYE_NAMEOF_HPP
 
+#define NAMEOF_MAJOR 0
+#define NAMEOF_MINOR 9
+#define NAMEOF_PATCH 4
+
 #include <array>
 #include <cassert>
 #include <cstdint>
