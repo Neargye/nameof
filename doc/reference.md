@@ -5,7 +5,9 @@
 * [`NAMEOF_RAW` macro that obtains raw string name of variable, function, macro.](#nameof_raw)
 * [`nameof_enum` function that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum)
 * [`NAMEOF_ENUM` macro that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum-1)
-* [`NAMEOF_CONST_ENUM` macro that obtains simple (unqualified) string enum name of static storage enum variable.](#NAMEOF_CONST_ENUM)
+* [`NAMEOF_CONST_ENUM` macro that obtains simple (unqualified) string enum name of static storage enum variable.](#nameof_const_enum)
+* [`nameof_enum_flag` function that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum_flag)
+* [`NAMEOF_ENUM_FLAG` function that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum_flag-1)
 * [`nameof_type` function that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type)
 * [`nameof_full_type` function that obtains string name of full type, with reference and cv-qualifiers.](#nameof_full_type)
 * [`NAMEOF_TYPE` macro that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type-1)
@@ -134,7 +136,7 @@
 
 ## `NAMEOF_CONST_ENUM`
 
-* Macro macro that obtains simple (unqualified) string enum name of static storage enum variable.
+* Macro that obtains simple (unqualified) string enum name of static storage enum variable.
 
 * Returns `std::string_view`.
 
@@ -148,9 +150,51 @@
   NAMEOF_CONST_ENUM(Color::GREEN) -> "GREEN"
   ```
 
+## `nameof_enum_flag`
+
+* Function that obtains simple (unqualified) string enum name of enum flag variable.
+
+* Returns `std::string`.
+
+* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `std::string_view`.
+
+* Examples
+
+  ```cpp
+  enum AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
+  auto flag = AnimalFlags::Endangered;
+  nameof_enum_flag(flag) -> "Endangered"
+  flag = AnimalFlags::Endangered | AnimalFlags::CanFly;
+  nameof_enum_flag(HasClaws | CanFly) -> "CanFly|Endangered"
+  nameof_enum_flag(HasClaws | CanFly) -> "HasClaws|CanFly"
+
+  nameof_enum(HasClaws | CanFly) -> ""
+  ```
+
+## `NAMEOF_ENUM_FLAG`
+
+* Macro that obtains simple (unqualified) string enum name of enum flag variable.
+
+* Returns `std::string`.
+
+* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `std::string_view`.
+
+* Examples
+
+  ```cpp
+  enum AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
+  auto flag = AnimalFlags::Endangered;
+  NAMEOF_ENUM_FLAG(flag) -> "Endangered"
+  flag = AnimalFlags::Endangered | AnimalFlags::CanFly;
+  NAMEOF_ENUM_FLAG(HasClaws | CanFly) -> "CanFly|Endangered"
+  NAMEOF_ENUM_FLAG(HasClaws | CanFly) -> "HasClaws|CanFly"
+
+  NAMEOF_ENUM(HasClaws | CanFly) -> ""
+  ```
+
 ## `nameof_type`
 
-* Function macro that obtains string name of type, reference and cv-qualifiers are ignored.
+* Function that obtains string name of type, reference and cv-qualifiers are ignored.
 
 * Returns `nameof::cstring` - constexpr implementation of an string.
 
@@ -186,7 +230,7 @@
 
 ## `NAMEOF_TYPE`
 
-* Macro macro that obtains string name of type, reference and cv-qualifiers are ignored.
+* Macro that obtains string name of type, reference and cv-qualifiers are ignored.
 
 * Returns `nameof::cstring` - constexpr implementation of an string.
 
@@ -260,7 +304,7 @@
 
 ## `NAMEOF_TYPE_RTTI`
 
-* Macro macro that obtains string name of type, using RTTI.
+* Macro that obtains string name of type, using RTTI.
 
 * Returns demangled RTTI type name.
 
