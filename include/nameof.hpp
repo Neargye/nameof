@@ -561,6 +561,7 @@ template <typename E, typename U = std::underlying_type_t<E>>
 constexpr std::uint8_t log2(E value) noexcept {
   auto ret = std::uint8_t{0};
   for (auto x = static_cast<U>(value); x > static_cast<U>(1U); x >>= static_cast<U>(1U), ++ret) {};
+
   return ret;
 }
 
