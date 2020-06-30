@@ -557,54 +557,56 @@ constexpr auto strings() noexcept {
 template <typename E>
 inline static constexpr auto strings_v = strings<E>();
 
-template <typename E>
-constexpr bool is_pow2(std::underlying_type_t<E> x) noexcept {
-  return x != 0 && (x & (x - 1)) == 0;
+template <typename E, typename U = std::underlying_type_t<E>>
+constexpr std::uint8_t log2(E value) {
+  auto ret = std::uint8_t{0};
+  for (auto x = static_cast<U>(value); x > static_cast<U>(1U); x >>= static_cast<U>(1U), ++ret) {};
+  return ret;
 }
 
-constexpr std::uint8_t log2_64(std::uint64_t x) noexcept {
-  // https://stackoverflow.com/a/11398748/9514814
-  constexpr std::array<std::uint8_t, 64> tab = {{
-      63, 0,  58, 1,  59, 47, 53, 2,  60, 39, 48, 27, 54, 33, 42, 3,
-      61, 51, 37, 40, 49, 18, 28, 20, 55, 30, 34, 11, 43, 14, 22, 4,
-      62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21,
-      56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5}};
-
-  x |= x >> 1;
-  x |= x >> 2;
-  x |= x >> 4;
-  x |= x >> 8;
-  x |= x >> 16;
-  x |= x >> 32;
-  x = ((x - (x >> 1)) * 0x07EDD5E59A4E28C2) >> 58;
-
-  return tab[x];
+template <typename E, typename U = std::underlying_type_t<E>>
+constexpr auto flag_value(U v) noexcept {
+  return static_cast<E>(static_cast<U>(1U) << v);
 }
 
-template <typename E>
-constexpr auto flag_value(std::underlying_type_t<E> v) noexcept {
-  return static_cast<E>(static_cast<std::underlying_type_t<E>>(0x1) << v);
+template <typename E, typename U = std::underlying_type_t<E>, U... I>
+constexpr auto flags_values(std::integer_sequence<U, I...>) noexcept {
+  static_assert(is_enum_v<E>, "nameof::detail::flags_values requires enum type.");
+  constexpr std::array<bool, sizeof...(I)> valid{{is_valid<E, flag_value<E>(I)>()...}};
+  constexpr std::size_t count = (valid[I] + ...);
+  static_assert(count <= std::numeric_limits<U>::digits, "nameof::detail::flags_values requires valid count.");
+
+  std::array<E, count> values{};
+  for (U i = 0, v = 0; v < count; ++i) {
+    if (valid[i]) {
+      values[v++] = flag_value<E>(i);
+    }
+  }
+
+  return values;
 }
 
-template <typename E, std::underlying_type_t<E>... I>
-constexpr auto flags_count(std::integer_sequence<std::underlying_type_t<E>, I...>) noexcept {
-  static_assert(is_enum_v<E>, "magic_enum::flags::detail::values requires enum type.");
-
-  return (is_valid<E, flag_value<E>(I)>() + ...);
-}
+template <typename E, typename U = std::underlying_type_t<E>>
+inline constexpr auto flags_values_v = flags_values<E>(std::make_integer_sequence<U, std::numeric_limits<U>::digits>{});
 
 template <typename E>
-inline constexpr auto flags_count_v = flags_count<E>(std::make_integer_sequence<std::underlying_type_t<E>, std::numeric_limits<std::underlying_type_t<E>>::digits>{});
+inline constexpr auto flags_count_v = flags_values_v<E>.size();
 
-template <typename E, std::underlying_type_t<E>... I>
-constexpr auto flags_strings(std::integer_sequence<std::underlying_type_t<E>, I...>) noexcept {
+template <typename E>
+inline constexpr auto flags_min_v = log2<E>(flags_values_v<E>.front());
+
+template <typename E>
+inline constexpr auto flags_max_v = log2<E>(flags_values_v<E>.back());
+
+template <typename E, auto Min, typename U = std::underlying_type_t<E>, U... I>
+constexpr auto flags_strings(std::integer_sequence<U, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::flags_strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I)>.data()...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I + Min)>.data()...}};
 }
 
-template <typename E>
-inline constexpr auto flags_strings_v = flags_strings<E>(std::make_integer_sequence<std::underlying_type_t<E>, std::numeric_limits<std::underlying_type_t<E>>::digits>{});
+template <typename E, typename U = std::underlying_type_t<E>>
+inline constexpr auto flags_strings_v = flags_strings<E, flags_min_v<E>>(std::make_integer_sequence<U, range_size<E, flags_min_v<E>, flags_max_v<E>>()>{});
 
 template <typename... T>
 constexpr auto n() noexcept {
@@ -678,17 +680,11 @@ template <typename E>
   using D = std::decay_t<E>;
   using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(detail::flags_count_v<D> > 0, "nameof::nameof_enum_flag requires enum implementation.");
-
-  if (const auto v = static_cast<U>(value); detail::is_pow2<E>(v)) {
-    if (const auto n = detail::flags_strings_v<D>[detail::log2_64(v)]; n != nullptr) {
-      return n;
-    }
-  }
+  static_assert(detail::flags_count_v<D> > 0, "nameof::nameof_enum_flag requires enum flag implementation.");
 
   auto name = std::string{};
-  for (U i = 0; i < std::numeric_limits<U>::digits; ++i) {
-    if (const auto v = (static_cast<U>(0x1) << i); (static_cast<U>(value) & v) != 0) {
+  for (U i = detail::flags_min_v<D>; i <= detail::flags_max_v<D>; ++i) {
+    if (const auto v = (static_cast<U>(1U) << i); (static_cast<U>(value) & v) != 0) {
       if (const auto n = detail::flags_strings_v<D>[i]; n != nullptr) {
         if (name.empty()) {
           name = n;
