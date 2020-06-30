@@ -443,7 +443,7 @@ constexpr bool cmp_less(L lhs, R rhs) noexcept {
 }
 
 template <typename E, int Min, int Max>
-constexpr std::size_t range_size() noexcept {
+constexpr auto range_size() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::range_size requires enum type.");
   constexpr auto size = Max - Min + 1;
   static_assert(size > 0, "nameof::enum_range requires valid size.");
@@ -453,7 +453,7 @@ constexpr std::size_t range_size() noexcept {
 }
 
 template <typename E>
-constexpr int reflected_min() noexcept {
+constexpr auto reflected_min() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::reflected_min requires enum type.");
   constexpr auto lhs = enum_range<E>::min;
   static_assert(lhs > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
@@ -463,7 +463,7 @@ constexpr int reflected_min() noexcept {
 }
 
 template <typename E>
-constexpr int reflected_max() noexcept {
+constexpr auto reflected_max() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::reflected_max requires enum type.");
   constexpr auto lhs = enum_range<E>::max;
   static_assert(lhs < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires max must be less than INT16_MAX.");
@@ -473,10 +473,10 @@ constexpr int reflected_max() noexcept {
 }
 
 template <typename E>
-inline constexpr int reflected_min_v = reflected_min<E>();
+inline constexpr auto reflected_min_v = reflected_min<E>();
 
 template <typename E>
-inline constexpr int reflected_max_v = reflected_max<E>();
+inline constexpr auto reflected_max_v = reflected_max<E>();
 
 template <typename E, int... I>
 constexpr auto values(std::integer_sequence<int, I...>) noexcept {
@@ -558,7 +558,7 @@ template <typename E>
 inline static constexpr auto strings_v = strings<E>();
 
 template <typename E, typename U = std::underlying_type_t<E>>
-constexpr std::uint8_t log2(E value) {
+constexpr std::uint8_t log2(E value) noexcept {
   auto ret = std::uint8_t{0};
   for (auto x = static_cast<U>(value); x > static_cast<U>(1U); x >>= static_cast<U>(1U), ++ret) {};
   return ret;
