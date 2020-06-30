@@ -530,18 +530,18 @@ template <typename E, int... I>
 constexpr auto strings(std::integer_sequence<int, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, static_cast<E>(I + min_v<E>)>.data()...}};
+  return std::array<std::string_view, sizeof...(I)>{{enum_name_v<E, static_cast<E>(I + min_v<E>)>...}};
 }
 
 template <typename E, std::size_t... I>
 constexpr auto strings(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, values_v<E>[I]>.data()...}};
+  return std::array<std::string_view, sizeof...(I)>{{enum_name_v<E, values_v<E>[I]>...}};
 }
 
 template <typename E>
-inline constexpr bool sparsity_v = (sizeof(const char*) * range_size_v<E>) > (sizeof(index_t<E>) * range_size_v<E> + sizeof(const char*) * count_v<E>);
+inline constexpr bool sparsity_v = (sizeof(std::string_view) * range_size_v<E>) > (sizeof(index_t<E>) * range_size_v<E> + sizeof(std::string_view) * count_v<E>);
 
 template <typename E>
 constexpr auto strings() noexcept {
@@ -603,7 +603,7 @@ template <typename E, auto Min, typename U = std::underlying_type_t<E>, U... I>
 constexpr auto flags_strings(std::integer_sequence<U, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::flags_strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I + Min)>.data()...}};
+  return std::array<std::string_view, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I + Min)>...}};
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
@@ -683,14 +683,14 @@ template <typename E>
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::flags_count_v<D> > 0, "nameof::nameof_enum_flag requires enum flag implementation.");
 
-  auto name = std::string{};
+  std::string name;
   for (U i = detail::flags_min_v<D>; i <= detail::flags_max_v<D>; ++i) {
     if (const auto v = (static_cast<U>(1U) << i); (static_cast<U>(value) & v) != 0) {
-      if (const auto n = detail::flags_strings_v<D>[i]; n != nullptr) {
+      if (const auto n = detail::flags_strings_v<D>[i]; !n.empty()) {
         if (name.empty()) {
-          name = n;
+          name.append(n.data(), n.size());
         } else {
-          name.append(1, '|').append(n);
+          name.append(1, '|').append(n.data(), n.size());
         }
       } else {
         return {}; // Value out of range.
