@@ -613,6 +613,9 @@ struct identity {
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
+#if defined(NEARGYE_MAGIC_ENUM_HPP)
+using ::magic_enum::detail::type_name_v;
+#else
 template <typename... T>
 constexpr auto n() noexcept {
 #if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
@@ -632,6 +635,7 @@ constexpr auto n() noexcept {
 
 template <typename... T>
 inline constexpr auto type_name_v = n<T...>();
+#endif
 
 #if __has_include(<cxxabi.h>)
 inline std::string demangle(const char* tn) {
