@@ -44,30 +44,6 @@ matrix:
       addons:
         apt:
           sources:
-            - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-5.0 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-          packages:
-            - clang-5.0
-      env:
-        - CXX_COMPILER=clang++-5.0 CC_COMPILER=clang-5.0
-
-    - os: linux
-      compiler: clang++
-      addons:
-        apt:
-          sources:
-            - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-6.0 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-          packages:
-            - clang-6.0
-      env:
-        - CXX_COMPILER=clang++-6.0 CC_COMPILER=clang-6.0
-
-    - os: linux
-      compiler: clang++
-      addons:
-        apt:
-          sources:
             - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main'
               key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
           packages:
@@ -120,6 +96,12 @@ matrix:
     - os: osx
       compiler: clang++
       osx_image: xcode11.6
+      env:
+        - CXX_COMPILER=clang++ CC_COMPILER=clang
+
+    - os: osx
+      compiler: clang++
+      osx_image: xcode12
       env:
         - CXX_COMPILER=clang++ CC_COMPILER=clang
 
