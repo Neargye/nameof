@@ -566,8 +566,8 @@ constexpr std::uint8_t log2(E value) noexcept {
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
-constexpr auto flag_value(U v) noexcept {
-  return static_cast<E>(static_cast<U>(1U) << v);
+constexpr auto flag_value(std::size_t v) noexcept {
+  return static_cast<E>(static_cast<U>(1U) << static_cast<U>(v));
 }
 
 template <typename E, typename U = std::underlying_type_t<E>, U... I>
@@ -578,7 +578,7 @@ constexpr auto flags_values(std::integer_sequence<U, I...>) noexcept {
   static_assert(count <= std::numeric_limits<U>::digits, "nameof::detail::flags_values requires valid count.");
 
   std::array<E, count> values{};
-  for (U i = 0, v = 0; v < count; ++i) {
+  for (std::size_t i = 0, v = 0; v < count; ++i) {
     if (valid[i]) {
       values[v++] = flag_value<E>(i);
     }
@@ -631,13 +631,10 @@ inline constexpr auto type_name_v = n<T...>();
 
 #if __has_include(<cxxabi.h>)
 inline std::string demangle(const char* tn) {
-  if (tn == nullptr) {
-    return {};
-  }
-
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto r = std::string{dmg != nullptr ? dmg : tn};
+  auto r = std::string{dmg};
   std::free(dmg);
+
   return r;
 }
 #else
@@ -684,14 +681,13 @@ template <typename E>
   static_assert(detail::flags_count_v<D> > 0, "nameof::nameof_enum_flag requires enum flag implementation.");
 
   std::string name;
-  for (U i = detail::flags_min_v<D>; i <= detail::flags_max_v<D>; ++i) {
-    if (const auto v = (static_cast<U>(1U) << i); (static_cast<U>(value) & v) != 0) {
+  for (auto i = detail::flags_min_v<D>; i <= detail::flags_max_v<D>; ++i) {
+    if (const auto v = (static_cast<U>(1U) << static_cast<U>(i)); (static_cast<U>(value) & v) != 0) {
       if (const auto n = detail::flags_strings_v<D>[i]; !n.empty()) {
-        if (name.empty()) {
-          name.append(n.data(), n.size());
-        } else {
-          name.append(1, '|').append(n.data(), n.size());
+        if (!name.empty()) {
+          name.append(1, '|');
         }
+        name.append(n.data(), n.size());
       } else {
         return {}; // Value out of range.
       }
