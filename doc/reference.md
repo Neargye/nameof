@@ -3,11 +3,11 @@
 * [`NAMEOF` macro that obtains simple (unqualified) string name of variable, function, macro.](#nameof)
 * [`NAMEOF_FULL` macro that obtains simple (unqualified) full (with template suffix) string name of variable, function, macro.](#nameof_full)
 * [`NAMEOF_RAW` macro that obtains raw string name of variable, function, macro.](#nameof_raw)
-* [`nameof_enum` function that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum)
-* [`NAMEOF_ENUM` macro that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum-1)
-* [`NAMEOF_CONST_ENUM` macro that obtains simple (unqualified) string enum name of static storage enum variable.](#nameof_const_enum)
-* [`nameof_enum_flag` function that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum_flag)
-* [`NAMEOF_ENUM_FLAG` function that obtains simple (unqualified) string enum name of enum variable.](#nameof_enum_flag-1)
+* [`nameof_enum` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum)
+* [`NAMEOF_ENUM` macro that obtains simple (unqualified) string name of enum variable.](#nameof_enum-1)
+* [`NAMEOF_CONST_ENUM` macro that obtains simple (unqualified) string name of static storage enum variable.](#nameof_const_enum)
+* [`nameof_enum_flag` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum_flag)
+* [`NAMEOF_ENUM_FLAG` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum_flag-1)
 * [`nameof_type` function that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type)
 * [`nameof_full_type` function that obtains string name of full type, with reference and cv-qualifiers.](#nameof_full_type)
 * [`NAMEOF_TYPE` macro that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type-1)
@@ -92,7 +92,7 @@
 
 ## `nameof_enum`
 
-* Function that obtains simple (unqualified) string enum name of enum variable.
+* Function that obtains simple (unqualified) string name of enum variable.
 
 * Returns `std::string_view`.
 
@@ -121,7 +121,7 @@
 
 ## `NAMEOF_ENUM`
 
-* Macro that obtains simple (unqualified) string enum name of enum variable.
+* Macro that obtains simple (unqualified) string name of enum variable.
 
 * Returns `std::string_view`.
 
@@ -136,7 +136,7 @@
 
 ## `NAMEOF_CONST_ENUM`
 
-* Macro that obtains simple (unqualified) string enum name of static storage enum variable.
+* Macro that obtains simple (unqualified) string name of static storage enum variable.
 
 * Returns `std::string_view`.
 
@@ -152,7 +152,7 @@
 
 ## `nameof_enum_flag`
 
-* Function that obtains simple (unqualified) string enum name of enum flag variable.
+* Function that obtains simple (unqualified) string name of enum flag variable.
 
 * Returns `std::string`.
 
@@ -173,7 +173,7 @@
 
 ## `NAMEOF_ENUM_FLAG`
 
-* Macro that obtains simple (unqualified) string enum name of enum flag variable.
+* Macro that obtains simple (unqualified) string name of enum flag variable.
 
 * Returns `std::string`.
 

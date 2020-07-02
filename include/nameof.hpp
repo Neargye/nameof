@@ -288,36 +288,6 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 
 namespace detail {
 
-template <typename T>
-struct identity {
-  using type = T;
-};
-
-template <typename... T>
-struct nameof_type_supported
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
-template <typename T>
-struct nameof_enum_supported
-#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
-template <typename T>
-using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-template <typename T, typename R>
-using enable_if_enum_t = std::enable_if_t<std::is_enum_v<std::decay_t<T>>, R>;
-
-template <typename T>
-inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::decay_t<T>>;
-
 constexpr std::string_view pretty_name(std::string_view name, bool remove_template_suffix = true) noexcept {
   if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
     return {}; // Narrow multibyte string literal.
@@ -397,6 +367,23 @@ constexpr std::string_view pretty_name(std::string_view name, bool remove_templa
   return {}; // Invalid name.
 }
 
+template <typename T>
+struct nameof_enum_supported
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
+template <typename T, typename R>
+using enable_if_enum_t = std::enable_if_t<std::is_enum_v<std::decay_t<T>>, R>;
+
+template <typename T>
+inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::decay_t<T>>;
+
+#if defined(NEARGYE_MAGIC_ENUM_HPP)
+using ::magic_enum::detail::enum_name_v;
+#else
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
@@ -416,8 +403,9 @@ constexpr auto n() noexcept {
 #endif
 }
 
-template <typename E, E V>
-inline constexpr auto enum_name_v = n<E, V>();
+template <auto V>
+inline constexpr auto enum_name_v = n<decltype(V), V>();
+#endif
 
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
@@ -530,18 +518,18 @@ template <typename E, int... I>
 constexpr auto strings(std::integer_sequence<int, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
-  return std::array<std::string_view, sizeof...(I)>{{enum_name_v<E, static_cast<E>(I + min_v<E>)>...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<static_cast<E>(I + min_v<E>)>.data()...}};
 }
 
 template <typename E, std::size_t... I>
 constexpr auto strings(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
-  return std::array<std::string_view, sizeof...(I)>{{enum_name_v<E, values_v<E>[I]>...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<values_v<E>[I]>.data()...}};
 }
 
 template <typename E>
-inline constexpr bool sparsity_v = (sizeof(std::string_view) * range_size_v<E>) > (sizeof(index_t<E>) * range_size_v<E> + sizeof(std::string_view) * count_v<E>);
+inline constexpr bool sparsity_v = (sizeof(const char*) * range_size_v<E>) > (sizeof(index_t<E>) * range_size_v<E> + sizeof(const char*) * count_v<E>);
 
 template <typename E>
 constexpr auto strings() noexcept {
@@ -603,11 +591,27 @@ template <typename E, auto Min, typename U = std::underlying_type_t<E>, U... I>
 constexpr auto flags_strings(std::integer_sequence<U, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::flags_strings requires enum type.");
 
-  return std::array<std::string_view, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I + Min)>...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<flag_value<E>(I + Min)>.data()...}};
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
 inline constexpr auto flags_strings_v = flags_strings<E, flags_min_v<E>>(std::make_integer_sequence<U, range_size<E, flags_min_v<E>, flags_max_v<E>>()>{});
+
+template <typename... T>
+struct nameof_type_supported
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
+template <typename T>
+struct identity {
+  using type = T;
+};
+
+template <typename T>
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename... T>
 constexpr auto n() noexcept {
@@ -651,7 +655,7 @@ inline constexpr bool is_nameof_type_supported = detail::nameof_type_supported<v
 // Checks is nameof_enum supported compiler.
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
 
-// Obtains simple (unqualified) string enum name of enum variable.
+// Obtains simple (unqualified) string name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
   using D = std::decay_t<E>;
@@ -673,6 +677,7 @@ template <typename E>
   return {}; // Value out of range.
 }
 
+// Obtains simple (unqualified) string name of enum flag variable.
 template <typename E>
 [[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, std::string> {
   using D = std::decay_t<E>;
@@ -683,11 +688,11 @@ template <typename E>
   std::string name;
   for (auto i = detail::flags_min_v<D>; i <= detail::flags_max_v<D>; ++i) {
     if (const auto v = (static_cast<U>(1U) << static_cast<U>(i)); (static_cast<U>(value) & v) != 0) {
-      if (const auto n = detail::flags_strings_v<D>[i]; !n.empty()) {
+      if (const auto n = detail::flags_strings_v<D>[i]; n != nullptr) {
         if (!name.empty()) {
           name.append(1, '|');
         }
-        name.append(n.data(), n.size());
+        name.append(n);
       } else {
         return {}; // Value out of range.
       }
@@ -697,13 +702,13 @@ template <typename E>
   return name;
 }
 
-// Obtains simple (unqualified) string enum name of static storage enum variable.
+// Obtains simple (unqualified) string name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
   using D = std::decay_t<decltype(V)>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  constexpr std::string_view name = detail::enum_name_v<D, V>;
+  constexpr std::string_view name = detail::enum_name_v<static_cast<D>(V)>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
   return name;
@@ -768,14 +773,14 @@ template <typename T>
   constexpr auto __nameof_raw = ::nameof::cstring<__size>{__name};      \
   return __nameof_raw; }()
 
-// Obtains simple (unqualified) string enum name of enum variable.
+// Obtains simple (unqualified) string name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
-// Obtains simple (unqualified) string enum name of static storage enum variable.
+// Obtains simple (unqualified) string name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 #define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// Obtains simple (unqualified) string enum name of enum flag variable.
+// Obtains simple (unqualified) string name of enum flag variable.
 #define NAMEOF_ENUM_FLAG(...) ::nameof::nameof_enum_flag<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
