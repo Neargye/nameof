@@ -60,6 +60,7 @@
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wsign-conversion" // Implicit conversion changes signedness: 'int' to 'size_t'.
+#  pragma GCC diagnostic ignored "-Wstringop-overflow" // Missing terminating nul 'enum_name_v'.
 #elif defined(_MSC_VER)
 #  pragma warning(push)
 #  pragma warning(disable : 26495) // Variable 'cstring<N>::chars_' is uninitialized.
@@ -403,8 +404,8 @@ constexpr auto n() noexcept {
 #endif
 }
 
-template <auto V>
-inline constexpr auto enum_name_v = n<decltype(V), V>();
+template <typename E, E V>
+inline constexpr auto enum_name_v = n<E, V>();
 #endif
 
 template <typename E, auto V>
@@ -431,7 +432,7 @@ constexpr bool cmp_less(L lhs, R rhs) noexcept {
 }
 
 template <typename E, int Min, int Max>
-constexpr auto range_size() noexcept {
+constexpr std::size_t range_size() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::range_size requires enum type.");
   constexpr auto size = Max - Min + 1;
   static_assert(size > 0, "nameof::enum_range requires valid size.");
@@ -518,14 +519,14 @@ template <typename E, int... I>
 constexpr auto strings(std::integer_sequence<int, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<static_cast<E>(I + min_v<E>)>.data()...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, static_cast<E>(I + min_v<E>)>.data()...}};
 }
 
 template <typename E, std::size_t... I>
 constexpr auto strings(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<values_v<E>[I]>.data()...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, values_v<E>[I]>.data()...}};
 }
 
 template <typename E>
@@ -554,7 +555,7 @@ constexpr std::uint8_t log2(E value) noexcept {
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
-constexpr auto flag_value(std::size_t v) noexcept {
+constexpr E flag_value(std::size_t v) noexcept {
   return static_cast<E>(static_cast<U>(1U) << static_cast<U>(v));
 }
 
@@ -591,7 +592,7 @@ template <typename E, auto Min, typename U = std::underlying_type_t<E>, U... I>
 constexpr auto flags_strings(std::integer_sequence<U, I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::flags_strings requires enum type.");
 
-  return std::array<const char*, sizeof...(I)>{{enum_name_v<flag_value<E>(I + Min)>.data()...}};
+  return std::array<const char*, sizeof...(I)>{{enum_name_v<E, flag_value<E>(I + Min)>.data()...}};
 }
 
 template <typename E, typename U = std::underlying_type_t<E>>
@@ -712,7 +713,7 @@ template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
   using D = std::decay_t<decltype(V)>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  constexpr std::string_view name = detail::enum_name_v<static_cast<D>(V)>;
+  constexpr std::string_view name = detail::enum_name_v<D, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
 
   return name;
