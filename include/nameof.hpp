@@ -32,9 +32,9 @@
 #ifndef NEARGYE_NAMEOF_HPP
 #define NEARGYE_NAMEOF_HPP
 
-#define NAMEOF_MAJOR 0
-#define NAMEOF_MINOR 9
-#define NAMEOF_PATCH 4
+#define NAMEOF_VERSION_MAJOR 0
+#define NAMEOF_VERSION_MINOR 9
+#define NAMEOF_VERSION_PATCH 4
 
 #include <array>
 #include <cassert>
