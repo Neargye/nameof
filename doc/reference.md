@@ -161,12 +161,12 @@
 * Examples
 
   ```cpp
-  enum AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
+  enum class AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
   auto flag = AnimalFlags::Endangered;
   nameof_enum_flag(flag) -> "Endangered"
   flag = AnimalFlags::Endangered | AnimalFlags::CanFly;
-  nameof_enum_flag(HasClaws | CanFly) -> "CanFly|Endangered"
-  nameof_enum_flag(HasClaws | CanFly) -> "HasClaws|CanFly"
+  nameof_enum_flag(flag) -> "CanFly|Endangered"
+  nameof_enum_flag(flag) -> "HasClaws|CanFly"
 
   nameof_enum(HasClaws | CanFly) -> ""
   ```
@@ -182,12 +182,12 @@
 * Examples
 
   ```cpp
-  enum AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
+  enum class AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
   auto flag = AnimalFlags::Endangered;
   NAMEOF_ENUM_FLAG(flag) -> "Endangered"
   flag = AnimalFlags::Endangered | AnimalFlags::CanFly;
-  NAMEOF_ENUM_FLAG(HasClaws | CanFly) -> "CanFly|Endangered"
-  NAMEOF_ENUM_FLAG(HasClaws | CanFly) -> "HasClaws|CanFly"
+  NAMEOF_ENUM_FLAG(flag) -> "CanFly|Endangered"
+  NAMEOF_ENUM_FLAG(flag) -> "HasClaws|CanFly"
 
   NAMEOF_ENUM(HasClaws | CanFly) -> ""
   ```
