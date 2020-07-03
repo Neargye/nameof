@@ -66,7 +66,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * Nameof enum
 
   ```cpp
-  enum class Color { RED = 2, BLUE = 4, GREEN = 8 };
+  enum class Color { RED = 1, BLUE = 2, GREEN = 4 };
 
   auto color = Color::RED;
   // Name of enum variable.
@@ -77,6 +77,10 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
   NAMEOF_CONST_ENUM(Color::GREEN) -> "GREEN"
   nameof::nameof_enum<Color::GREEN>() -> "GREEN"
+
+  // Enum flag variable to string.
+  NAMEOF_ENUM_FLAG(Color::GREEN | Color::BLUE) -> "GREEN|BLUE"
+  nameof::nameof_enum_flag<Color::GREEN>() -> "GREEN|BLUE"
   ```
 
 * Nameof type
