@@ -205,6 +205,50 @@ class [[nodiscard]] cstring {
     return std::string_view{data(), size()}.compare(str);
   }
 
+  [[nodiscard]] constexpr size_type count(std::string_view str) const noexcept {
+    size_type result = 0;
+    for (size_type i = 0; i < N - str.size(); i++) {
+      bool match = true;
+      for (std::size_t j = 0; j < str.size(); j++) {
+        if (at(i + j) != str[j]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        i += str.size() - 1;
+        result++;
+      }
+    }
+    return result;
+  }
+
+  template<size_type Loss>
+  [[nodiscard]] constexpr cstring<N-Loss> erase(std::string_view str) const noexcept {
+    std::array<char, N - Loss> result{};
+    size_type cur = 0;
+    size_t i = 0;
+    while (i <= N - str.size()) {
+      bool match = true;
+      for (std::size_t j = 0; j < str.size(); j++) {
+        if (at(i + j) != str[j]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        i += str.size();
+      }
+      else {
+        result[cur++] = at(i++);
+      }
+    }
+    while (i < N)
+      result[cur++] = at(i++);
+
+    return cstring<N - Loss>{std::string_view{ result.data(), result.size() }};
+  }
+
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
   template <typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
@@ -734,6 +778,20 @@ template <typename T>
   return name;
 }
 
+// Obtains string name of type, without reference, cv-qualifiers and class-key.
+template <typename T>
+[[nodiscard]] constexpr auto nameof_brief_type() noexcept {
+  constexpr std::string_view name = nameof_type<T>();
+  constexpr cstring<name.size()> cname{ name };
+  constexpr auto num_struct = cname.count("struct ");
+  constexpr auto num_class = cname.count("class ");
+  constexpr auto num_enum = cname.count("enum ");
+  constexpr auto cname_without_s = cname.erase<num_struct * sizeof("struct")>("struct ");
+  constexpr auto cname_without_sc = cname_without_s.erase<num_class * sizeof("class")>("class ");
+  constexpr auto cname_without_sce = cname_without_sc.erase<num_enum * sizeof("enum")>("enum ");
+  return cname_without_sce;
+}
+
 // Obtains string name of full type, with reference and cv-qualifiers.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
@@ -794,11 +852,17 @@ template <typename T>
 // Obtains string name of full type, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
 
+// Obtains string name of brief type, without class-key('class', 'struct' and 'enum').
+#define NAMEOF_BRIEF_TYPE(...) ::nameof::nameof_brief_type<__VA_ARGS__>()
+
 // Obtains string name type of expression, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
 
 // Obtains string name full type of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
+
+// Obtains string name of brief type of expression, without class-key('class', 'struct' and 'enum').
+#define NAMEOF_BRIEF_TYPE_EXPR(...) ::nameof::nameof_brief_type<decltype(__VA_ARGS__)>()
 
 // Obtains string name of type, using RTTI.
 #define NAMEOF_TYPE_RTTI(...) ::nameof::detail::demangle(typeid(__VA_ARGS__).name())
