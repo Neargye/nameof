@@ -782,14 +782,19 @@ template <typename T>
 template <typename T>
 [[nodiscard]] constexpr auto nameof_brief_type() noexcept {
   constexpr std::string_view name = nameof_type<T>();
+#if defined(_MSC_VER)
   constexpr cstring<name.size()> cname{ name };
   constexpr auto num_struct = cname.count("struct ");
   constexpr auto num_class = cname.count("class ");
   constexpr auto num_enum = cname.count("enum ");
-  constexpr auto cname_without_s = cname.erase<num_struct * sizeof("struct")>("struct ");
-  constexpr auto cname_without_sc = cname_without_s.erase<num_class * sizeof("class")>("class ");
-  constexpr auto cname_without_sce = cname_without_sc.erase<num_enum * sizeof("enum")>("enum ");
+  constexpr auto cname_without_s = cname.template erase<num_struct * sizeof("struct")>("struct ");
+  constexpr auto cname_without_sc = cname_without_s.template erase<num_class * sizeof("class")>("class ");
+  constexpr auto cname_without_sce = cname_without_sc.template erase<num_enum * sizeof("enum")>("enum ");
+  // it's new string data, so static_cast<std::string_view>(cname_without_sce) isn't correct here
   return cname_without_sce;
+#else
+  return name;
+#endif
 }
 
 // Obtains string name of full type, with reference and cv-qualifiers.
