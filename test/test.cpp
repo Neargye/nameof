@@ -373,56 +373,64 @@ TEST_CASE("nameof_enum") {
   }
 }
 
-TEST_CASE("nameof_enum_flag") {
+TEST_CASE("nameof_enum_flags") {
   constexpr AnimalFlags af = AnimalFlags::HasClaws;
-  auto af_name = nameof::nameof_enum_flag(af);
+  auto af_name = nameof::nameof_enum_flags(af);
   AnimalFlags afm[3] = {AnimalFlags::HasClaws, AnimalFlags::CanFly, AnimalFlags::EatsFish};
   REQUIRE(af_name == "HasClaws");
-  REQUIRE(nameof::nameof_enum_flag(AnimalFlags::EatsFish) == "EatsFish");
-  REQUIRE(nameof::nameof_enum_flag(afm[1]) == "CanFly");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
-  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
+  REQUIRE(nameof::nameof_enum_flags(AnimalFlags::EatsFish) == "EatsFish");
+  REQUIRE(nameof::nameof_enum_flags(afm[1]) == "CanFly");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<AnimalFlags>(0)).empty());
+  REQUIRE(nameof::nameof_enum_flags(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<AnimalFlags>(0)).empty());
 
   constexpr BigFlags bf = BigFlags::A;
-  auto bf_name = nameof::nameof_enum_flag(bf);
+  auto bf_name = nameof::nameof_enum_flags(bf);
   BigFlags bfm[3] = {BigFlags::A, BigFlags::B, BigFlags::C};
   REQUIRE(bf_name == "A");
-  REQUIRE(nameof::nameof_enum_flag(BigFlags::C) == "C");
-  REQUIRE(nameof::nameof_enum_flag(bfm[1]) == "B");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(0)).empty());
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 2)).empty());
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
+  REQUIRE(nameof::nameof_enum_flags(BigFlags::C) == "C");
+  REQUIRE(nameof::nameof_enum_flags(bfm[1]) == "B");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(0)).empty());
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(1 | 2)).empty());
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>(2)).empty());
+  REQUIRE(nameof::nameof_enum_flags(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
 }
 
-TEST_CASE("NAMEOF_ENUM_FLAG") {
+TEST_CASE("NAMEOF_ENUM_FLAGS") {
   constexpr AnimalFlags af = AnimalFlags::HasClaws;
-  auto af_name = NAMEOF_ENUM_FLAG(af);
+  auto af_name = NAMEOF_ENUM_FLAGS(af);
   AnimalFlags afm[3] = {AnimalFlags::HasClaws, AnimalFlags::CanFly, AnimalFlags::EatsFish};
   REQUIRE(af_name == "HasClaws");
-  REQUIRE(NAMEOF_ENUM_FLAG(afm[1]) == "CanFly");
-  REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::EatsFish) == "EatsFish");
-  REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::Endangered) == "Endangered");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
+  REQUIRE(NAMEOF_ENUM_FLAGS(afm[1]) == "CanFly");
+  REQUIRE(NAMEOF_ENUM_FLAGS(AnimalFlags::EatsFish) == "EatsFish");
+  REQUIRE(NAMEOF_ENUM_FLAGS(AnimalFlags::Endangered) == "Endangered");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<AnimalFlags>(0)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<AnimalFlags>(0)).empty());
 
   constexpr BigFlags bf = BigFlags::A;
-  auto bf_name = NAMEOF_ENUM_FLAG(bf);
+  auto bf_name = NAMEOF_ENUM_FLAGS(bf);
   BigFlags bfm[3] = {BigFlags::A, BigFlags::B, BigFlags::C};
   REQUIRE(bf_name == "A");
-  REQUIRE(NAMEOF_ENUM_FLAG(bfm[1]) == "B");
-  REQUIRE(NAMEOF_ENUM_FLAG(BigFlags::C) == "C");
-  REQUIRE(NAMEOF_ENUM_FLAG(BigFlags::D) == "D");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(0)).empty());
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | 2)).empty());
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
+  REQUIRE(NAMEOF_ENUM_FLAGS(bfm[1]) == "B");
+  REQUIRE(NAMEOF_ENUM_FLAGS(BigFlags::C) == "C");
+  REQUIRE(NAMEOF_ENUM_FLAGS(BigFlags::D) == "D");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>(0)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>(1 | 2)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>(2)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAGS(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
 }
 
 #endif
