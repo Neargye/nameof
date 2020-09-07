@@ -784,6 +784,17 @@ template <typename T>
   return name;
 }
 
+// Obtains string name of short type.
+template <typename T>
+[[nodiscard]] constexpr std::string_view nameof_short_type() noexcept {
+  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  using U = detail::identity<detail::remove_cvref_t<T>>;
+  constexpr std::string_view name = detail::pretty_name(detail::type_name_v<U>);
+  static_assert(name.size() > 0, "Type does not have a name.");
+
+  return name;
+}
+
 } // namespace nameof
 
 // Obtains simple (unqualified) string name of variable, function, macro.
@@ -834,6 +845,12 @@ template <typename T>
 
 // Obtains string name full type of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
+
+// Obtains string name of short type.
+#define NAMEOF_SHORT_TYPE(...) ::nameof::nameof_short_type<__VA_ARGS__>()
+
+// Obtains string name short type of expression.
+#define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()
 
 // Obtains string name of type, using RTTI.
 #define NAMEOF_TYPE_RTTI(...) ::nameof::detail::demangle(typeid(__VA_ARGS__).name())
