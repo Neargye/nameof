@@ -16,6 +16,8 @@
 
 ## Nameof Enum
 
+* Do not use [nameof](https://github.com/Neargye/nameof) and [magic_enum](https://github.com/Neargye/magic_enum) in the same project to get enum name.
+
 * To check is nameof enum supported compiler use macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.
 
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 9.

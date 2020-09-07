@@ -128,9 +128,9 @@ int main() {
   std::cout << nameof::nameof_enum<Color::GREEN>() << std::endl; // 'GREEN'
 
   // Nameof enum flags.
-  AnimalFlags flag = static_cast<AnimalFlags>(AnimalFlags::CanFly | AnimalFlags::EatsFish);
-  std::cout << nameof::nameof_enum_flags(flag) << std::endl; // 'CanFly|EatsFish'
-  std::cout << NAMEOF_ENUM_FLAGS(flag) << std::endl; // 'CanFly|EatsFish'
+  auto flag = static_cast<AnimalFlags>(AnimalFlags::CanFly | AnimalFlags::EatsFish);
+  std::cout << nameof::nameof_enum_flag(flag) << std::endl; // 'CanFly|EatsFish'
+  std::cout << NAMEOF_ENUM_FLAG(flag) << std::endl; // 'CanFly|EatsFish'
 #endif
 
   // Nameof.

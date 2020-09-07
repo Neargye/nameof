@@ -720,11 +720,11 @@ template <typename E>
 
 // Obtains simple (unqualified) string name of enum-flags variable.
 template <typename E>
-[[nodiscard]] auto nameof_enum_flags(E value) -> detail::enable_if_enum_t<E, std::string> {
+[[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, std::string> {
   using D = std::decay_t<E>;
   using U = std::underlying_type_t<D>;
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flags unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(detail::count_v<D, true> > 0, "nameof::nameof_enum_flags requires enum flag implementation.");
+  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::count_v<D, true> > 0, "nameof::nameof_enum_flag requires enum-flags implementation.");
   constexpr auto size = detail::is_sparse_v<D, true> ? detail::count_v<D, true> : detail::range_size_v<D, true>;
 
   std::string name;
@@ -818,19 +818,19 @@ template <typename T>
 
 // Obtains simple (unqualified) string name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
-#define NAMEOF_CONST_ENUM(...) ::nameof::nameof_enum<__VA_ARGS__>()
+#define NAMEOF_ENUM_CONST(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// Obtains simple (unqualified) string name of enum flag variable.
-#define NAMEOF_ENUM_FLAGS(...) ::nameof::nameof_enum_flags<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
+// Obtains simple (unqualified) string name of enum-flags variable.
+#define NAMEOF_ENUM_FLAG(...) ::nameof::nameof_enum_flag<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains string name of type, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// Obtains string name of full type, with reference and cv-qualifiers.
-#define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
-
 // Obtains string name type of expression, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+
+// Obtains string name of full type, with reference and cv-qualifiers.
+#define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
 
 // Obtains string name full type of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()

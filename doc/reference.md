@@ -5,7 +5,7 @@
 * [`NAMEOF_RAW` macro that obtains raw string name of variable, function, macro.](#nameof_raw)
 * [`nameof_enum` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum)
 * [`NAMEOF_ENUM` macro that obtains simple (unqualified) string name of enum variable.](#nameof_enum-1)
-* [`NAMEOF_CONST_ENUM` macro that obtains simple (unqualified) string name of static storage enum variable.](#nameof_const_enum)
+* [`NAMEOF_ENUM_CONST` macro that obtains simple (unqualified) string name of static storage enum variable.](#nameof_enum_const)
 * [`nameof_enum_flag` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum_flag)
 * [`NAMEOF_ENUM_FLAG` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum_flag-1)
 * [`nameof_type` function that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type)
@@ -134,7 +134,7 @@
   NAMEOF_ENUM(color) -> "RED"
   ```
 
-## `NAMEOF_CONST_ENUM`
+## `NAMEOF_ENUM_CONST`
 
 * Macro that obtains simple (unqualified) string name of static storage enum variable.
 
@@ -147,7 +147,7 @@
 * Examples
 
   ```cpp
-  NAMEOF_CONST_ENUM(Color::GREEN) -> "GREEN"
+  NAMEOF_ENUM_CONST(Color::GREEN) -> "GREEN"
   ```
 
 ## `nameof_enum_flag`
@@ -156,7 +156,7 @@
 
 * Returns `std::string`.
 
-* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `std::string_view`.
+* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `std::string`.
 
 * Examples
 
@@ -177,7 +177,7 @@
 
 * Returns `std::string`.
 
-* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `std::string_view`.
+* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `std::string`.
 
 * Examples
 

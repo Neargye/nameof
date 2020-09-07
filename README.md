@@ -75,7 +75,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 
   // Static storage enum variable to string.
   // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
-  NAMEOF_CONST_ENUM(Color::GREEN) -> "GREEN"
+  NAMEOF_ENUM_CONST(Color::GREEN) -> "GREEN"
   nameof::nameof_enum<Color::GREEN>() -> "GREEN"
 
   // Enum flag variable to string.
