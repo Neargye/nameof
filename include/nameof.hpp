@@ -675,16 +675,40 @@ template <typename... T>
 inline constexpr auto type_name_v = n<T...>();
 
 #if __has_include(<cxxabi.h>)
-inline std::string demangle(const char* tn) {
+template <typename T>
+std::string nameof_type_rtti(const char* tn) {
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto r = std::string{dmg};
+  auto name = std::string{dmg};
   std::free(dmg);
+  assert(name.size() > 0 && "Type does not have a name.");
 
-  return r;
+  return name;
+}
+
+template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
+std::string nameof_short_type_rtti(const char* tn) {
+  auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
+  auto name = std::string{detail::pretty_name(dmg)};
+  std::free(dmg);
+  assert(name.size() > 0 && "Type does not have a short name.");
+
+  return name;
 }
 #else
-constexpr std::string_view demangle(const char* tn) noexcept {
-  return {tn};
+template <typename T>
+constexpr std::string_view nameof_type_rtti(const char* tn) noexcept {
+  auto name = std::string_view{tn};
+  assert(name.size() > 0 && "Type does not have a name.");
+
+  return name;
+}
+
+template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
+constexpr std::string_view nameof_short_type_rtti(const char* tn) noexcept {
+  auto name = detail::pretty_name(tn);
+  assert(name.size() > 0 && "Type does not have a short name.");
+
+  return name;
 }
 #endif
 
@@ -696,7 +720,7 @@ inline constexpr bool is_nameof_type_supported = detail::nameof_type_supported<v
 // Checks is nameof_enum supported compiler.
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
 
-// Obtains simple (unqualified) string name of enum variable.
+// Obtains simple (unqualified) name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, std::string_view> {
   using D = std::decay_t<E>;
@@ -718,7 +742,7 @@ template <typename E>
   return {}; // Value out of range.
 }
 
-// Obtains simple (unqualified) string name of enum-flags variable.
+// Obtains simple (unqualified) name of enum-flags variable.
 template <typename E>
 [[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, std::string> {
   using D = std::decay_t<E>;
@@ -750,7 +774,7 @@ template <typename E>
   return {}; // Invalid value or out of range.
 }
 
-// Obtains simple (unqualified) string name of static storage enum variable.
+// Obtains simple (unqualified) name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), std::string_view> {
@@ -762,7 +786,7 @@ template <auto V>
   return name;
 }
 
-// Obtains string name of type, reference and cv-qualifiers are ignored.
+// Obtains name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -773,87 +797,90 @@ template <typename T>
   return name;
 }
 
-// Obtains string name of full type, with reference and cv-qualifiers.
+// Obtains full name of type, with reference and cv-qualifiers.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_full_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = detail::identity<T>;
   constexpr std::string_view name = detail::type_name_v<U>;
-  static_assert(name.size() > 0, "Type does not have a name.");
+  static_assert(name.size() > 0, "Type does not have a full name.");
 
   return name;
 }
 
-// Obtains string name of short type.
+// Obtains short name of type.
 template <typename T>
 [[nodiscard]] constexpr std::string_view nameof_short_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = detail::identity<detail::remove_cvref_t<T>>;
   constexpr std::string_view name = detail::pretty_name(detail::type_name_v<U>);
-  static_assert(name.size() > 0, "Type does not have a name.");
+  static_assert(name.size() > 0, "Type does not have a short name.");
 
   return name;
 }
 
 } // namespace nameof
 
-// Obtains simple (unqualified) string name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept {                                \
+// Obtains simple (unqualified) name of variable, function, macro.
+#define NAMEOF(...) []() constexpr noexcept {                               \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                   \
+  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
+  static_assert(_name.size() > 0, "Expression does not have a name.");      \
+  constexpr auto _size = _name.size();                                      \
+  constexpr auto _nameof = ::nameof::cstring<_size>{_name};                 \
+  return _nameof; }()
+
+// Obtains simple (unqualified) full (with template suffix) name of variable, function, macro.
+#define NAMEOF_FULL(...) []() constexpr noexcept {                           \
   ::std::void_t<decltype(__VA_ARGS__)>();                                    \
-  constexpr auto __name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
-  static_assert(__name.size() > 0, "Expression does not have a name.");      \
-  constexpr auto __size = __name.size();                                     \
-  constexpr auto __nameof = ::nameof::cstring<__size>{__name};               \
-  return __nameof; }()
+  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
+  static_assert(_name.size() > 0, "Expression does not have a name.");       \
+  constexpr auto _size = _name.size();                                       \
+  constexpr auto _nameof_full = ::nameof::cstring<_size>{_name};             \
+  return _nameof_full; }()
 
-// Obtains simple (unqualified) full (with template suffix) string name of variable, function, macro.
-#define NAMEOF_FULL(...) []() constexpr noexcept {                            \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                     \
-  constexpr auto __name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(__name.size() > 0, "Expression does not have a name.");       \
-  constexpr auto __size = __name.size();                                      \
-  constexpr auto __nameof_full = ::nameof::cstring<__size>{__name};           \
-  return __nameof_full; }()
+// Obtains raw name of variable, function, macro.
+#define NAMEOF_RAW(...) []() constexpr noexcept {                      \
+  ::std::void_t<decltype(__VA_ARGS__)>();                              \
+  constexpr auto _name = ::std::string_view{#__VA_ARGS__};             \
+  static_assert(_name.size() > 0, "Expression does not have a name."); \
+  constexpr auto _size = _name.size();                                 \
+  constexpr auto _nameof_raw = ::nameof::cstring<_size>{_name};        \
+  return _nameof_raw; }()
 
-// Obtains raw string name of variable, function, macro.
-#define NAMEOF_RAW(...) []() constexpr noexcept {                       \
-  ::std::void_t<decltype(__VA_ARGS__)>();                               \
-  constexpr auto __name = ::std::string_view{#__VA_ARGS__};             \
-  static_assert(__name.size() > 0, "Expression does not have a name."); \
-  constexpr auto __size = __name.size();                                \
-  constexpr auto __nameof_raw = ::nameof::cstring<__size>{__name};      \
-  return __nameof_raw; }()
-
-// Obtains simple (unqualified) string name of enum variable.
+// Obtains simple (unqualified) name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
-// Obtains simple (unqualified) string name of static storage enum variable.
+// Obtains simple (unqualified) name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 #define NAMEOF_ENUM_CONST(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// Obtains simple (unqualified) string name of enum-flags variable.
+// Obtains simple (unqualified) name of enum-flags variable.
 #define NAMEOF_ENUM_FLAG(...) ::nameof::nameof_enum_flag<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
-// Obtains string name of type, reference and cv-qualifiers are ignored.
+// Obtains type name, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// Obtains string name type of expression, reference and cv-qualifiers are ignored.
+// Obtains type name of expression, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
 
-// Obtains string name of full type, with reference and cv-qualifiers.
+// Obtains full type name, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
 
-// Obtains string name full type of expression, with reference and cv-qualifiers.
+// Obtains full type name of expression, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
-// Obtains string name of short type.
+// Obtains short type name.
 #define NAMEOF_SHORT_TYPE(...) ::nameof::nameof_short_type<__VA_ARGS__>()
 
-// Obtains string name short type of expression.
+// Obtains short type name of expression.
 #define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()
 
-// Obtains string name of type, using RTTI.
-#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::demangle(typeid(__VA_ARGS__).name())
+// Obtains type name, using RTTI.
+#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::nameof_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
+
+// Obtains short type name, using RTTI.
+#define NAMEOF_SHORT_TYPE_RTTI(...) ::nameof::detail::nameof_short_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop

@@ -103,6 +103,11 @@ struct enum_range<number> {
 };
 } // namespace nameof
 
+struct TestRtti{
+  struct Base { virtual ~Base() = default; };
+  struct Derived : Base {};
+};
+
 SomeStruct struct_var;
 Long othervar;
 SomeStruct* ptr_s = &struct_var;
@@ -761,12 +766,24 @@ TEST_CASE("nameof::nameof_type") {
 
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
 TEST_CASE("NAMEOF_TYPE_RTTI") {
+  TestRtti::Base* ptr = new TestRtti::Derived();
 #if defined(__clang__)
-  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "Color");
+  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "enum Color");
+  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "struct TestRtti::Derived");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "Color");
+  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
+#endif
+}
+
+TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
+  TestRtti::Base* ptr = new TestRtti::Derived();
+#if defined(__clang__)
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
+#elif defined(_MSC_VER)
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
+#elif defined(__GNUC__)
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
 #endif
 }
 #endif

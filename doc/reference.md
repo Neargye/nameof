@@ -10,11 +10,15 @@
 * [`NAMEOF_ENUM_FLAG` function that obtains simple (unqualified) string name of enum variable.](#nameof_enum_flag-1)
 * [`nameof_type` function that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type)
 * [`nameof_full_type` function that obtains string name of full type, with reference and cv-qualifiers.](#nameof_full_type)
+* [`nameof_short_type` function that obtains string name of full type, with reference and cv-qualifiers.](#nameof_short_type)
 * [`NAMEOF_TYPE` macro that obtains string name of type, reference and cv-qualifiers are ignored.](#nameof_type-1)
 * [`NAMEOF_FULL_TYPE` macro that obtains string name of full type, with reference and cv-qualifiers.](#nameof_full_type-1)
+* [`NAMEOF_SHORT_TYPE` macro that obtains string name of full type, with reference and cv-qualifiers.](#nameof_short_type-1)
 * [`NAMEOF_TYPE_EXPR` macro that obtains string name type of expression, reference and cv-qualifiers are ignored.](#nameof_type_expr)
 * [`NAMEOF_FULL_TYPE_EXPR` macro that obtains string name full type of expression, with reference and cv-qualifiers.](#nameof_full_type_expr)
+* [`NAMEOF_SHIRT_TYPE_EXPR` macro that obtains string name full type of expression, with reference and cv-qualifiers.](#nameof_short_type_expr)
 * [`NAMEOF_TYPE_RTTI` macro that obtains string name type, using RTTI.](#nameof_type_rtti)
+* [`NAMEOF_TYPE_RTTI` macro that obtains string name type, using RTTI.](#nameof_short_type_rtti)
 
 ## Synopsis
 
@@ -30,7 +34,7 @@
 
 ## `NAMEOF`
 
-* Macro that obtains simple (unqualified) string name of variable, function, macro.
+* Macro that obtains simple (unqualified) name of variable, function, macro.
 
 * Returns `nameof::cstring` - constexpr implementation of an string.
 
@@ -59,7 +63,7 @@
 
 ## `NAMEOF_FULL`
 
-* Macro that obtains simple (unqualified) full (with template suffix) string name of variable, function, macro.
+* Macro that obtains simple (unqualified) full (with template suffix) name of variable, function, macro.
 
 * Returns `nameof::cstring` - constexpr implementation of an string.
 
@@ -77,7 +81,7 @@
 
 ## `NAMEOF_RAW`
 
-* Macro that obtains raw string name of variable, function, macro.
+* Macro that obtains raw name of variable, function, macro.
 
 * Returns `nameof::cstring` - constexpr implementation of an string.
 
@@ -92,7 +96,7 @@
 
 ## `nameof_enum`
 
-* Function that obtains simple (unqualified) string name of enum variable.
+* Function that obtains simple (unqualified) name of enum variable.
 
 * Returns `std::string_view`.
 
@@ -121,7 +125,7 @@
 
 ## `NAMEOF_ENUM`
 
-* Macro that obtains simple (unqualified) string name of enum variable.
+* Macro that obtains simple (unqualified) name of enum variable.
 
 * Returns `std::string_view`.
 
@@ -136,7 +140,7 @@
 
 ## `NAMEOF_ENUM_CONST`
 
-* Macro that obtains simple (unqualified) string name of static storage enum variable.
+* Macro that obtains simple (unqualified) name of static storage enum variable.
 
 * Returns `std::string_view`.
 
@@ -152,7 +156,7 @@
 
 ## `nameof_enum_flag`
 
-* Function that obtains simple (unqualified) string name of enum flag variable.
+* Function that obtains simple (unqualified) name of enum flag variable.
 
 * Returns `std::string`.
 
@@ -173,7 +177,7 @@
 
 ## `NAMEOF_ENUM_FLAG`
 
-* Macro that obtains simple (unqualified) string name of enum flag variable.
+* Macro that obtains simple (unqualified) name of enum flag variable.
 
 * Returns `std::string`.
 
@@ -194,9 +198,9 @@
 
 ## `nameof_type`
 
-* Function that obtains string name of type, reference and cv-qualifiers are ignored.
+* Function that obtains type name, reference and cv-qualifiers are ignored.
 
-* Returns `nameof::cstring` - constexpr implementation of an string.
+* Returns `std::string_view`.
 
 * In all cases, reference and cv-qualifiers are ignored by `nameof_type` (that is, `nameof_type<const T&>() == nameof_type<T>()`).
 
@@ -213,9 +217,9 @@
 
 ## `nameof_full_type`
 
-* Function that obtains string name of full type, with reference and cv-qualifiers.
+* Function that obtains full type name, with reference and cv-qualifiers.
 
-* Returns `nameof::cstring` - constexpr implementation of an string.
+* Returns `std::string_view`.
 
 * Returns compiler-specific type name.
 
@@ -228,11 +232,28 @@
   nameof::nameof_full_type<T>() -> "const int&"
   ```
 
+## `nameof_short_type`
+
+* Function that obtains short type name.
+
+* Returns `std::string_view`.
+
+* Returns compiler-specific type name.
+
+* If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
+
+* Examples
+
+  ```cpp
+  using T = const my::detail::SomeClass<int>&;
+  nameof::nameof_short_type<T>() -> "SomeClass"
+  ```
+
 ## `NAMEOF_TYPE`
 
-* Macro that obtains string name of type, reference and cv-qualifiers are ignored.
+* Macro that obtains type name, reference and cv-qualifiers are ignored.
 
-* Returns `nameof::cstring` - constexpr implementation of an string.
+* Returns `std::string_view`.
 
 * In all cases, reference and cv-qualifiers are ignored by `NAMEOF_TYPE` (that is, `NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
 
@@ -249,9 +270,9 @@
 
 ## `NAMEOF_FULL_TYPE`
 
-* Macro that obtains string name of full type, with reference and cv-qualifiers.
+* Macro that obtains full type name, with reference and cv-qualifiers.
 
-* Returns `nameof::cstring` - constexpr implementation of an string.
+* Returns `std::string_view`.
 
 * Returns compiler-specific type name.
 
@@ -268,9 +289,9 @@
 
 * Macro that obtains string name type of expression, reference and cv-qualifiers are ignored.
 
-* Returns `nameof::cstring` - constexpr implementation of an string.
+* Returns `std::string_view`.
 
-* Returns returns compiler-specific type name.
+* Returns compiler-specific type name.
 
 * In all cases, reference and cv-qualifiers are ignored.
 
@@ -286,9 +307,9 @@
 
 ## `NAMEOF_FULL_TYPE_EXPR`
 
-* Macro that obtains string name full type of expression, with reference and cv-qualifiers.
+* Macro that obtains full type name of expression, with reference and cv-qualifiers.
 
-* Returns `nameof::cstring` - constexpr implementation of an string.
+* Returns `std::string_view`.
 
 * Returns compiler-specific type name.
 
@@ -302,19 +323,46 @@
   NAMEOF_FULL_TYPE_EXPR(var) -> "const int&"
   ```
 
+## `NAMEOF_SHORT_TYPE_EXPR`
+
+* Macro that obtains short type name of expression.
+
+* Returns `std::string_view`.
+
+* Returns compiler-specific type name.
+
+* If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
+
+* Examples
+
+  ```cpp
+  my::detail::SomeClass<int> var;
+  NAMEOF_SHORT_TYPE_EXPR(var) -> "SomeClass"
+  ```
+
 ## `NAMEOF_TYPE_RTTI`
 
-* Macro that obtains string name of type, using RTTI.
+* Macro that obtains type name, using RTTI.
 
 * Returns demangled RTTI type name.
 
 * Examples
 
   ```cpp
-  struct Base { virtual void foo() {} };
-  struct Derived : Base {};
+  my::detail::Base* ptr = new my::detail::Derived();
+  NAMEOF_TYPE_RTTI(ptr)  -> "my::detail::Base *"
+  NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
+  ```
 
+## `NAMEOF_SHORT_TYPE_RTTI`
+
+* Macro that obtains short type name, using RTTI.
+
+* Returns demangled RTTI type name.
+
+* Examples
+
+  ```cpp
   Base* ptr = new Derived();
-  NAMEOF_TYPE_RTTI(ptr)  -> "Base *"
-  NAMEOF_TYPE_RTTI(*ptr) -> "Derived"
+  NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "my::detail::Derived"
   ```
