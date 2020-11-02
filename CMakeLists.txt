@@ -45,3 +45,6 @@ install(EXPORT ${PROJECT_NAME}Config
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
         DESTINATION .)
+
+export(EXPORT ${PROJECT_NAME}Config
+        NAMESPACE ${PROJECT_NAME}::)
