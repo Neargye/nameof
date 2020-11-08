@@ -93,15 +93,13 @@ enum class BigFlags : std::uint64_t {
   D = (static_cast<std::uint64_t>(0x1) << 63),
 };
 
-namespace nameof {
 template <>
-struct enum_range<number> {
+struct nameof::customize::enum_range<number> {
   static_assert(std::is_enum_v<number>, "nameof::enum_range<number> requires enum type.");
   static constexpr int min = 100;
   static constexpr int max = 300;
   static_assert(max > min, "nameof::enum_range<number> requires max > min.");
 };
-} // namespace nameof
 
 struct TestRtti{
   struct Base { virtual ~Base() = default; };
@@ -767,7 +765,7 @@ TEST_CASE("nameof::nameof_type") {
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
 TEST_CASE("NAMEOF_TYPE_RTTI") {
   TestRtti::Base* ptr = new TestRtti::Derived();
-#if defined(__clang__)
+#if defined(__clang__) && !defined(_MSC_VER)
   REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
 #elif defined(_MSC_VER)
   REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "struct TestRtti::Derived");
@@ -778,7 +776,7 @@ TEST_CASE("NAMEOF_TYPE_RTTI") {
 
 TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
   TestRtti::Base* ptr = new TestRtti::Derived();
-#if defined(__clang__)
+#if defined(__clang__) && !defined(_MSC_VER)
   REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
 #elif defined(_MSC_VER)
   REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");

@@ -40,20 +40,18 @@
     #include <nameof.hpp>
     ```
 
-  * If need another range for specific enum type, add specialization `enum_range` for necessary enum type. Specialization of `enum_range` must be injected in `namespace nameof`.
+  * If need another range for specific enum type, add specialization `enum_range` for necessary enum type. Specialization of `enum_range` must be injected in `namespace nameof::customize`.
 
     ```cpp
     #include <nameof.hpp>
 
     enum class number { one = 100, two = 200, three = 300 };
 
-    namespace nameof {
     template <>
-    struct enum_range<number> {
+    struct nameof::customize::enum_range<number> {
       static constexpr int min = 100;
       static constexpr int max = 300;
     };
-    } // namespace nameof
     ```
 
 * Nameof enum won't work if a value is aliased, work with enum-aliases is compiler-implementation-defined.
