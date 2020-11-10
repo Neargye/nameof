@@ -565,15 +565,7 @@ template <typename E, bool IsFlags, int Min, std::size_t... I>
 constexpr auto values(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::values requires enum type.");
   constexpr std::array<bool, sizeof...(I)> valid{{is_valid<E, value<E, Min, IsFlags>(I)>()...}};
-  constexpr std::size_t count = [](decltype((valid)) valid_) constexpr noexcept -> std::size_t {
-    auto count_ = std::size_t{0};
-    for (std::size_t i_ = 0; i_ < valid_.size(); ++i_) {
-      if (valid_[i_]) {
-        ++count_;
-      }
-    }
-    return count_;
-  }(valid);
+  constexpr std::size_t count = (static_cast<std::size_t>(valid[I]) + ...);
 
   std::array<E, count> values{};
   for (std::size_t i = 0, v = 0; v < count; ++i) {
