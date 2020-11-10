@@ -25,7 +25,9 @@
 #include <nameof.hpp>
 
 enum class Color : int { RED = -10, BLUE = 0, GREEN = 10 };
+enum class Numbers : int { One, Two, Three };
 
+#if defined(NAMEOF_ENUM_SUPPORTED)
 // Сustom definitions of names for enum.
 // Specialization of `enum_name` must be injected in `namespace nameof::customize`.
 template <>
@@ -41,8 +43,6 @@ constexpr std::string_view nameof::customize::enum_name<Color>(Color value) noex
   return {}; // Empty string for unknow value.
 }
 
-enum class Numbers : int { One, Two, Three };
-
 // Сustom definitions of names for enum.
 // Specialization of `enum_name` must be injected in `namespace nameof::customize`.
 template <>
@@ -54,6 +54,7 @@ constexpr std::string_view nameof::customize::enum_name<Numbers>(Numbers value) 
       return {}; // Empty string for default or unknow value.
   }
 }
+#endif
 
 // Сustom definitions of names for type.
 // Specialization of `type_name` must be injected in `namespace nameof::customize`.
@@ -73,6 +74,7 @@ constexpr std::string_view nameof::customize::type_name<a1_test>() noexcept {
 }
 
 int main() {
+#if defined(NAMEOF_ENUM_SUPPORTED)
   std::cout << nameof::nameof_enum(Color::RED) << std::endl; // 'the red color'
   std::cout << nameof::nameof_enum(Color::BLUE) << std::endl; // 'The BLUE'
   std::cout << nameof::nameof_enum(Color::GREEN) << std::endl; // 'GREEN'
@@ -80,6 +82,7 @@ int main() {
   std::cout << nameof::nameof_enum(Numbers::One) << std::endl; // 'the one'
   std::cout << nameof::nameof_enum(Numbers::Two) << std::endl; // 'Two'
   std::cout << nameof::nameof_enum(Numbers::Three) << std::endl; // 'Three'
+#endif
 
   std::cout << nameof::nameof_type<Color>() << std::endl; // 'The Color'
   std::cout << nameof::nameof_type<Numbers>() << std::endl; // 'Numbers'
