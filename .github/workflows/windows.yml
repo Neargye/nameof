@@ -4,9 +4,10 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: [windows-2016, windows-2019]
+    runs-on: ${{matrix.os}}
     strategy:
       matrix:
+        os: [windows-2016, windows-2019]
         build: [Debug, Release]
         platform: [Win32, x64]
 
@@ -15,7 +16,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Configure CMake
-      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} -A ${{matrix.platform}}
+      run: cmake -A ${{matrix.platform}}
 
     - name: Build
       run: cmake --build . --config ${{matrix.build}}
