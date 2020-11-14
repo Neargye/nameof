@@ -15,8 +15,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Create Build Environment
+      run: mkdir build & cd build
+
     - name: Configure CMake
-      run: cmake -A ${{matrix.platform}}
+      run: cmake -A ${{matrix.platform}} ..
 
     - name: Build
       run: cmake --build . --config ${{matrix.build}}
+
+    - name: Tests
+      run: ctest --output-on-failure -C ${{matrix.build}}
