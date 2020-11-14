@@ -15,10 +15,15 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Configure CXX
-      run: export CXX=${{matrix.compiler}}
+      run: |
+        export CXX=${{matrix.compiler}}
+        ${CXX} --version
 
     - name: Create Build Environment
-      run: mkdir build & cd build
+      run: |
+        rm -rf build
+        mkdir -p build
+        cd build
 
     - name: Configure CMake
       run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} ..

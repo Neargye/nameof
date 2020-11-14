@@ -16,7 +16,10 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Create Build Environment
-      run: mkdir build & cd build
+      run: |
+        if exist build RMDIR /S /Q build
+        if not exist build mkdir build
+        cd build
 
     - name: Configure CMake
       run: cmake -A ${{matrix.platform}} ..
