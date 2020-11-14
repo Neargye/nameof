@@ -8,8 +8,9 @@ jobs:
     strategy:
       matrix:
         build: [Debug, Release]
+        compiler: [g++, clang++]
 
-    name: "${{matrix.compiler}}:${{matrix.build}}"
+    name: "${{matrix.os}}:${{matrix.compiler}}:${{matrix.build}}"
     steps:
     - uses: actions/checkout@v2
 
