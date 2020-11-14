@@ -1,0 +1,26 @@
+name: windows
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        build: [Debug, Release]
+        platform: [Win32, x64]
+
+    name: "${{matrix.os}}:${{matrix.generator}}:${{matrix.build}}"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.build}} -A ${{matrix.platform}}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config ${{matrix.build}}

@@ -1,0 +1,25 @@
+name: ubuntu
+
+on: [push, pull_request]
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        build: [Debug, Release]
+
+    name: "${{matrix.compiler}}:${{matrix.build}}"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_CXX_COMPILER={{matrix.compiler}}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config ${{matrix.build}}
