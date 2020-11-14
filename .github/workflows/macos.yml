@@ -14,14 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Create Build Environment
-      run: |
-        rm -rf build
-        mkdir -p build
-        cd build
-
     - name: Configure CMake
-      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} ..
+      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build}}
 
     - name: Build
       run: cmake --build . --config ${{matrix.build}}
