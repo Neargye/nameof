@@ -18,14 +18,14 @@ jobs:
         - { cc: "clang-9", cxx: "clang++-9" }
         - { cc: "clang-10", cxx: "clang++-10" }
 
-    name: "${{matrix.os}}:${{matrix.compiler}}:${{matrix.build}}"
+    name: "${{matrix.compiler.cxx}}:${{matrix.build}}"
     steps:
     - uses: actions/checkout@v2
 
     - name: Configure CXX
       run: |
-        apt install ${{matrix.compiler.cc}}
-        apt install ${{matrix.compiler.cxx}}
+        sudo apt install ${{matrix.compiler.cc}}
+        sudo apt install ${{matrix.compiler.cxx}}
         set(ENV{CC} ${{matrix.compiler.cc}})
         set(ENV{CXX} ${{matrix.compiler.cxx}})
         ${CC} --version
