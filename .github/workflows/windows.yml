@@ -11,7 +11,7 @@ jobs:
         build: [Debug, Release]
         platform: [Win32, x64]
 
-    name: "${{matrix.os}}:${{matrix.build}}"
+    name: "${{matrix.os}}:${{matrix.platform}}:${{matrix.build}}"
     steps:
     - uses: actions/checkout@v2
 

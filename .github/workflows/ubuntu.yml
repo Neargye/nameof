@@ -8,7 +8,15 @@ jobs:
     strategy:
       matrix:
         build: [Debug, Release]
-        #compiler: [g++7, g++8, g++9, g++10, clang++8, clang++9, clang++10]
+        compiler:
+        - { cc: "gcc-7", cxx: "g++-7" }
+        - { cc: "gcc-8", cxx: "g++-8" }
+        - { cc: "gcc-9", cxx: "g++-9" }
+        - { cc: "gcc-10", cxx: "g++-10" }
+        - { cc: "clang-7", cxx: "clang++-7" }
+        - { cc: "clang-8", cxx: "clang++-8" }
+        - { cc: "clang-9", cxx: "clang++-9" }
+        - { cc: "clang-10", cxx: "clang++-10" }
 
     name: "${{matrix.os}}:${{matrix.compiler}}:${{matrix.build}}"
     steps:
@@ -16,11 +24,15 @@ jobs:
 
     - name: Configure CXX
       run: |
-        #export CXX=${{matrix.compiler}}
+        apt install ${{matrix.compiler.cc}}
+        apt install ${{matrix.compiler.cxx}}
+        set(ENV{CC} ${{matrix.compiler.cc}})
+        set(ENV{CXX} ${{matrix.compiler.cxx}})
+        ${CC} --version
         ${CXX} --version
 
     - name: Configure CMake
-      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build}} ..
+      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build}}
 
     - name: Build
       run: cmake --build . --config ${{matrix.build}}
