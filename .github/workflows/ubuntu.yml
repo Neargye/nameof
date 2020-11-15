@@ -10,11 +10,9 @@ jobs:
       matrix:
         build: [Debug, Release]
         compiler:
-        - { cc: "gcc-7", cxx: "g++-7" }
         - { cc: "gcc-8", cxx: "g++-8" }
         - { cc: "gcc-9", cxx: "g++-9" }
         - { cc: "gcc-10", cxx: "g++-10" }
-        - { cc: "clang-7", cxx: "clang++-7" }
         - { cc: "clang-8", cxx: "clang++-8" }
         - { cc: "clang-9", cxx: "clang++-9" }
         - { cc: "clang-10", cxx: "clang++-10" }
@@ -25,10 +23,8 @@ jobs:
 
     - name: Configure CXX
       run: |
-        sudo apt install ${{matrix.compiler.cc}}
-        sudo apt install ${{matrix.compiler.cxx}}
-        set(ENV{CC} ${{matrix.compiler.cc}})
-        set(ENV{CXX} ${{matrix.compiler.cxx}})
+        export CC=${{matrix.compiler.cc}}
+        export CXX=${{matrix.compiler.cxx}}
         ${CC} --version
         ${CXX} --version
 
