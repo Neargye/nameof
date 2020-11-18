@@ -1,6 +1,5 @@
 os: linux # Use linux unless specified otherwise.
 dist: bionic
-
 language: cpp
 
 jobs:
@@ -37,6 +36,17 @@ jobs:
             - g++-9
       env:
         - CXX_COMPILER=g++-9 CC_COMPILER=gcc-9
+
+    - os: linux
+      compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-10
+      env:
+        - CXX_COMPILER=g++-10 CC_COMPILER=gcc-10
 
     - os: linux
       compiler: clang++
@@ -100,7 +110,7 @@ jobs:
 
     - os: osx
       compiler: clang++
-      osx_image: xcode12
+      osx_image: xcode12.2
       env:
         - CXX_COMPILER=clang++ CC_COMPILER=clang
 
