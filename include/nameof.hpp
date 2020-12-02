@@ -408,28 +408,6 @@ constexpr string_view pretty_name(string_view name, bool remove_template_suffix 
   return {}; // Invalid name.
 }
 
-constexpr std::size_t normalized_length(string_view name) noexcept {
-  return name.length();
-}
-
-template <std::size_t N>
-constexpr auto normalize(string_view name) noexcept {
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
-  assert(normalized_length(name) == N);
-  auto normalized_name = cstring<N>{name};
-#  if defined(__clang__)
-  // TODO
-#  elif defined(__GNUC__)
-  // TODO
-#  elif defined(_MSC_VER)
-  // TODO
-#  endif
-  return normalized_name;
-#else
-  return string_view{}; // Unsupported compiler.
-#endif
-}
-
 template <typename L, typename R>
 constexpr bool cmp_less(L lhs, R rhs) noexcept {
   static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral type.");
@@ -734,9 +712,9 @@ inline constexpr auto type_name_v = n<T...>();
 
 #if __has_include(<cxxabi.h>)
 template <typename T>
-std::string nameof_type_rtti(const char* tn) {
+string nameof_type_rtti(const char* tn) {
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto name = std::string{dmg};
+  auto name = string{dmg};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
 
@@ -744,9 +722,9 @@ std::string nameof_type_rtti(const char* tn) {
 }
 
 template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
-std::string nameof_short_type_rtti(const char* tn) {
+string nameof_short_type_rtti(const char* tn) {
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto name = std::string{detail::pretty_name(dmg)};
+  auto name = string{detail::pretty_name(dmg)};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a short name.");
 
@@ -802,14 +780,14 @@ template <typename E>
 
 // Obtains simple (unqualified) name of enum-flags variable.
 template <typename E>
-[[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, std::string> {
+[[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
   using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::count_v<D, true> > 0, "nameof::nameof_enum_flag requires enum-flags implementation.");
   constexpr auto size = detail::is_sparse_v<D, true> ? detail::count_v<D, true> : detail::range_size_v<D, true>;
 
-  std::string name;
+  string name;
   auto check_value = U{0};
   for (std::size_t i = 0; i < size; ++i) {
     if (const auto v = static_cast<U>(detail::get_value<D, true>(i)); (static_cast<U>(value) & v) != 0) {
