@@ -721,6 +721,28 @@ string nameof_type_rtti(const char* tn) {
   return name;
 }
 
+template <typename T>
+string nameof_full_type_rtti(const char* tn) {
+  auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
+  auto name = string{dmg};
+  std::free(dmg);
+  assert(name.size() > 0 && "Type does not have a name.");
+  if constexpr (std::is_volatile_v<T>) {
+    name = "volatile " + name;
+  }
+  if constexpr (std::is_const_v<T>) {
+    name = "const " + name;
+  }
+  if constexpr (std::is_lvalue_reference_v<T>) {
+    name =+ "&";
+  }
+  if constexpr (std::is_rvalue_reference_v<T>) {
+    name =+ "&&";
+  }
+
+  return name;
+}
+
 template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
@@ -732,16 +754,36 @@ string nameof_short_type_rtti(const char* tn) {
 }
 #else
 template <typename T>
-constexpr string_view nameof_type_rtti(const char* tn) noexcept {
-  auto name = string_view{tn};
+string nameof_type_rtti(const char* tn) noexcept {
+  auto name = string{tn};
   assert(name.size() > 0 && "Type does not have a name.");
 
   return name;
 }
 
+template <typename T>
+string nameof_full_type_rtti(const char* tn) noexcept {
+  auto name = string{tn};
+  assert(name.size() > 0 && "Type does not have a name.");
+  if constexpr (std::is_volatile_v<T>) {
+    name = "volatile " + name;
+  }
+  if constexpr (std::is_const_v<T>) {
+    name = "const " + name;
+  }
+  if constexpr (std::is_lvalue_reference_v<T>) {
+    name =+ "&";
+  }
+  if constexpr (std::is_rvalue_reference_v<T>) {
+    name =+ "&&";
+  }
+
+  return name;
+}
+
 template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
-constexpr string_view nameof_short_type_rtti(const char* tn) noexcept {
-  auto name = detail::pretty_name(tn);
+string nameof_short_type_rtti(const char* tn) noexcept {
+  auto name = string{detail::pretty_name(tn)};
   assert(name.size() > 0 && "Type does not have a short name.");
 
   return name;
@@ -764,8 +806,8 @@ template <typename E>
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
 
-  if (const auto i = static_cast<int>(value) - detail::min_v<D>; static_cast<U>(value) >= static_cast<U>(detail::min_v<D>) &&
-                                                                 static_cast<U>(value) <= static_cast<U>(detail::max_v<D>)) {
+  const bool valid = static_cast<U>(value) >= static_cast<U>(detail::min_v<D>) && static_cast<U>(value) <= static_cast<U>(detail::max_v<D>);
+  if (const auto i = static_cast<int>(value) - detail::min_v<D>; valid) {
     if constexpr (detail::is_sparse_v<D>) {
       if (const auto idx = detail::indexes_v<D>[i]; idx != detail::invalid_index_v<D>) {
         return detail::strings_v<D>[idx];
@@ -775,6 +817,7 @@ template <typename E>
     }
   }
 
+  assert(valid && "enum variable does not have a name.");
   return {}; // Value out of range.
 }
 
@@ -803,10 +846,12 @@ template <typename E>
     }
   }
 
-  if (check_value != 0 && check_value == static_cast<U>(value)) {
+  const bool valid = check_value != 0 && check_value == static_cast<U>(value);
+  if (valid) {
     return name;
   }
 
+  assert(valid && "enum-flags variable does not have a name.");
   return {}; // Invalid value or out of range.
 }
 
@@ -858,12 +903,12 @@ template <typename T>
 } // namespace nameof
 
 // Obtains simple (unqualified) name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept {                               \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                   \
-  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, true); \
-  static_assert(_name.size() > 0, "Expression does not have a name.");      \
-  constexpr auto _size = _name.size();                                      \
-  constexpr auto _nameof = ::nameof::cstring<_size>{_name};                 \
+#define NAMEOF(...) []() constexpr noexcept {                          \
+  ::std::void_t<decltype(__VA_ARGS__)>();                              \
+  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__);  \
+  static_assert(_name.size() > 0, "Expression does not have a name."); \
+  constexpr auto _size = _name.size();                                 \
+  constexpr auto _nameof = ::nameof::cstring<_size>{_name};            \
   return _nameof; }()
 
 // Obtains simple (unqualified) full (with template suffix) name of variable, function, macro.
@@ -878,7 +923,7 @@ template <typename T>
 // Obtains raw name of variable, function, macro.
 #define NAMEOF_RAW(...) []() constexpr noexcept {                      \
   ::std::void_t<decltype(__VA_ARGS__)>();                              \
-  constexpr auto _name = ::nameof::string_view{#__VA_ARGS__};             \
+  constexpr auto _name = ::nameof::string_view{#__VA_ARGS__};          \
   static_assert(_name.size() > 0, "Expression does not have a name."); \
   constexpr auto _size = _name.size();                                 \
   constexpr auto _nameof_raw = ::nameof::cstring<_size>{_name};        \
@@ -912,8 +957,11 @@ template <typename T>
 // Obtains short type name of expression.
 #define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()
 
-// Obtains type name, using RTTI.
+// Obtains type name, with reference and cv-qualifiers, using RTTI.
 #define NAMEOF_TYPE_RTTI(...) ::nameof::detail::nameof_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
+
+// Obtains full type name, using RTTI.
+#define NAMEOF_FULL_TYPE_RTTI(...) ::nameof::detail::nameof_full_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
 
 // Obtains short type name, using RTTI.
 #define NAMEOF_SHORT_TYPE_RTTI(...) ::nameof::detail::nameof_short_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
