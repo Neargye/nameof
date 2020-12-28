@@ -691,6 +691,9 @@ using identity = T;
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
+template <typename T, typename R>
+using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, R>;
+
 template <typename... T>
 constexpr auto n() noexcept {
 #  if defined(_MSC_VER) && !defined(__clang__)
@@ -755,10 +758,10 @@ string nameof_full_type_rtti(const char* tn) {
   return name;
 }
 
-template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
+template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto name = string{detail::pretty_name(dmg)};
+  auto name = string{pretty_name(dmg)};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a short name.");
 
@@ -793,9 +796,9 @@ string nameof_full_type_rtti(const char* tn) noexcept {
   return name;
 }
 
-template <typename T, std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, int> = 0>
+template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) noexcept {
-  auto name = string{detail::pretty_name(tn)};
+  auto name = string{pretty_name(tn)};
   assert(name.size() > 0 && "Type does not have a short name.");
 
   return name;
@@ -903,7 +906,7 @@ template <typename T>
 
 // Obtains short name of type.
 template <typename T>
-[[nodiscard]] constexpr string_view nameof_short_type() noexcept {
+[[nodiscard]] constexpr auto nameof_short_type() noexcept -> detail::enable_if_has_short_name_t<T, string_view> {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = detail::identity<detail::remove_cvref_t<T>>;
   constexpr string_view name = detail::pretty_name(detail::type_name_v<U>);
