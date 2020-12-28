@@ -739,17 +739,17 @@ string nameof_full_type_rtti(const char* tn) {
   auto name = string{dmg};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
-  if constexpr (std::is_volatile_v<T>) {
-    name = "volatile " + name;
-  }
-  if constexpr (std::is_const_v<T>) {
+  if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
     name = "const " + name;
   }
+  if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
+    name = "volatile " + name;
+  }
   if constexpr (std::is_lvalue_reference_v<T>) {
-    name =+ "&";
+    name += '&';
   }
   if constexpr (std::is_rvalue_reference_v<T>) {
-    name =+ "&&";
+    name += "&&";
   }
 
   return name;
@@ -777,17 +777,17 @@ template <typename T>
 string nameof_full_type_rtti(const char* tn) noexcept {
   auto name = string{tn};
   assert(name.size() > 0 && "Type does not have a name.");
-  if constexpr (std::is_volatile_v<T>) {
-    name = "volatile " + name;
-  }
-  if constexpr (std::is_const_v<T>) {
+  if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
     name = "const " + name;
   }
+  if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
+    name = "volatile " + name;
+  }
   if constexpr (std::is_lvalue_reference_v<T>) {
-    name =+ "&";
+    name += '&';
   }
   if constexpr (std::is_rvalue_reference_v<T>) {
-    name =+ "&&";
+    name += "&&";
   }
 
   return name;
