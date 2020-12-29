@@ -171,13 +171,6 @@ constexpr string_view type_name() noexcept {
 
 template <std::size_t N>
 class [[nodiscard]] cstring {
-  static_assert(N > 0, "nameof::cstring requires size greater than 0.");
-
-  std::array<char, N + 1> chars_;
-
-  template <std::size_t... I>
-  constexpr cstring(string_view str, std::index_sequence<I...>) noexcept : chars_{{str[I]..., '\0'}} {}
-
  public:
   using value_type      = const char;
   using size_type       = std::size_t;
@@ -194,7 +187,7 @@ class [[nodiscard]] cstring {
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   constexpr explicit cstring(string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {
-    assert(str.size() == N);
+    assert(str.size() > 0 && str.size() == N);
   }
 
   constexpr cstring() = delete;
@@ -247,15 +240,19 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
-  template <typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
-  [[nodiscard]] std::basic_string<Char, Traits, Allocator> str() const { return {begin(), end()}; }
+  [[nodiscard]] string str() const { return {begin(), end()}; }
 
   [[nodiscard]] constexpr operator string_view() const noexcept { return {data(), size()}; }
 
-  [[nodiscard]] constexpr explicit operator const char*() const noexcept { return data(); }
+  [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return data(); }
 
-  template <typename Char = char, typename Traits = std::char_traits<Char>, typename Allocator = std::allocator<Char>>
-  [[nodiscard]] explicit operator std::basic_string<Char, Traits, Allocator>() const { return {begin(), end()}; }
+  [[nodiscard]] explicit operator string() const { return {begin(), end()}; }
+
+ private:
+  template <std::size_t... I>
+  constexpr cstring(string_view str, std::index_sequence<I...>) noexcept : chars_{{str[I]..., '\0'}} {}
+
+  std::array<char, N + 1> chars_;
 };
 
 template <std::size_t N>
