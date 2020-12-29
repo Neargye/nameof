@@ -728,8 +728,8 @@ inline constexpr auto type_name_v = n<T...>();
 #if __has_include(<cxxabi.h>)
 template <typename T>
 string nameof_type_rtti(const char* tn) {
-  auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto name = string{dmg};
+  const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
+  const auto name = string{dmg};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
 
@@ -738,7 +738,7 @@ string nameof_type_rtti(const char* tn) {
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) {
-  auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
+  const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   auto name = string{dmg};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
@@ -760,8 +760,8 @@ string nameof_full_type_rtti(const char* tn) {
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
-  auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto name = string{pretty_name(dmg)};
+  const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
+  const auto name = string{pretty_name(dmg)};
   std::free(dmg);
   assert(name.size() > 0 && "Type does not have a short name.");
 
@@ -770,10 +770,10 @@ string nameof_short_type_rtti(const char* tn) {
 #else
 template <typename T>
 string nameof_type_rtti(const char* tn) noexcept {
-  auto name = string{tn};
+  const auto name = string_view{tn};
   assert(name.size() > 0 && "Type does not have a name.");
 
-  return name;
+  return {name.begin(), name.end()};
 }
 
 template <typename T>
@@ -798,10 +798,10 @@ string nameof_full_type_rtti(const char* tn) noexcept {
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) noexcept {
-  auto name = string{pretty_name(tn)};
+  const auto name = pretty_name(tn);
   assert(name.size() > 0 && "Type does not have a short name.");
 
-  return name;
+  return {name.begin(), name.end()};
 }
 #endif
 
