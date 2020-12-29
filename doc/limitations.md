@@ -8,13 +8,13 @@
 
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 7.
 
+* nameof_type and nameof_type_rtti returns compiler-specific type name.
+
 * To check is nameof_type supported compiler use macro `NAMEOF_TYPE_SUPPORTED` or constexpr constant `nameof::is_nameof_type_supported`.</br>
   If nameof_type used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
 
 * To check is nameof_type_rtti supported compiler use macro `NAMEOF_TYPE_RTTI_SUPPORTED` or constexpr constant `nameof::is_nameof_type_rtti_supported`.</br>
   If nameof_type used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
-
-* nameof_type and nameof_type_rtti returns compiler-specific type name.
 
 ## Nameof Enum
 
@@ -58,17 +58,5 @@
 * Won't work if a value is aliased, work with enum-aliases is compiler-implementation-defined.
 
 * Won't work if the enum is a forward declaration.
-
-* If you hit a message like this:
-
-  ```text
-  [...]
-  note: constexpr evaluation hit maximum step limit; possible infinite loop?
-  ```
-
-  Change the limit for the number of constexpr evaluated:
-  * MSVC `/constexpr:depthN`, `/constexpr:stepsN` <https://docs.microsoft.com/en-us/cpp/build/reference/constexpr-control-constexpr-evaluation>
-  * Clang `-fconstexpr-depth=N`, `-fconstexpr-steps=N` <https://clang.llvm.org/docs/UsersManual.html#controlling-implementation-limits>
-  * GCC `-fconstexpr-depth=N`, `-fconstexpr-loop-limit=N`, `-fconstexpr-ops-limit=N` <https://gcc.gnu.org/onlinedocs/gcc-9.2.0/gcc/C_002b_002b-Dialect-Options.html>
 
 * Intellisense Visual Studio may have some problems analyzing `nameof`.

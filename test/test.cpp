@@ -561,6 +561,21 @@ TEST_CASE("nameof::nameof_full_type") {
 }
 
 TEST_CASE("nameof::nameof_short_type") {
+  constexpr auto type_name = nameof::nameof_short_type<decltype(struct_var)>();
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<decltype(ref_s)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<SomeStruct &>() == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<const SomeStruct volatile>() == "SomeStruct");
+
+  REQUIRE(nameof::nameof_short_type<SomeClass<int>>() == "SomeClass");
+  REQUIRE(nameof::nameof_short_type<const SomeClass<int> volatile>() == "SomeClass");
+
+  REQUIRE(nameof::nameof_short_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_short_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_short_type<Long::LL>() == "LL");
+
+  REQUIRE(nameof::nameof_short_type<Color>() == "Color");
 }
 
 TEST_CASE("NAMEOF_TYPE") {
@@ -770,9 +785,35 @@ TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE") {
+  constexpr auto type_name = NAMEOF_SHORT_TYPE(decltype(struct_var));
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(decltype(ref_s)) == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(SomeStruct) == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(SomeStruct &) == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(const SomeStruct volatile) == "SomeStruct");
+
+  REQUIRE(NAMEOF_SHORT_TYPE(SomeClass<int>) == "SomeClass");
+  REQUIRE(NAMEOF_SHORT_TYPE(const SomeClass<int> volatile) == "SomeClass");
+
+  REQUIRE(NAMEOF_SHORT_TYPE(decltype(othervar)) == "Long");
+  REQUIRE(NAMEOF_SHORT_TYPE(Long) == "Long");
+  REQUIRE(NAMEOF_SHORT_TYPE(Long::LL) == "LL");
+
+  REQUIRE(NAMEOF_SHORT_TYPE(Color) == "Color");
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
+  constexpr auto type_name = NAMEOF_SHORT_TYPE_EXPR(struct_var);
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(ref_s) == "SomeStruct");
+
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(othervar) == "Long");
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(othervar.ll) == "LL");
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass");
 }
 
 #endif
@@ -781,12 +822,24 @@ TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
 
 TEST_CASE("NAMEOF_TYPE_RTTI") {
   TestRtti::Base* ptr = new TestRtti::Derived();
+  const TestRtti::Base& const_ref = *ptr;
+  volatile TestRtti::Base& volatile_ref = *ptr;
+  volatile const TestRtti::Base& cv_ref = *ptr;
 #if defined(__clang__) && !defined(_MSC_VER)
   REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "TestRtti::Derived");
 #elif defined(_MSC_VER)
   REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "struct TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "struct TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "struct TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "struct TestRtti::Derived");
 #elif defined(__GNUC__)
   REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "TestRtti::Derived");
 #endif
 }
 
@@ -815,13 +868,14 @@ TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
 
 TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
   TestRtti::Base* ptr = new TestRtti::Derived();
-#if defined(__clang__) && !defined(_MSC_VER)
+  const TestRtti::Base& const_ref = *ptr;
+  volatile TestRtti::Base& volatile_ref = *ptr;
+  volatile const TestRtti::Base& cv_ref = *ptr;
+
   REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
-#elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
-#elif defined(__GNUC__)
-  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
-#endif
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(const_ref) == "Derived");
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(volatile_ref) == "Derived");
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(cv_ref) == "Derived");
 }
 
 #endif
