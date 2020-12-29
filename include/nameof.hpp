@@ -675,6 +675,14 @@ struct nameof_type_supported
     : std::false_type {};
 #endif
 
+template <typename... T>
+struct nameof_type_rtti_supported
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 template <typename T>
 struct identity {
@@ -725,6 +733,7 @@ inline constexpr auto type_name_v = n<T...>();
 #if __has_include(<cxxabi.h>)
 template <typename T>
 string nameof_type_rtti(const char* tn) {
+  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   const auto name = string{dmg};
   std::free(dmg);
@@ -735,6 +744,7 @@ string nameof_type_rtti(const char* tn) {
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) {
+static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   auto name = string{dmg};
   std::free(dmg);
@@ -757,6 +767,7 @@ string nameof_full_type_rtti(const char* tn) {
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
+  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   const auto name = string{pretty_name(dmg)};
   std::free(dmg);
@@ -767,6 +778,7 @@ string nameof_short_type_rtti(const char* tn) {
 #else
 template <typename T>
 string nameof_type_rtti(const char* tn) noexcept {
+  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = string_view{tn};
   assert(name.size() > 0 && "Type does not have a name.");
 
@@ -775,6 +787,7 @@ string nameof_type_rtti(const char* tn) noexcept {
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) noexcept {
+static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   auto name = string{tn};
   assert(name.size() > 0 && "Type does not have a name.");
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
@@ -795,6 +808,7 @@ string nameof_full_type_rtti(const char* tn) noexcept {
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) noexcept {
+  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = pretty_name(tn);
   assert(name.size() > 0 && "Type does not have a short name.");
 
@@ -806,6 +820,9 @@ string nameof_short_type_rtti(const char* tn) noexcept {
 
 // Checks is nameof_type supported compiler.
 inline constexpr bool is_nameof_type_supported = detail::nameof_type_supported<void>::value;
+
+// Checks is nameof_type_rtti supported compiler.
+inline constexpr bool is_nameof_type_rtti_supported = detail::nameof_type_rtti_supported<void>::value;
 
 // Checks is nameof_enum supported compiler.
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
@@ -914,7 +931,7 @@ template <typename T>
 
 } // namespace nameof
 
-// Obtains simple (unqualified) name of variable, function, macro.
+// Obtains name of variable, function, macro.
 #define NAMEOF(...) []() constexpr noexcept {                          \
   ::std::void_t<decltype(__VA_ARGS__)>();                              \
   constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__);  \
@@ -923,7 +940,7 @@ template <typename T>
   constexpr auto _nameof = ::nameof::cstring<_size>{_name};            \
   return _nameof; }()
 
-// Obtains simple (unqualified) full (with template suffix) name of variable, function, macro.
+// Obtains full name of variable, function, macro.
 #define NAMEOF_FULL(...) []() constexpr noexcept {                           \
   ::std::void_t<decltype(__VA_ARGS__)>();                                    \
   constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
@@ -941,14 +958,14 @@ template <typename T>
   constexpr auto _nameof_raw = ::nameof::cstring<_size>{_name};        \
   return _nameof_raw; }()
 
-// Obtains simple (unqualified) name of enum variable.
+// Obtains name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
-// Obtains simple (unqualified) name of static storage enum variable.
+// Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 #define NAMEOF_ENUM_CONST(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// Obtains simple (unqualified) name of enum-flags variable.
+// Obtains name of enum-flags variable.
 #define NAMEOF_ENUM_FLAG(...) ::nameof::nameof_enum_flag<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains type name, reference and cv-qualifiers are ignored.

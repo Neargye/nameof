@@ -792,9 +792,9 @@ TEST_CASE("NAMEOF_TYPE_RTTI") {
 
 TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
   TestRtti::Base* ptr = new TestRtti::Derived();
-  const auto& const_ref = *ptr;
-  volatile auto& volatile_ref = *ptr;
-  volatile const auto& cv_ref = *ptr;
+  const TestRtti::Base& const_ref = *ptr;
+  volatile TestRtti::Base& volatile_ref = *ptr;
+  volatile const TestRtti::Base& cv_ref = *ptr;
 #if defined(__clang__) && !defined(_MSC_VER)
   REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "TestRtti::Derived&");
   REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const TestRtti::Derived&");

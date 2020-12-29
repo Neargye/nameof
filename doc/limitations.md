@@ -6,23 +6,24 @@
 
 ## Nameof Type
 
-* To check is nameof type supported compiler use macro `NAMEOF_TYPE_SUPPORTED` or constexpr constant `nameof::is_nameof_type_supported`.
-
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 7.
 
-* Nameof type returns compiler-specific type name.
+* To check is nameof_type supported compiler use macro `NAMEOF_TYPE_SUPPORTED` or constexpr constant `nameof::is_nameof_type_supported`.</br>
+  If nameof_type used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
 
-* If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
+* To check is nameof_type_rtti supported compiler use macro `NAMEOF_TYPE_RTTI_SUPPORTED` or constexpr constant `nameof::is_nameof_type_rtti_supported`.</br>
+  If nameof_type used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+
+* nameof_type and nameof_type_rtti returns compiler-specific type name.
 
 ## Nameof Enum
 
-* Do not use [nameof](https://github.com/Neargye/nameof) and [magic_enum](https://github.com/Neargye/magic_enum) in the same project to get enum name.
-
-* To check is nameof enum supported compiler use macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.
-
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 9.
 
-* Enum can't reflect if the enum is a forward declaration.
+* Do not use [nameof](https://github.com/Neargye/nameof) and [magic_enum](https://github.com/Neargye/magic_enum) in the same project to get enum name.
+
+* To check is nameof_enum supported compiler use macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.</br>
+  If nameof_enum used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_ENUM_NO_CHECK_SUPPORT`.
 
 * Enum value must be in range `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`.
 
@@ -54,47 +55,9 @@
     };
     ```
 
-* Nameof enum won't work if a value is aliased, work with enum-aliases is compiler-implementation-defined.
+* Won't work if a value is aliased, work with enum-aliases is compiler-implementation-defined.
 
-  ```cpp
-  enum ShapeKind {
-    ConvexBegin = 0,
-    Box = 0, // Won't work.
-    Sphere = 1,
-    ConvexEnd = 2,
-    Donut = 2, // Won't work too.
-    Banana = 3,
-    COUNT = 4,
-  };
-  // nameof::nameof_enum(ShapeKind::Box) -> "ConvexBegin" or ""
-  // NAMEOF_ENUM(ShapeKind::Box) -> "ConvexBegin" or ""
-  ```
-
-  One of the possible workaround the issue:
-
-  ```cpp
-  enum ShapeKind {
-    // Convex shapes, see ConvexBegin and ConvexEnd below.
-    Box = 0,
-    Sphere = 1,
-
-    // Non-convex shapes.
-    Donut = 2,
-    Banana = 3,
-
-    COUNT = Banana + 1,
-
-    // Non-reflected aliases.
-    ConvexBegin = Box,
-    ConvexEnd = Sphere + 1,
-  };
-  // nameof::nameof_enum(ShapeKind::Box) -> "Box"
-  // NAMEOF_ENUM(ShapeKind::Box) -> "Box"
-
-  // Non-reflected aliases.
-  // nameof::nameof_enum(ShapeKind::ConvexBegin) -> "Box"
-  // NAMEOF_ENUM(ShapeKind::ConvexBegin) -> "Box"
-  ```
+* Won't work if the enum is a forward declaration.
 
 * If you hit a message like this:
 
