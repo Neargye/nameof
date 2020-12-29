@@ -8,7 +8,7 @@
 ```
 
 [![Github releases](https://img.shields.io/github/release/Neargye/nameof.svg)](https://github.com/Neargye/nameof/releases)
-[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://conan.io/center/nameof/0.9.4)
+[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://conan.io/center/nameof)
 [![Vcpkg package](https://img.shields.io/badge/Vcpkg-package-blueviolet)](https://github.com/microsoft/vcpkg/tree/master/ports/nameof)
 [![License](https://img.shields.io/github/license/Neargye/nameof.svg)](LICENSE)
 [![Build status](https://travis-ci.org/Neargye/nameof.svg?branch=master)](https://travis-ci.org/Neargye/nameof)
@@ -86,19 +86,29 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * Nameof type
 
   ```cpp
-  using T = const int&;
-  T var = 42;
+  const my::detail::SomeClass<int>& var_ref = var;
   // Name of variable type.
-  NAMEOF_TYPE_EXPR(var) -> "int"
-  NAMEOF_FULL_TYPE_EXPR(var) -> "const int&"
-  nameof::nameof_type<decltype(var)>() -> "int"
-  nameof::nameof_full_type<decltype(var)>() -> "const int&"
+  NAMEOF_TYPE_EXPR(var_ref) -> "my::detail::SomeClass<int>"
+  nameof::nameof_type<decltype(var_ref)>() -> "my::detail::SomeClass<int>"
+  NAMEOF_FULL_TYPE_EXPR(var_ref) -> "const my::detail::SomeClass<int>&"
+  nameof::nameof_full_type<decltype(var_ref)>() -> "const my::detail::SomeClass<int>&"
+  NAMEOF_SHORT_TYPE_EXPR(var_ref) -> "SomeClass"
+  nameof::nameof_short_type<decltype(var_ref)>() -> "SomeClass"
 
+  using T = const my::detail::SomeClass<int>&;
   // Name of type.
-  NAMEOF_TYPE(T) -> "int"
-  NAMEOF_FULL_TYPE(T) -> "const int&"
-  nameof::nameof_type<T>() -> "int"
-  nameof::nameof_full_type<T>() -> "const int&"
+  NAMEOF_TYPE(T) ->"my::detail::SomeClass<int>"
+  nameof::nameof_type<T>() -> "my::detail::SomeClass<int>"
+  NAMEOF_FULL_TYPE(T) -> "const my::detail::SomeClass<int>&"
+  nameof::nameof_full_type<T>() -> "const my::detail::SomeClass<int>&"
+  NAMEOF_SHORT_TYPE(T) -> "SomeClass"
+  nameof::nameof_short_type<T>() -> "SomeClass"
+
+  my::detail::Base* ptr = new my::detail::Derived();
+  // Name of type, using rtti.
+  NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
+  NAMEOF_FULL_TYPE_RTTI(*ptr) -> "volatile const my::detail::Derived&"
+  NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "Derived"
   ```
 
 * Compile-time

@@ -178,8 +178,8 @@ int main() {
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   // Nameof type using RTTI.
   Base* ptr = new Derived();
-  std::cout << NAMEOF_TYPE_RTTI(ptr) << std::endl; // "Base *"
-  std::cout << NAMEOF_TYPE_RTTI(*ptr) << std::endl; // "Derived"
+  std::cout << NAMEOF_TYPE_RTTI(ptr) << std::endl; // 'Base *'
+  std::cout << NAMEOF_TYPE_RTTI(*ptr) << std::endl; // 'Derived'
 #endif
 
   // Some more complex example.

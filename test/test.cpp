@@ -30,6 +30,12 @@
 #include <string>
 #include <stdexcept>
 
+#ifdef NDEBUG
+#  define NAMEOF_DEBUG_REQUIRE(...) REQUIRE(__VA_ARGS__)
+#else
+#  define NAMEOF_DEBUG_REQUIRE(...)
+#endif
+
 struct SomeStruct {
   int somefield = 0;
 
@@ -93,15 +99,18 @@ enum class BigFlags : std::uint64_t {
   D = (static_cast<std::uint64_t>(0x1) << 63),
 };
 
-namespace nameof {
 template <>
-struct enum_range<number> {
+struct nameof::customize::enum_range<number> {
   static_assert(std::is_enum_v<number>, "nameof::enum_range<number> requires enum type.");
   static constexpr int min = 100;
   static constexpr int max = 300;
   static_assert(max > min, "nameof::enum_range<number> requires max > min.");
 };
-} // namespace nameof
+
+struct TestRtti{
+  struct Base { virtual ~Base() = default; };
+  struct Derived : Base {};
+};
 
 SomeStruct struct_var;
 Long othervar;
@@ -243,70 +252,6 @@ TEST_CASE("NAMEOF_RAW") {
 
 static_assert(nameof::is_nameof_enum_supported, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
-TEST_CASE("NAMEOF_ENUM") {
-  constexpr Color cr = Color::RED;
-  constexpr auto cr_name = NAMEOF_ENUM(cr);
-  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
-  REQUIRE(cr_name == "RED");
-  REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
-  REQUIRE(NAMEOF_ENUM(cm[1]) == "GREEN");
-  REQUIRE(NAMEOF_ENUM(static_cast<Color>(0)).empty());
-
-  constexpr Numbers no = Numbers::one;
-  constexpr auto no_name = NAMEOF_ENUM(no);
-  REQUIRE(no_name == "one");
-  REQUIRE(NAMEOF_ENUM(Numbers::two) == "two");
-  REQUIRE(NAMEOF_ENUM(Numbers::three) == "three");
-  REQUIRE(NAMEOF_ENUM(Numbers::many).empty());
-  REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
-
-  constexpr Directions dr = Directions::Right;
-  constexpr auto dr_name = NAMEOF_ENUM(dr);
-  REQUIRE(NAMEOF_ENUM(Directions::Up) == "Up");
-  REQUIRE(NAMEOF_ENUM(Directions::Down) == "Down");
-  REQUIRE(dr_name == "Right");
-  REQUIRE(NAMEOF_ENUM(Directions::Left) == "Left");
-  REQUIRE(NAMEOF_ENUM(static_cast<Directions>(0)).empty());
-
-  constexpr number nt = number::three;
-  constexpr auto nt_name = NAMEOF_ENUM(nt);
-  REQUIRE(NAMEOF_ENUM(number::one) == "one");
-  REQUIRE(NAMEOF_ENUM(number::two) == "two");
-  REQUIRE(nt_name == "three");
-  REQUIRE(NAMEOF_ENUM(number::four).empty());
-  REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
-}
-
-TEST_CASE("NAMEOF_ENUM_CONST") {
-  constexpr Color cr = Color::RED;
-  constexpr auto cr_name = NAMEOF_ENUM_CONST(cr);
-  constexpr Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
-  REQUIRE(cr_name == "RED");
-  REQUIRE(NAMEOF_ENUM_CONST(Color::BLUE) == "BLUE");
-  REQUIRE(NAMEOF_ENUM_CONST(cm[1]) == "GREEN");
-
-  constexpr Numbers no = Numbers::one;
-  constexpr auto no_name = NAMEOF_ENUM_CONST(no);
-  REQUIRE(no_name == "one");
-  REQUIRE(NAMEOF_ENUM_CONST(Numbers::two) == "two");
-  REQUIRE(NAMEOF_ENUM_CONST(Numbers::three) == "three");
-  REQUIRE(NAMEOF_ENUM_CONST(Numbers::many) == "many");
-
-  constexpr Directions dr = Directions::Right;
-  constexpr auto dr_name = NAMEOF_ENUM_CONST(dr);
-  REQUIRE(NAMEOF_ENUM_CONST(Directions::Up) == "Up");
-  REQUIRE(NAMEOF_ENUM_CONST(Directions::Down) == "Down");
-  REQUIRE(dr_name == "Right");
-  REQUIRE(NAMEOF_ENUM_CONST(Directions::Left) == "Left");
-
-  constexpr number nt = number::three;
-  constexpr auto nt_name = NAMEOF_ENUM_CONST(nt);
-  REQUIRE(NAMEOF_ENUM_CONST(number::one) == "one");
-  REQUIRE(NAMEOF_ENUM_CONST(number::two) == "two");
-  REQUIRE(nt_name == "three");
-  REQUIRE(NAMEOF_ENUM_CONST(number::four) == "four");
-}
-
 TEST_CASE("nameof_enum") {
   SECTION("automatic storage") {
     constexpr Color cr = Color::RED;
@@ -315,15 +260,15 @@ TEST_CASE("nameof_enum") {
     REQUIRE(cr_name == "RED");
     REQUIRE(nameof::nameof_enum(Color::BLUE) == "BLUE");
     REQUIRE(nameof::nameof_enum(cm[1]) == "GREEN");
-    REQUIRE(nameof::nameof_enum(static_cast<Color>(0)).empty());
+    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Color>(0)).empty());
 
     constexpr Numbers no = Numbers::one;
     constexpr auto no_name = nameof::nameof_enum(no);
     REQUIRE(no_name == "one");
     REQUIRE(nameof::nameof_enum(Numbers::two) == "two");
     REQUIRE(nameof::nameof_enum(Numbers::three) == "three");
-    REQUIRE(nameof::nameof_enum(Numbers::many).empty());
-    REQUIRE(nameof::nameof_enum(static_cast<Numbers>(0)).empty());
+    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(Numbers::many).empty());
+    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Numbers>(0)).empty());
 
     constexpr Directions dr = Directions::Right;
     constexpr auto dr_name = nameof::nameof_enum(dr);
@@ -331,15 +276,15 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum(Directions::Down) == "Down");
     REQUIRE(dr_name == "Right");
     REQUIRE(nameof::nameof_enum(Directions::Left) == "Left");
-    REQUIRE(nameof::nameof_enum(static_cast<Directions>(0)).empty());
+    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Directions>(0)).empty());
 
     constexpr number nt = number::three;
     constexpr auto nt_name = nameof::nameof_enum(nt);
     REQUIRE(nameof::nameof_enum(number::one) == "one");
     REQUIRE(nameof::nameof_enum(number::two) == "two");
     REQUIRE(nt_name == "three");
-    REQUIRE(nameof::nameof_enum(number::four).empty());
-    REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
+    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(number::four).empty());
+    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
   }
 
   SECTION("static storage") {
@@ -380,11 +325,11 @@ TEST_CASE("nameof_enum_flag") {
   REQUIRE(af_name == "HasClaws");
   REQUIRE(nameof::nameof_enum_flag(AnimalFlags::EatsFish) == "EatsFish");
   REQUIRE(nameof::nameof_enum_flag(afm[1]) == "CanFly");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
+  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
   REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
   REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
   REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
+  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
 
   constexpr BigFlags bf = BigFlags::A;
   auto bf_name = nameof::nameof_enum_flag(bf);
@@ -392,15 +337,79 @@ TEST_CASE("nameof_enum_flag") {
   REQUIRE(bf_name == "A");
   REQUIRE(nameof::nameof_enum_flag(BigFlags::C) == "C");
   REQUIRE(nameof::nameof_enum_flag(bfm[1]) == "B");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(0)).empty());
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 2)).empty());
+  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(0)).empty());
+  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 2)).empty());
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(2)).empty());
-  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
+  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(2)).empty());
+  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
+}
+
+TEST_CASE("NAMEOF_ENUM") {
+  constexpr Color cr = Color::RED;
+  constexpr auto cr_name = NAMEOF_ENUM(cr);
+  Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  REQUIRE(cr_name == "RED");
+  REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
+  REQUIRE(NAMEOF_ENUM(cm[1]) == "GREEN");
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Color>(0)).empty());
+
+  constexpr Numbers no = Numbers::one;
+  constexpr auto no_name = NAMEOF_ENUM(no);
+  REQUIRE(no_name == "one");
+  REQUIRE(NAMEOF_ENUM(Numbers::two) == "two");
+  REQUIRE(NAMEOF_ENUM(Numbers::three) == "three");
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(Numbers::many).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
+
+  constexpr Directions dr = Directions::Right;
+  constexpr auto dr_name = NAMEOF_ENUM(dr);
+  REQUIRE(NAMEOF_ENUM(Directions::Up) == "Up");
+  REQUIRE(NAMEOF_ENUM(Directions::Down) == "Down");
+  REQUIRE(dr_name == "Right");
+  REQUIRE(NAMEOF_ENUM(Directions::Left) == "Left");
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Directions>(0)).empty());
+
+  constexpr number nt = number::three;
+  constexpr auto nt_name = NAMEOF_ENUM(nt);
+  REQUIRE(NAMEOF_ENUM(number::one) == "one");
+  REQUIRE(NAMEOF_ENUM(number::two) == "two");
+  REQUIRE(nt_name == "three");
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(number::four).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
+}
+
+TEST_CASE("NAMEOF_ENUM_CONST") {
+  constexpr Color cr = Color::RED;
+  constexpr auto cr_name = NAMEOF_ENUM_CONST(cr);
+  constexpr Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  REQUIRE(cr_name == "RED");
+  REQUIRE(NAMEOF_ENUM_CONST(Color::BLUE) == "BLUE");
+  REQUIRE(NAMEOF_ENUM_CONST(cm[1]) == "GREEN");
+
+  constexpr Numbers no = Numbers::one;
+  constexpr auto no_name = NAMEOF_ENUM_CONST(no);
+  REQUIRE(no_name == "one");
+  REQUIRE(NAMEOF_ENUM_CONST(Numbers::two) == "two");
+  REQUIRE(NAMEOF_ENUM_CONST(Numbers::three) == "three");
+  REQUIRE(NAMEOF_ENUM_CONST(Numbers::many) == "many");
+
+  constexpr Directions dr = Directions::Right;
+  constexpr auto dr_name = NAMEOF_ENUM_CONST(dr);
+  REQUIRE(NAMEOF_ENUM_CONST(Directions::Up) == "Up");
+  REQUIRE(NAMEOF_ENUM_CONST(Directions::Down) == "Down");
+  REQUIRE(dr_name == "Right");
+  REQUIRE(NAMEOF_ENUM_CONST(Directions::Left) == "Left");
+
+  constexpr number nt = number::three;
+  constexpr auto nt_name = NAMEOF_ENUM_CONST(nt);
+  REQUIRE(NAMEOF_ENUM_CONST(number::one) == "one");
+  REQUIRE(NAMEOF_ENUM_CONST(number::two) == "two");
+  REQUIRE(nt_name == "three");
+  REQUIRE(NAMEOF_ENUM_CONST(number::four) == "four");
 }
 
 TEST_CASE("NAMEOF_ENUM_FLAG") {
@@ -411,11 +420,11 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
   REQUIRE(NAMEOF_ENUM_FLAG(afm[1]) == "CanFly");
   REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::EatsFish) == "EatsFish");
   REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::Endangered) == "Endangered");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
 
   constexpr BigFlags bf = BigFlags::A;
   auto bf_name = NAMEOF_ENUM_FLAG(bf);
@@ -424,13 +433,13 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
   REQUIRE(NAMEOF_ENUM_FLAG(bfm[1]) == "B");
   REQUIRE(NAMEOF_ENUM_FLAG(BigFlags::C) == "C");
   REQUIRE(NAMEOF_ENUM_FLAG(BigFlags::D) == "D");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(0)).empty());
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | 2)).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(0)).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | 2)).empty());
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(2)).empty());
-  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(2)).empty());
+  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
 }
 
 #endif
@@ -439,106 +448,59 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
 
 static_assert(nameof::is_nameof_type_supported, "nameof::nameof_type: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
-TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
-  constexpr auto type_name = NAMEOF_FULL_TYPE_EXPR(struct_var);
+TEST_CASE("nameof::nameof_type") {
+  constexpr auto type_name = nameof::nameof_type<decltype(struct_var)>();
 #if defined(__clang__)
   REQUIRE(type_name == "SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_s) == "SomeStruct *");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ref_s) == "SomeStruct &");
+  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct *");
+  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct *");
+  REQUIRE(nameof::nameof_type<const SomeStruct &>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "const volatile SomeStruct *");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int> *");
+  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
+  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "const volatile SomeClass<int> *");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar) == "Long");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll) == "Long::LL");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll.field) == "int");
+  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(Color::RED) == "Color");
-
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "const SomeClass<int> &&");
+  REQUIRE(nameof::nameof_type<Color>() == "Color");
 #elif defined(_MSC_VER)
   REQUIRE(type_name == "struct SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_s) == "struct SomeStruct *");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ref_s) == "struct SomeStruct &");
+  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "struct SomeStruct *");
+  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "struct SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct>() == "struct SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct *>() == "struct SomeStruct *");
+  REQUIRE(nameof::nameof_type<const SomeStruct &>() == "struct SomeStruct");
+  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "struct SomeStruct const volatile *");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_c) == "class SomeClass<int> const volatile *");
+  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "class SomeClass<int>");
+  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "class SomeClass<int> const volatile *");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar) == "struct Long");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll) == "struct Long::LL");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll.field) == "int");
+  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "struct Long");
+  REQUIRE(nameof::nameof_type<Long>() == "struct Long");
+  REQUIRE(nameof::nameof_type<Long::LL>() == "struct Long::LL");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(Color::RED) == "enum Color");
-
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "class SomeClass<int> const &&");
+  REQUIRE(nameof::nameof_type<Color>() == "enum Color");
 #elif defined(__GNUC__)
   REQUIRE(type_name == "SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_s) == "SomeStruct*");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ref_s) == "SomeStruct&");
+  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct*");
+  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct*");
+  REQUIRE(nameof::nameof_type<const SomeStruct &>() == "SomeStruct");
+  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "const volatile SomeStruct*");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int>*");
+  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
+  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "const volatile SomeClass<int>*");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar) == "Long");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll) == "Long::LL");
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll.field) == "int");
+  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
 
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(Color::RED) == "Color");
-
-  REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "const SomeClass<int>&&");
-#endif
-}
-
-TEST_CASE("NAMEOF_FULL_TYPE") {
-  constexpr auto type_name = NAMEOF_FULL_TYPE(decltype(struct_var));
-#if defined(__clang__)
-  REQUIRE(type_name == "SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(ptr_s)) == "SomeStruct *");
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(ref_s)) == "SomeStruct &");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct) == "SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct *) == "SomeStruct *");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct &) == "SomeStruct &");
-  REQUIRE(NAMEOF_FULL_TYPE(const SomeStruct volatile *) == "const volatile SomeStruct *");
-
-  REQUIRE(NAMEOF_FULL_TYPE(SomeClass<int>) == "SomeClass<int>");
-  REQUIRE(NAMEOF_FULL_TYPE(const SomeClass<int> volatile *) == "const volatile SomeClass<int> *");
-
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(othervar)) == "Long");
-  REQUIRE(NAMEOF_FULL_TYPE(Long) == "Long");
-  REQUIRE(NAMEOF_FULL_TYPE(Long::LL) == "Long::LL");
-
-  REQUIRE(NAMEOF_FULL_TYPE(Color) == "Color");
-#elif defined(_MSC_VER)
-  REQUIRE(type_name == "struct SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(ptr_s)) == "struct SomeStruct *");
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(ref_s)) == "struct SomeStruct &");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct) == "struct SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct *) == "struct SomeStruct *");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct &) == "struct SomeStruct &");
-  REQUIRE(NAMEOF_FULL_TYPE(const SomeStruct volatile *) == "struct SomeStruct const volatile *");
-
-  REQUIRE(NAMEOF_FULL_TYPE(SomeClass<int>) == "class SomeClass<int>");
-  REQUIRE(NAMEOF_FULL_TYPE(const SomeClass<int> volatile *) == "class SomeClass<int> const volatile *");
-
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(othervar)) == "struct Long");
-  REQUIRE(NAMEOF_FULL_TYPE(Long) == "struct Long");
-  REQUIRE(NAMEOF_FULL_TYPE(Long::LL) == "struct Long::LL");
-
-  REQUIRE(NAMEOF_FULL_TYPE(Color) == "enum Color");
-#elif defined(__GNUC__)
-  REQUIRE(type_name == "SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(ptr_s)) == "SomeStruct*");
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(ref_s)) == "SomeStruct&");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct) == "SomeStruct");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct *) == "SomeStruct*");
-  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct &) == "SomeStruct&");
-  REQUIRE(NAMEOF_FULL_TYPE(const SomeStruct volatile *) == "const volatile SomeStruct*");
-
-  REQUIRE(NAMEOF_FULL_TYPE(SomeClass<int>) == "SomeClass<int>");
-  REQUIRE(NAMEOF_FULL_TYPE(const SomeClass<int> volatile *) == "const volatile SomeClass<int>*");
-
-  REQUIRE(NAMEOF_FULL_TYPE(decltype(othervar)) == "Long");
-  REQUIRE(NAMEOF_FULL_TYPE(Long) == "Long");
-  REQUIRE(NAMEOF_FULL_TYPE(Long::LL) == "Long::LL");
-
-  REQUIRE(NAMEOF_FULL_TYPE(Color) == "Color");
+  REQUIRE(nameof::nameof_type<Color>() == "Color");
 #endif
 }
 
@@ -598,51 +560,22 @@ TEST_CASE("nameof::nameof_full_type") {
 #endif
 }
 
-TEST_CASE("NAMEOF_TYPE_EXPR") {
-  constexpr auto type_name = NAMEOF_TYPE_EXPR(struct_var);
-#if defined(__clang__)
+TEST_CASE("nameof::nameof_short_type") {
+  constexpr auto type_name = nameof::nameof_short_type<decltype(struct_var)>();
   REQUIRE(type_name == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE_EXPR(ptr_s) == "SomeStruct *");
-  REQUIRE(NAMEOF_TYPE_EXPR(ref_s) == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<decltype(ref_s)>() == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<SomeStruct>() == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<SomeStruct &>() == "SomeStruct");
+  REQUIRE(nameof::nameof_short_type<const SomeStruct volatile>() == "SomeStruct");
 
-  REQUIRE(NAMEOF_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int> *");
+  REQUIRE(nameof::nameof_short_type<SomeClass<int>>() == "SomeClass");
+  REQUIRE(nameof::nameof_short_type<const SomeClass<int> volatile>() == "SomeClass");
 
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar) == "Long");
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll) == "Long::LL");
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll.field) == "int");
+  REQUIRE(nameof::nameof_short_type<decltype(othervar)>() == "Long");
+  REQUIRE(nameof::nameof_short_type<Long>() == "Long");
+  REQUIRE(nameof::nameof_short_type<Long::LL>() == "LL");
 
-  REQUIRE(NAMEOF_TYPE_EXPR(Color::RED) == "Color");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass<int>");
-#elif defined(_MSC_VER)
-  REQUIRE(type_name == "struct SomeStruct");
-  REQUIRE(NAMEOF_TYPE_EXPR(ptr_s) == "struct SomeStruct *");
-  REQUIRE(NAMEOF_TYPE_EXPR(ref_s) == "struct SomeStruct");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(ptr_c) == "class SomeClass<int> const volatile *");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar) == "struct Long");
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll) == "struct Long::LL");
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll.field) == "int");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(Color::RED) == "enum Color");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "class SomeClass<int>");
-#elif defined(__GNUC__)
-  REQUIRE(type_name == "SomeStruct");
-  REQUIRE(NAMEOF_TYPE_EXPR(ptr_s) == "SomeStruct*");
-  REQUIRE(NAMEOF_TYPE_EXPR(ref_s) == "SomeStruct");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int>*");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar) == "Long");
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll) == "Long::LL");
-  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll.field) == "int");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(Color::RED) == "Color");
-
-  REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass<int>");
-#endif
+  REQUIRE(nameof::nameof_short_type<Color>() == "Color");
 }
 
 TEST_CASE("NAMEOF_TYPE") {
@@ -701,72 +634,248 @@ TEST_CASE("NAMEOF_TYPE") {
 #endif
 }
 
-TEST_CASE("nameof::nameof_type") {
-  constexpr auto type_name = nameof::nameof_type<decltype(struct_var)>();
+TEST_CASE("NAMEOF_TYPE_EXPR") {
+  constexpr auto type_name = NAMEOF_TYPE_EXPR(struct_var);
 #if defined(__clang__)
   REQUIRE(type_name == "SomeStruct");
-  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct *");
-  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct");
-  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
-  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct *");
-  REQUIRE(nameof::nameof_type<const SomeStruct &>() == "SomeStruct");
-  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "const volatile SomeStruct *");
+  REQUIRE(NAMEOF_TYPE_EXPR(ptr_s) == "SomeStruct *");
+  REQUIRE(NAMEOF_TYPE_EXPR(ref_s) == "SomeStruct");
 
-  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
-  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "const volatile SomeClass<int> *");
+  REQUIRE(NAMEOF_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int> *");
 
-  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
-  REQUIRE(nameof::nameof_type<Long>() == "Long");
-  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar) == "Long");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll) == "Long::LL");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll.field) == "int");
 
-  REQUIRE(nameof::nameof_type<Color>() == "Color");
+  REQUIRE(NAMEOF_TYPE_EXPR(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass<int>");
 #elif defined(_MSC_VER)
   REQUIRE(type_name == "struct SomeStruct");
-  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "struct SomeStruct *");
-  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "struct SomeStruct");
-  REQUIRE(nameof::nameof_type<SomeStruct>() == "struct SomeStruct");
-  REQUIRE(nameof::nameof_type<SomeStruct *>() == "struct SomeStruct *");
-  REQUIRE(nameof::nameof_type<const SomeStruct &>() == "struct SomeStruct");
-  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "struct SomeStruct const volatile *");
+  REQUIRE(NAMEOF_TYPE_EXPR(ptr_s) == "struct SomeStruct *");
+  REQUIRE(NAMEOF_TYPE_EXPR(ref_s) == "struct SomeStruct");
 
-  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "class SomeClass<int>");
-  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "class SomeClass<int> const volatile *");
+  REQUIRE(NAMEOF_TYPE_EXPR(ptr_c) == "class SomeClass<int> const volatile *");
 
-  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "struct Long");
-  REQUIRE(nameof::nameof_type<Long>() == "struct Long");
-  REQUIRE(nameof::nameof_type<Long::LL>() == "struct Long::LL");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar) == "struct Long");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll) == "struct Long::LL");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll.field) == "int");
 
-  REQUIRE(nameof::nameof_type<Color>() == "enum Color");
+  REQUIRE(NAMEOF_TYPE_EXPR(Color::RED) == "enum Color");
+
+  REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "class SomeClass<int>");
 #elif defined(__GNUC__)
   REQUIRE(type_name == "SomeStruct");
-  REQUIRE(nameof::nameof_type<decltype(ptr_s)>() == "SomeStruct*");
-  REQUIRE(nameof::nameof_type<decltype(ref_s)>() == "SomeStruct");
-  REQUIRE(nameof::nameof_type<SomeStruct>() == "SomeStruct");
-  REQUIRE(nameof::nameof_type<SomeStruct *>() == "SomeStruct*");
-  REQUIRE(nameof::nameof_type<const SomeStruct &>() == "SomeStruct");
-  REQUIRE(nameof::nameof_type<const SomeStruct volatile *>() == "const volatile SomeStruct*");
+  REQUIRE(NAMEOF_TYPE_EXPR(ptr_s) == "SomeStruct*");
+  REQUIRE(NAMEOF_TYPE_EXPR(ref_s) == "SomeStruct");
 
-  REQUIRE(nameof::nameof_type<SomeClass<int>>() == "SomeClass<int>");
-  REQUIRE(nameof::nameof_type<const SomeClass<int> volatile *>() == "const volatile SomeClass<int>*");
+  REQUIRE(NAMEOF_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int>*");
 
-  REQUIRE(nameof::nameof_type<decltype(othervar)>() == "Long");
-  REQUIRE(nameof::nameof_type<Long>() == "Long");
-  REQUIRE(nameof::nameof_type<Long::LL>() == "Long::LL");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar) == "Long");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll) == "Long::LL");
+  REQUIRE(NAMEOF_TYPE_EXPR(othervar.ll.field) == "int");
 
-  REQUIRE(nameof::nameof_type<Color>() == "Color");
+  REQUIRE(NAMEOF_TYPE_EXPR(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass<int>");
 #endif
+}
+
+TEST_CASE("NAMEOF_FULL_TYPE") {
+  constexpr auto type_name = NAMEOF_FULL_TYPE(decltype(struct_var));
+#if defined(__clang__)
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(ptr_s)) == "SomeStruct *");
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(ref_s)) == "SomeStruct &");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct) == "SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct *) == "SomeStruct *");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct &) == "SomeStruct &");
+  REQUIRE(NAMEOF_FULL_TYPE(const SomeStruct volatile *) == "const volatile SomeStruct *");
+
+  REQUIRE(NAMEOF_FULL_TYPE(SomeClass<int>) == "SomeClass<int>");
+  REQUIRE(NAMEOF_FULL_TYPE(const SomeClass<int> volatile *) == "const volatile SomeClass<int> *");
+
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(othervar)) == "Long");
+  REQUIRE(NAMEOF_FULL_TYPE(Long) == "Long");
+  REQUIRE(NAMEOF_FULL_TYPE(Long::LL) == "Long::LL");
+
+  REQUIRE(NAMEOF_FULL_TYPE(Color) == "Color");
+#elif defined(_MSC_VER)
+  REQUIRE(type_name == "struct SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(ptr_s)) == "struct SomeStruct *");
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(ref_s)) == "struct SomeStruct &");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct) == "struct SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct *) == "struct SomeStruct *");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct &) == "struct SomeStruct &");
+  REQUIRE(NAMEOF_FULL_TYPE(const SomeStruct volatile *) == "struct SomeStruct const volatile *");
+
+  REQUIRE(NAMEOF_FULL_TYPE(SomeClass<int>) == "class SomeClass<int>");
+  REQUIRE(NAMEOF_FULL_TYPE(const SomeClass<int> volatile *) == "class SomeClass<int> const volatile *");
+
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(othervar)) == "struct Long");
+  REQUIRE(NAMEOF_FULL_TYPE(Long) == "struct Long");
+  REQUIRE(NAMEOF_FULL_TYPE(Long::LL) == "struct Long::LL");
+
+  REQUIRE(NAMEOF_FULL_TYPE(Color) == "enum Color");
+#elif defined(__GNUC__)
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(ptr_s)) == "SomeStruct*");
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(ref_s)) == "SomeStruct&");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct) == "SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct *) == "SomeStruct*");
+  REQUIRE(NAMEOF_FULL_TYPE(SomeStruct &) == "SomeStruct&");
+  REQUIRE(NAMEOF_FULL_TYPE(const SomeStruct volatile *) == "const volatile SomeStruct*");
+
+  REQUIRE(NAMEOF_FULL_TYPE(SomeClass<int>) == "SomeClass<int>");
+  REQUIRE(NAMEOF_FULL_TYPE(const SomeClass<int> volatile *) == "const volatile SomeClass<int>*");
+
+  REQUIRE(NAMEOF_FULL_TYPE(decltype(othervar)) == "Long");
+  REQUIRE(NAMEOF_FULL_TYPE(Long) == "Long");
+  REQUIRE(NAMEOF_FULL_TYPE(Long::LL) == "Long::LL");
+
+  REQUIRE(NAMEOF_FULL_TYPE(Color) == "Color");
+#endif
+}
+
+TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
+  constexpr auto type_name = NAMEOF_FULL_TYPE_EXPR(struct_var);
+#if defined(__clang__)
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_s) == "SomeStruct *");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ref_s) == "SomeStruct &");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int> *");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar) == "Long");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll) == "Long::LL");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "const SomeClass<int> &&");
+#elif defined(_MSC_VER)
+  REQUIRE(type_name == "struct SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_s) == "struct SomeStruct *");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ref_s) == "struct SomeStruct &");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_c) == "class SomeClass<int> const volatile *");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar) == "struct Long");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll) == "struct Long::LL");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(Color::RED) == "enum Color");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "class SomeClass<int> const &&");
+#elif defined(__GNUC__)
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_s) == "SomeStruct*");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ref_s) == "SomeStruct&");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(ptr_c) == "const volatile SomeClass<int>*");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar) == "Long");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll) == "Long::LL");
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "const SomeClass<int>&&");
+#endif
+}
+
+TEST_CASE("NAMEOF_SHORT_TYPE") {
+  constexpr auto type_name = NAMEOF_SHORT_TYPE(decltype(struct_var));
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(decltype(ref_s)) == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(SomeStruct) == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(SomeStruct &) == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE(const SomeStruct volatile) == "SomeStruct");
+
+  REQUIRE(NAMEOF_SHORT_TYPE(SomeClass<int>) == "SomeClass");
+  REQUIRE(NAMEOF_SHORT_TYPE(const SomeClass<int> volatile) == "SomeClass");
+
+  REQUIRE(NAMEOF_SHORT_TYPE(decltype(othervar)) == "Long");
+  REQUIRE(NAMEOF_SHORT_TYPE(Long) == "Long");
+  REQUIRE(NAMEOF_SHORT_TYPE(Long::LL) == "LL");
+
+  REQUIRE(NAMEOF_SHORT_TYPE(Color) == "Color");
+}
+
+TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
+  constexpr auto type_name = NAMEOF_SHORT_TYPE_EXPR(struct_var);
+  REQUIRE(type_name == "SomeStruct");
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(ref_s) == "SomeStruct");
+
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(othervar) == "Long");
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(othervar.ll) == "LL");
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(othervar.ll.field) == "int");
+
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(Color::RED) == "Color");
+
+  REQUIRE(NAMEOF_SHORT_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass");
 }
 
 #endif
 
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
+
 TEST_CASE("NAMEOF_TYPE_RTTI") {
-#if defined(__clang__)
-  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "Color");
+  TestRtti::Base* ptr = new TestRtti::Derived();
+  const TestRtti::Base& const_ref = *ptr;
+  volatile TestRtti::Base& volatile_ref = *ptr;
+  volatile const TestRtti::Base& cv_ref = *ptr;
+#if defined(__clang__) && !defined(_MSC_VER)
+  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "TestRtti::Derived");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "enum Color");
+  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "struct TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "struct TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "struct TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "struct TestRtti::Derived");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_TYPE_RTTI(Color) == "Color");
+  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "TestRtti::Derived");
+  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "TestRtti::Derived");
 #endif
 }
+
+TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
+  TestRtti::Base* ptr = new TestRtti::Derived();
+  const TestRtti::Base& const_ref = *ptr;
+  volatile TestRtti::Base& volatile_ref = *ptr;
+  volatile const TestRtti::Base& cv_ref = *ptr;
+#if defined(__clang__) && !defined(_MSC_VER)
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(volatile_ref) == "volatile TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(cv_ref) == "volatile const TestRtti::Derived&");
+#elif defined(_MSC_VER)
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "struct TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const struct TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(volatile_ref) == "volatile struct TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(cv_ref) == "volatile const struct TestRtti::Derived&");
+#elif defined(__GNUC__)
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(volatile_ref) == "volatile TestRtti::Derived&");
+  REQUIRE(NAMEOF_FULL_TYPE_RTTI(cv_ref) == "volatile const TestRtti::Derived&");
+#endif
+}
+
+TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
+  TestRtti::Base* ptr = new TestRtti::Derived();
+  const TestRtti::Base& const_ref = *ptr;
+  volatile TestRtti::Base& volatile_ref = *ptr;
+  volatile const TestRtti::Base& cv_ref = *ptr;
+
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(const_ref) == "Derived");
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(volatile_ref) == "Derived");
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(cv_ref) == "Derived");
+}
+
 #endif
