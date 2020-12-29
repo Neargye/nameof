@@ -733,7 +733,7 @@ inline constexpr auto type_name_v = n<T...>();
 #if __has_include(<cxxabi.h>)
 template <typename T>
 string nameof_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   const auto name = string{dmg};
   std::free(dmg);
@@ -744,7 +744,7 @@ string nameof_type_rtti(const char* tn) {
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) {
-static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   auto name = string{dmg};
   std::free(dmg);
@@ -767,7 +767,7 @@ static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported 
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   const auto name = string{pretty_name(dmg)};
   std::free(dmg);
@@ -778,7 +778,7 @@ string nameof_short_type_rtti(const char* tn) {
 #else
 template <typename T>
 string nameof_type_rtti(const char* tn) noexcept {
-  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = string_view{tn};
   assert(name.size() > 0 && "Type does not have a name.");
 
@@ -787,7 +787,7 @@ string nameof_type_rtti(const char* tn) noexcept {
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) noexcept {
-static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   auto name = string{tn};
   assert(name.size() > 0 && "Type does not have a name.");
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
@@ -808,7 +808,7 @@ static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported 
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) noexcept {
-  static_assert(nameof_type_rtti<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = pretty_name(tn);
   assert(name.size() > 0 && "Type does not have a short name.");
 

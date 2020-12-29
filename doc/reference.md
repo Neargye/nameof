@@ -274,8 +274,7 @@
 * Examples
 
   ```cpp
-  my::detail::Base* ptr = new my::detail::Derived();
-  NAMEOF_TYPE_RTTI(ptr)  -> "my::detail::Base *"
+  volatile const my::detail::Base* ptr = new my::detail::Derived();
   NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
   ```
 
@@ -288,9 +287,8 @@
 * Examples
 
   ```cpp
-  my::detail::Base* ptr = new my::detail::Derived();
-  volatile const my::detail::Base& cv_ref = *ptr;
-  NAMEOF_TYPE_RTTI(cv_ref) -> "volatile const my::detail::Derived&"
+  volatile const my::detail::Base* ptr = new my::detail::Derived();
+  NAMEOF_FULL_TYPE_RTTI(cv_ref) -> "volatile const my::detail::Derived&"
   ``
 
 ## `NAMEOF_SHORT_TYPE_RTTI`
@@ -302,6 +300,6 @@
 * Examples
 
   ```cpp
-  my::detail::Base* ptr = new my::detail::Derived();
+  volatile const my::detail::Base* ptr = new my::detail::Derived();
   NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "Derived"
   ```
