@@ -24,8 +24,8 @@
 
 #include <nameof.hpp>
 
-enum class Color : int { RED = -10, BLUE = 0, GREEN = 10 };
-enum class Numbers : int { One, Two, Three };
+enum class Color { RED = -10, BLUE = 0, GREEN = 10 };
+enum class Numbers { One, Two, Three };
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
 // Сustom definitions of names for enum.
