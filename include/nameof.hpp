@@ -326,7 +326,7 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 
 namespace detail {
 
-constexpr string_view pretty_name(string_view name, bool remove_template_suffix = true) noexcept {
+constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
   if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
     return {}; // Narrow multibyte string literal.
   } else if (name.size() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
@@ -392,7 +392,7 @@ constexpr string_view pretty_name(string_view name, bool remove_template_suffix 
       break;
     }
   }
-  if (remove_template_suffix) {
+  if (remove_suffix) {
     name.remove_suffix(s);
   }
 
@@ -987,7 +987,7 @@ template <typename T>
 #define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()
 
 // Obtains type name, with reference and cv-qualifiers, using RTTI.
-#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::nameof_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
+#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::nameof_type_rtti<::std::void_t<decltype(__VA_ARGS__)>>(typeid(__VA_ARGS__).name())
 
 // Obtains full type name, using RTTI.
 #define NAMEOF_FULL_TYPE_RTTI(...) ::nameof::detail::nameof_full_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
