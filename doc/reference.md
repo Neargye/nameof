@@ -29,6 +29,18 @@
 * To check is nameof_enum supported compiler use macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.</br>
   If nameof_enum used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_ENUM_NO_CHECK_SUPPORT`.
 
+* To add custom enum or type names see the [example](../example/example_custom_name.cpp).
+
+* To change the type of strings, use special macros:
+
+  ```cpp
+  #include <my_lib/string.hpp>
+  #include <my_lib/string_view.hpp>
+  #define NAMEOF_USING_ALIAS_STRING using string = my_lib::String;
+  #define NAMEOF_USING_ALIAS_STRING_VIEW using string_view = my_lib::StringView;
+  #include <nameof.hpp>
+  ```
+
 ## `NAMEOF`
 
 * Obtains simple (unqualified) name of variable, function, macro.

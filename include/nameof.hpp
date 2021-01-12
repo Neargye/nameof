@@ -5,7 +5,7 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// version 0.9.5
+// version 0.10.0
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
@@ -33,8 +33,8 @@
 #define NEARGYE_NAMEOF_HPP
 
 #define NAMEOF_VERSION_MAJOR 0
-#define NAMEOF_VERSION_MINOR 9
-#define NAMEOF_VERSION_PATCH 5
+#define NAMEOF_VERSION_MINOR 10
+#define NAMEOF_VERSION_PATCH 0
 
 #include <array>
 #include <cassert>
@@ -326,7 +326,7 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 
 namespace detail {
 
-constexpr string_view pretty_name(string_view name, bool remove_template_suffix = true) noexcept {
+constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
   if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
     return {}; // Narrow multibyte string literal.
   } else if (name.size() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
@@ -392,7 +392,7 @@ constexpr string_view pretty_name(string_view name, bool remove_template_suffix 
       break;
     }
   }
-  if (remove_template_suffix) {
+  if (remove_suffix) {
     name.remove_suffix(s);
   }
 
@@ -567,9 +567,17 @@ constexpr auto values(std::index_sequence<I...>) noexcept {
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr auto values() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::values requires enum type.");
-  constexpr auto range_size = reflected_max_v<E, IsFlags> - reflected_min_v<E, IsFlags> + 1;
+  constexpr auto min = reflected_min_v<E, IsFlags>;
+  constexpr auto max = reflected_max_v<E, IsFlags>;
+  constexpr auto range_size = max - min + 1;
   static_assert(range_size > 0, "nameof::enum_range requires valid size.");
   static_assert(range_size < (std::numeric_limits<std::uint16_t>::max)(), "nameof::enum_range requires valid size.");
+  if constexpr (cmp_less((std::numeric_limits<U>::min)(), min) && !IsFlags) {
+    static_assert(!is_valid<E, value<E, min - 1, IsFlags>(0)>(), "nameof::enum_range detects enum value smaller than min range size.");
+  }
+  if constexpr (cmp_less(range_size, (std::numeric_limits<U>::max)()) && !IsFlags) {
+    static_assert(!is_valid<E, value<E, min, IsFlags>(range_size + 1)>(), "nameof::enum_range detects enum value larger than max range size.");
+  }
 
   return values<E, IsFlags, reflected_min_v<E, IsFlags>>(std::make_index_sequence<range_size>{});
 }
@@ -987,7 +995,7 @@ template <typename T>
 #define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()
 
 // Obtains type name, with reference and cv-qualifiers, using RTTI.
-#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::nameof_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
+#define NAMEOF_TYPE_RTTI(...) ::nameof::detail::nameof_type_rtti<::std::void_t<decltype(__VA_ARGS__)>>(typeid(__VA_ARGS__).name())
 
 // Obtains full type name, using RTTI.
 #define NAMEOF_FULL_TYPE_RTTI(...) ::nameof::detail::nameof_full_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
