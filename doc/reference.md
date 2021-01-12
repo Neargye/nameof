@@ -39,7 +39,6 @@
   #define NAMEOF_USING_ALIAS_STRING using string = my_lib::String;
   #define NAMEOF_USING_ALIAS_STRING_VIEW using string_view = my_lib::StringView;
   #include <nameof.hpp>
-  // NAMEOF_ENUM(color) and NAMEOF_TYPE will be return my_lib::StringView
   ```
 
 ## `NAMEOF`
