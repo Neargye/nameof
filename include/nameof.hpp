@@ -204,7 +204,7 @@ class [[nodiscard]] cstring {
 
   cstring& operator=(cstring&&) = default;
 
-  [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_.data(); }
+  [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_; }
 
   [[nodiscard]] constexpr size_type size() const noexcept { return N; }
 
@@ -225,8 +225,6 @@ class [[nodiscard]] cstring {
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
   [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return assert(i < size()), chars_[i]; }
-
-  [[nodiscard]] constexpr const_reference at(size_type i) const { return assert(i < size()), chars_.at(i); }
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
 
@@ -252,9 +250,9 @@ class [[nodiscard]] cstring {
 
  private:
   template <std::size_t... I>
-  constexpr cstring(string_view str, std::index_sequence<I...>) noexcept : chars_{{str[I]..., '\0'}} {}
+  constexpr cstring(string_view str, std::index_sequence<I...>) noexcept : chars_{str[I]..., '\0'} {}
 
-  std::array<char, N + 1> chars_;
+  char chars_[N + 1];
 };
 
 template <std::size_t N>
@@ -407,6 +405,11 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
   return {}; // Invalid name.
 }
 
+template <typename T, std::size_t N, std::size_t... I>
+constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<I...>) {
+  return {{a[I]...}};
+}
+
 template <typename L, typename R>
 constexpr bool cmp_less(L lhs, R rhs) noexcept {
   static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral type.");
@@ -539,9 +542,9 @@ constexpr E value(std::size_t i) noexcept {
 }
 
 template <std::size_t N>
-constexpr std::size_t values_count(const std::array<bool, N>& valid) noexcept {
+constexpr std::size_t values_count(const bool (&valid)[N]) noexcept {
   auto count = std::size_t{0};
-  for (std::size_t i = 0; i < valid.size(); ++i) {
+  for (std::size_t i = 0; i < N; ++i) {
     if (valid[i]) {
       ++count;
     }
@@ -553,17 +556,17 @@ constexpr std::size_t values_count(const std::array<bool, N>& valid) noexcept {
 template <typename E, bool IsFlags, int Min, std::size_t... I>
 constexpr auto values(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::values requires enum type.");
-  constexpr std::array<bool, sizeof...(I)> valid{{is_valid<E, value<E, Min, IsFlags>(I)>()...}};
+  constexpr bool valid[sizeof...(I)] = {is_valid<E, value<E, Min, IsFlags>(I)>()...};
   constexpr std::size_t count = values_count(valid);
 
-  std::array<E, count> values{};
+  E values[count] = {};
   for (std::size_t i = 0, v = 0; v < count; ++i) {
     if (valid[i]) {
       values[v++] = value<E, Min, IsFlags>(i);
     }
   }
 
-  return values;
+  return to_array(values, std::make_index_sequence<count>{});
 }
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
