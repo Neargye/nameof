@@ -173,8 +173,8 @@ int main() {
   std::cout << nameof::nameof_member<&SomeStruct::somefield>() << std::endl; // somefield
   std::cout << nameof::nameof_member<&SomeStruct::SomeMethod1>() << std::endl; // SomeMethod1
   std::cout << NAMEOF_MEMBER(&Long::LL::field) << std::endl; // field
-  constexpr auto member_ptr = &SomeStruct.somefield;
-  std::cout << NAMEOF_MEMBER(member_ptr) << std::endl; // field
+  constexpr auto member_ptr = &SomeStruct::somefield;
+  std::cout << NAMEOF_MEMBER(member_ptr) << std::endl; // somefield
 #endif
 
   // Nameof macro.

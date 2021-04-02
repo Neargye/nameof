@@ -883,19 +883,19 @@ TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
 #if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
 
 TEST_CASE("NAMEOF_MEMBER") {
-  REQUIRE(NAMEOF_MEMBER(&SomeStruct::somefield) == "Derived");
-  REQUIRE(NAMEOF_MEMBER(&SomeStruct::SomeMethod1) == "Derived");
-  REQUIRE(NAMEOF_MEMBER(&Long::LL::field) == "Derived");
-  constexpr auto member_ptr = &SomeStruct.somefield;
-  REQUIRE(NAMEOF_MEMBER(member_ptr) == "Derived");
+  REQUIRE(NAMEOF_MEMBER(&SomeStruct::somefield) == "somefield");
+  REQUIRE(NAMEOF_MEMBER(&SomeStruct::SomeMethod1) == "SomeMethod1");
+  REQUIRE(NAMEOF_MEMBER(&Long::LL::field) == "SomeMethod1");
+  constexpr auto member_ptr = &SomeStruct::somefield;
+  REQUIRE(NAMEOF_MEMBER(member_ptr) == "somefield");
 }
 
 TEST_CASE("nameof_member") {
-  REQUIRE(nameof::nameof_member<&SomeStruct::somefield>() == "Derived");
-  REQUIRE(nameof::nameof_member<&SomeStruct::SomeMethod1>() == "Derived");
-  REQUIRE(nameof::nameof_member<&Long::LL::field>() == "Derived");
-  constexpr auto member_ptr = &SomeStruct.somefield;
-  REQUIRE(nameof::nameof_member<member_ptr>() == "Derived");
+  REQUIRE(nameof::nameof_member<&SomeStruct::somefield>() == "somefield");
+  REQUIRE(nameof::nameof_member<&SomeStruct::SomeMethod1>() == "SomeMethod1");
+  REQUIRE(nameof::nameof_member<&Long::LL::field>() == "field");
+  constexpr auto member_ptr = &SomeStruct::somefield;
+  REQUIRE(nameof::nameof_member<member_ptr>() == "somefield");
 }
 
 #endif
