@@ -168,6 +168,15 @@ int main() {
   std::cout << NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) << std::endl; // 'const SomeClass<int> &&'
   std::cout << NAMEOF_SHORT_TYPE_EXPR(std::declval<const SomeClass<int>>()) << std::endl; // 'SomeClass'
 
+#if defined(NAMEOF_MEMBER_SUPPORTED)
+  // Nameof member
+  std::cout << nameof::nameof_member<&SomeStruct::somefield>() << std::endl; // somefield
+  std::cout << nameof::nameof_member<&SomeStruct::SomeMethod1>() << std::endl; // SomeMethod1
+  std::cout << NAMEOF_MEMBER(&Long::LL::field) << std::endl; // field
+  constexpr auto member_ptr = &SomeStruct.somefield;
+  std::cout << NAMEOF_MEMBER(member_ptr) << std::endl; // field
+#endif
+
   // Nameof macro.
   std::cout << NAMEOF(__LINE__) << std::endl; // '__LINE__'
 

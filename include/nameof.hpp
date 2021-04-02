@@ -94,6 +94,12 @@
 #  endif
 #endif
 
+// Checks nameof_member compiler compatibility.
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7
+#  undef  NAMEOF_MEMBER_SUPPORTED
+#  define NAMEOF_MEMBER_SUPPORTED 1
+#endif
+
 // Checks nameof_enum compiler compatibility.
 #if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
 #  undef  NAMEOF_ENUM_SUPPORTED
@@ -166,6 +172,12 @@ constexpr string_view enum_name(E) noexcept {
 // If need cunstom name for type, add specialization type_name for necessary type.
 template <typename T>
 constexpr string_view type_name() noexcept {
+  return {};
+}
+
+// If need cunstom name for member, add specialization member_name for necessary type.
+template <auto V>
+constexpr string_view member_name() noexcept {
   return {};
 }
 
@@ -696,6 +708,14 @@ struct nameof_type_rtti_supported
     : std::false_type {};
 #endif
 
+template <typename... T>
+struct nameof_member_supported
+#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 template <typename T>
 struct identity {
@@ -829,6 +849,27 @@ string nameof_short_type_rtti(const char* tn) noexcept {
 }
 #endif
 
+template <auto V>
+constexpr auto n() noexcept {
+  constexpr auto custom_name = customize::member_name<V>();
+
+  if constexpr (custom_name.empty()) {
+    static_cast<void>(custom_name);
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
+    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+
+    return cstring<name.size()>{name};
+#else
+    return string_view{}; // Unsupported compiler.
+#endif
+  } else {
+    return cstring<custom_name.size()>{custom_name};
+  }
+}
+
+template <auto V>
+inline constexpr auto member_name_v = n<V>();
+
 } // namespace nameof::detail
 
 // Checks is nameof_type supported compiler.
@@ -836,6 +877,9 @@ inline constexpr bool is_nameof_type_supported = detail::nameof_type_supported<v
 
 // Checks is nameof_type_rtti supported compiler.
 inline constexpr bool is_nameof_type_rtti_supported = detail::nameof_type_rtti_supported<void>::value;
+
+// Checks is nameof_member supported compiler.
+inline constexpr bool is_nameof_member_supported = detail::nameof_member_supported<void>::value;
 
 // Checks is nameof_enum supported compiler.
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
@@ -942,6 +986,16 @@ template <typename T>
   return name;
 }
 
+// Obtains name of member.
+template <auto V>
+[[nodiscard]] constexpr auto nameof_member() noexcept -> std::enable_if_t<std::is_member_pointer_v<decltype(V)>, string_view> {
+  static_assert(detail::nameof_member_supported<decltype(V)>::value, "nameof::nameof_memder unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  constexpr string_view name = detail::member_name_v<V>;
+  static_assert(name.size() > 0, "Member does not have a name.");
+
+  return name;
+}
+
 } // namespace nameof
 
 // Obtains name of variable, function, macro.
@@ -1007,6 +1061,9 @@ template <typename T>
 
 // Obtains short type name, using RTTI.
 #define NAMEOF_SHORT_TYPE_RTTI(...) ::nameof::detail::nameof_short_type_rtti<decltype(__VA_ARGS__)>(typeid(__VA_ARGS__).name())
+
+// Obtains name of member.
+#define NAMEOF_MEMBER(...) ::nameof::nameof_member<__VA_ARGS__>()
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop
