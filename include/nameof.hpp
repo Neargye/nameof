@@ -95,7 +95,7 @@
 #endif
 
 // Checks nameof_member compiler compatibility.
-#if (defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7) && !defined(_MSC_VER)
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7
 #  undef  NAMEOF_MEMBER_SUPPORTED
 #  define NAMEOF_MEMBER_SUPPORTED 1
 #endif
@@ -855,7 +855,7 @@ constexpr auto n() noexcept {
 
   if constexpr (custom_name.empty()) {
     static_cast<void>(custom_name);
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
+#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 
     return cstring<name.size()>{name};
