@@ -885,7 +885,7 @@ TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
 TEST_CASE("NAMEOF_MEMBER") {
   REQUIRE(NAMEOF_MEMBER(&SomeStruct::somefield) == "somefield");
   REQUIRE(NAMEOF_MEMBER(&SomeStruct::SomeMethod1) == "SomeMethod1");
-  REQUIRE(NAMEOF_MEMBER(&Long::LL::field) == "SomeMethod1");
+  REQUIRE(NAMEOF_MEMBER(&Long::LL::field) == "field");
   constexpr auto member_ptr = &SomeStruct::somefield;
   REQUIRE(NAMEOF_MEMBER(member_ptr) == "somefield");
 }
