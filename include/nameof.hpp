@@ -95,7 +95,7 @@
 #endif
 
 // Checks nameof_member compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7
+#if (defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7) && !defined(_MSC_VER)
 #  undef  NAMEOF_MEMBER_SUPPORTED
 #  define NAMEOF_MEMBER_SUPPORTED 1
 #endif
