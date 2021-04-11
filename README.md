@@ -133,6 +133,8 @@ If you are using [vcpkg](https://github.com/Microsoft/vcpkg/) on your project fo
 
 If you are using [Conan](https://www.conan.io/) to manage your dependencies, merely add `nameof/x.y.z` to your conan's requires, where `x.y.z` is the release version you want to use.
 
+Archlinux users can install `nameof` by package manager AUR, using the following command: `yay -S nameof`.
+
 Alternatively, you can use something like [CPM](https://github.com/TheLartians/CPM) which is based on CMake's `Fetch_Content` module.
 
 ```cmake
