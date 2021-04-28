@@ -130,14 +130,14 @@ namespace nameof {
 #if defined(NAMEOF_USING_ALIAS_STRING_VIEW)
 NAMEOF_USING_ALIAS_STRING_VIEW
 #else
-using string_view = std::string_view;
+using std::string_view;
 #endif
 
 // If need another string type, define the macro NAMEOF_USING_ALIAS_STRING.
 #if defined(NAMEOF_USING_ALIAS_STRING)
 NAMEOF_USING_ALIAS_STRING
 #else
-using string = std::string;
+using std::string;
 #endif
 
 namespace customize {
