@@ -161,7 +161,7 @@ static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<std::int16_t>::max)()
 
 static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_MAX must be greater than NAMEOF_ENUM_RANGE_MIN.");
 
-// If need cunstom names for enum, add specialization enum_name for necessary enum type.
+// If need custom names for enum, add specialization enum_name for necessary enum type.
 template <typename E>
 constexpr string_view enum_name(E) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::customize::enum_name requires enum type.");
@@ -169,13 +169,13 @@ constexpr string_view enum_name(E) noexcept {
   return {};
 }
 
-// If need cunstom name for type, add specialization type_name for necessary type.
+// If need custom name for type, add specialization type_name for necessary type.
 template <typename T>
 constexpr string_view type_name() noexcept {
   return {};
 }
 
-// If need cunstom name for member, add specialization member_name for necessary type.
+// If need custom name for member, add specialization member_name for necessary type.
 template <auto V>
 constexpr string_view member_name() noexcept {
   return {};
