@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.14)
 
 project(nameof VERSION "0.10.0" LANGUAGES CXX)
 
@@ -32,7 +32,8 @@ target_include_directories(${PROJECT_NAME}
 
 write_basic_package_version_file(${PROJECT_NAME}ConfigVersion.cmake
         VERSION ${PROJECT_VERSION}
-        COMPATIBILITY AnyNewerVersion)
+        COMPATIBILITY AnyNewerVersion
+        ARCH_INDEPENDENT)
 
 if(NAMEOF_OPT_INSTALL)
     install(TARGETS ${PROJECT_NAME}
