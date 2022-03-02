@@ -14,6 +14,8 @@
 [![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://wandbox.org/permlink/PBBzVKlbMIfC3WOk)
 [![Compiler explorer](https://img.shields.io/badge/compiler_explorer-online-blue.svg)](https://godbolt.org/z/s_ecko)
 
+If you like this project, please consider donating to one of the funds that help victims of the war in Ukraine: https://www.stopputin.net/.
+
 # Nameof C++
 
 Header-only C++17 library provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum.
