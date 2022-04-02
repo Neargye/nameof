@@ -149,7 +149,7 @@ CPMAddPackage(
 
 ## Compiler compatibility
 
-* Clang/LLVM >= 5
+* Clang/LLVM >= 6
 * MSVC++ >= 14.11 / Visual Studio >= 2017
 * Xcode >= 10
 * GCC >= 7 (GCC >= 9 for NAMEOF_ENUM)
