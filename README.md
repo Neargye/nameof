@@ -1,3 +1,5 @@
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://stand-with-ukraine.pp.ua)
+
 ```text
  _   _                             __    _____
 | \ | |                           / _|  / ____|_     _
@@ -13,8 +15,6 @@
 [![License](https://img.shields.io/github/license/Neargye/nameof.svg)](LICENSE)
 [![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://wandbox.org/permlink/PBBzVKlbMIfC3WOk)
 [![Compiler explorer](https://img.shields.io/badge/compiler_explorer-online-blue.svg)](https://godbolt.org/z/s_ecko)
-
-If you like this project, please consider donating to one of the funds that help victims of the war in Ukraine: https://www.stopputin.net/.
 
 # Nameof C++
 
