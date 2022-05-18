@@ -300,6 +300,22 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] constexpr size_type size() const noexcept { return 0; }
 
+  [[nodiscard]] constexpr const_iterator begin() const noexcept { return nullptr; }
+
+  [[nodiscard]] constexpr const_iterator end() const noexcept { return nullptr; }
+
+  [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return nullptr; }
+
+  [[nodiscard]] constexpr const_iterator cend() const noexcept { return nullptr; }
+
+  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return {}; }
+
+  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return {}; }
+
+  [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return {}; }
+
+  [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return {}; }
+
   [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
 
   [[nodiscard]] constexpr bool empty() const noexcept { return true; }
@@ -1084,17 +1100,17 @@ template <auto V>
 // Obtains type name, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// Obtains type name of expression, reference and cv-qualifiers are ignored.
-#define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
-
 // Obtains full type name, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
 
-// Obtains full type name of expression, with reference and cv-qualifiers.
-#define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
-
 // Obtains short type name.
 #define NAMEOF_SHORT_TYPE(...) ::nameof::nameof_short_type<__VA_ARGS__>()
+
+// Obtains type name of expression, reference and cv-qualifiers are ignored.
+#define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+
+// Obtains full type name of expression, with reference and cv-qualifiers.
+#define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
 // Obtains short type name of expression.
 #define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()
