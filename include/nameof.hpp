@@ -449,6 +449,9 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
     if (!((name[i - 1] >= '0' && name[i - 1] <= '9') ||
           (name[i - 1] >= 'a' && name[i - 1] <= 'z') ||
           (name[i - 1] >= 'A' && name[i - 1] <= 'Z') ||
+#if defined(NAMEOF_ENABLE_NONASCII)
+          (name[i - 1] & 0x80) ||
+#endif
           (name[i - 1] == '_'))) {
       name.remove_prefix(i);
       break;
@@ -460,6 +463,9 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
 
   if (name.size() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
                           (name.front() >= 'A' && name.front() <= 'Z') ||
+#if defined(NAMEOF_ENABLE_NONASCII)
+                          (name.front() & 0x80) ||
+#endif
                           (name.front() == '_'))) {
     return name;
   }
@@ -1084,17 +1090,17 @@ template <auto V>
 // Obtains type name, reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
-// Obtains type name of expression, reference and cv-qualifiers are ignored.
-#define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
-
 // Obtains full type name, with reference and cv-qualifiers.
 #define NAMEOF_FULL_TYPE(...) ::nameof::nameof_full_type<__VA_ARGS__>()
 
-// Obtains full type name of expression, with reference and cv-qualifiers.
-#define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
-
 // Obtains short type name.
 #define NAMEOF_SHORT_TYPE(...) ::nameof::nameof_short_type<__VA_ARGS__>()
+
+// Obtains type name of expression, reference and cv-qualifiers are ignored.
+#define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
+
+// Obtains full type name of expression, with reference and cv-qualifiers.
+#define NAMEOF_FULL_TYPE_EXPR(...) ::nameof::nameof_full_type<decltype(__VA_ARGS__)>()
 
 // Obtains short type name of expression.
 #define NAMEOF_SHORT_TYPE_EXPR(...) ::nameof::nameof_short_type<decltype(__VA_ARGS__)>()

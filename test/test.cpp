@@ -99,6 +99,10 @@ enum class BigFlags : std::uint64_t {
   D = (static_cast<std::uint64_t>(0x1) << 63),
 };
 
+#if defined(MAGIC_ENUM_ENABLE_NONASCII)
+enum class Language : int { 日本語 = 10, 한국어 = 20, English = 30, 😃 = 40 };
+#endif
+
 template <>
 struct nameof::customize::enum_range<number> {
   static_assert(std::is_enum_v<number>, "nameof::enum_range<number> requires enum type.");
@@ -380,6 +384,17 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(nt_name == "three");
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(number::four).empty());
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
+
+#if defined(MAGIC_ENUM_ENABLE_NONASCII)
+  constexpr Language lang = Language::日本語;
+  constexpr auto lang_name = NAMEOF_ENUM(lang);
+  Language lk = Language::한국어;
+  REQUIRE(NAMEOF_ENUM(lk) == "한국어");
+  REQUIRE(NAMEOF_ENUM(Language::English) == "English");
+  REQUIRE(lang_name == "日本語");
+  REQUIRE(NAMEOF_ENUM(Language::😃) == "😃");
+  REQUIRE(NAMEOF_ENUM(static_cast<Language>(0)).empty());
+#endif
 }
 
 TEST_CASE("NAMEOF_ENUM_CONST") {

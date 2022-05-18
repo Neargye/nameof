@@ -41,6 +41,12 @@
   #include <nameof.hpp>
   ```
 
+* To add support for non-ASCII enumeration identifier, use special macros:
+  ```cpp
+  #define NAMEOF_ENABLE_NONASCII
+  #include <nameof.hpp>
+  ```
+
 ## `NAMEOF`
 
 * Obtains simple (unqualified) name of variable, function, macro.

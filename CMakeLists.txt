@@ -8,6 +8,7 @@ else()
     set(IS_TOPLEVEL_PROJECT FALSE)
 endif()
 
+option(NAMEOF_OPT_ENABLE_NONASCII "Enable support for non-ASCII identifier" ${IS_TOPLEVEL_PROJECT})
 option(NAMEOF_OPT_BUILD_EXAMPLES "Build nameof examples" ${IS_TOPLEVEL_PROJECT})
 option(NAMEOF_OPT_BUILD_TESTS "Build and perform nameof tests" ${IS_TOPLEVEL_PROJECT})
 option(NAMEOF_OPT_INSTALL "Generate and install nameof target" ${IS_TOPLEVEL_PROJECT})
