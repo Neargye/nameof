@@ -246,9 +246,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr bool empty() const noexcept { return false; }
 
-  [[nodiscard]] constexpr int compare(string_view str) const noexcept {
-    return string_view{data(), size()}.compare(str);
-  }
+  [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{data(), size()}.compare(str); }
 
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
@@ -265,6 +263,58 @@ class [[nodiscard]] cstring {
   constexpr cstring(string_view str, std::index_sequence<I...>) noexcept : chars_{str[I]..., '\0'} {}
 
   char chars_[N + 1];
+};
+
+template <>
+class [[nodiscard]] cstring<0> {
+ public:
+  using value_type      = const char;
+  using size_type       = std::size_t;
+  using difference_type = std::ptrdiff_t;
+  using pointer         = const char*;
+  using const_pointer   = const char*;
+  using reference       = const char&;
+  using const_reference = const char&;
+
+  using iterator       = const char*;
+  using const_iterator = const char*;
+
+  using reverse_iterator       = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  constexpr explicit cstring(string_view) noexcept {}
+
+  constexpr cstring() = delete;
+
+  constexpr cstring(const cstring&) = default;
+
+  constexpr cstring(cstring&&) = default;
+
+  ~cstring() = default;
+
+  cstring& operator=(const cstring&) = default;
+
+  cstring& operator=(cstring&&) = default;
+
+  [[nodiscard]] constexpr const_pointer data() const noexcept { return nullptr; }
+
+  [[nodiscard]] constexpr size_type size() const noexcept { return 0; }
+
+  [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
+
+  [[nodiscard]] constexpr bool empty() const noexcept { return true; }
+
+  [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{}.compare(str); }
+
+  [[nodiscard]] constexpr const char* c_str() const noexcept { return nullptr; }
+
+  [[nodiscard]] string str() const { return {}; }
+
+  [[nodiscard]] constexpr operator string_view() const noexcept { return {}; }
+
+  [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return nullptr; }
+
+  [[nodiscard]] explicit operator string() const { return {}; }
 };
 
 template <std::size_t N>
@@ -429,9 +479,9 @@ constexpr bool cmp_less(L lhs, R rhs) noexcept {
   if constexpr (std::is_signed_v<L> == std::is_signed_v<R>) {
     // If same signedness (both signed or both unsigned).
     return lhs < rhs;
-  } else if constexpr (std::is_same_v<L, bool>) { // bool special case due to msvc's C4804, C4018
+  } else if constexpr (std::is_same_v<L, bool>) { // bool special case
       return static_cast<R>(lhs) < rhs;
-  } else if constexpr (std::is_same_v<R, bool>) { // bool special case due to msvc's C4804, C4018
+  } else if constexpr (std::is_same_v<R, bool>) { // bool special case
       return lhs < static_cast<L>(rhs);
   } else if constexpr (std::is_signed_v<R>) {
     // If 'right' is negative, then result is 'false', otherwise cast & compare.
@@ -446,10 +496,14 @@ template <typename I>
 constexpr I log2(I value) noexcept {
   static_assert(std::is_integral_v<I>, "nameof::detail::log2 requires integral type.");
 
-  auto ret = I{0};
-  for (; value > I{1}; value >>= I{1}, ++ret) {}
+  if constexpr (std::is_same_v<I, bool>) { // bool special case
+    return assert(false), value;
+  } else {
+    auto ret = I{0};
+    for (; value > I{1}; value >>= I{1}, ++ret) {}
 
-  return ret;
+    return ret;
+  }
 }
 
 template <typename T>
@@ -469,24 +523,17 @@ inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::de
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
-  constexpr auto custom_name = customize::enum_name<E>(V);
+  [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(V);
 
-  if constexpr (custom_name.empty()) {
-    static_cast<void>(custom_name);
-#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
-#  if defined(__clang__) || defined(__GNUC__)
+  if constexpr (custom_name.empty() && nameof_enum_supported<E>::value) {
+#if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
-#  elif defined(_MSC_VER)
+#elif defined(_MSC_VER)
     constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
-#  endif
-    if constexpr (name.size() > 0) {
-      return cstring<name.size()>{name};
-    } else {
-      return string_view{};
-    }
 #else
-  return string_view{}; // Unsupported compiler.
+    constexpr auto name = string_view{};
 #endif
+    return cstring<name.size()>{name};
   } else {
     return cstring<custom_name.size()>{custom_name};
   }
@@ -506,7 +553,11 @@ template <typename E, int O, bool IsFlags = false, typename U = std::underlying_
 constexpr E value(std::size_t i) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::value requires enum type.");
 
-  if constexpr (IsFlags) {
+  if constexpr (std::is_same_v<U, bool>) { // bool special case
+    static_assert(O == 0, "nameof::detail::value requires valid offset.");
+
+    return static_cast<E>(i);
+  } else if constexpr (IsFlags) {
     return static_cast<E>(U{1} << static_cast<U>(static_cast<int>(i) + O));
   } else {
     return static_cast<E>(static_cast<int>(i) + O);
@@ -521,11 +572,9 @@ constexpr int reflected_min() noexcept {
     return 0;
   } else {
     constexpr auto lhs = customize::enum_range<E>::min;
-    static_assert(lhs > (std::numeric_limits<std::int16_t>::min)(), "nameof::enum_range requires min must be greater than INT16_MIN.");
     constexpr auto rhs = (std::numeric_limits<U>::min)();
 
     if constexpr (cmp_less(rhs, lhs)) {
-      static_assert(!is_valid<E, value<E, lhs - 1, IsFlags>(0)>(), "nameof::enum_range detects enum value smaller than min range size.");
       return lhs;
     } else {
       return rhs;
@@ -541,11 +590,9 @@ constexpr int reflected_max() noexcept {
     return std::numeric_limits<U>::digits - 1;
   } else {
     constexpr auto lhs = customize::enum_range<E>::max;
-    static_assert(lhs < (std::numeric_limits<std::int16_t>::max)(), "nameof::enum_range requires max must be less than INT16_MAX.");
     constexpr auto rhs = (std::numeric_limits<U>::max)();
 
     if constexpr (cmp_less(lhs, rhs)) {
-      static_assert(!is_valid<E, value<E, lhs + 1, IsFlags>(0)>(), "nameof::enum_range detects enum value larger than max range size.");
       return lhs;
     } else {
       return rhs;
@@ -739,26 +786,23 @@ using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<T> && !std:
 template <typename... T>
 constexpr auto n() noexcept {
 #  if defined(_MSC_VER) && !defined(__clang__)
-  constexpr auto custom_name = customize::type_name<typename T::type...>();
+  [[maybe_unused]] constexpr auto custom_name = customize::type_name<typename T::type...>();
 #else
-  constexpr auto custom_name = customize::type_name<T...>();
+  [[maybe_unused]] constexpr auto custom_name = customize::type_name<T...>();
 #  endif
 
-  if constexpr (custom_name.empty()) {
-    static_cast<void>(custom_name);
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
-#  if defined(__clang__)
+  if constexpr (custom_name.empty() && nameof_type_supported<T...>::value) {
+#if defined(__clang__)
     constexpr string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
-#  elif defined(__GNUC__)
+#elif defined(__GNUC__)
     constexpr string_view name{__PRETTY_FUNCTION__ + 46, sizeof(__PRETTY_FUNCTION__) - 49};
-#  elif defined(_MSC_VER)
+#elif defined(_MSC_VER)
     constexpr string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
-#  endif
-
-    return cstring<name.size()>{name};
 #else
-    return string_view{}; // Unsupported compiler.
+    constexpr auto name = string_view{};
 #endif
+    return cstring<name.size()>{name};
+
   } else {
     return cstring<custom_name.size()>{custom_name};
   }
@@ -824,7 +868,7 @@ string nameof_type_rtti(const char* tn) noexcept {
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) noexcept {
-static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   auto name = string{tn};
   assert(name.size() > 0 && "Type does not have a name.");
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
@@ -855,17 +899,15 @@ string nameof_short_type_rtti(const char* tn) noexcept {
 
 template <auto V>
 constexpr auto n() noexcept {
-  constexpr auto custom_name = customize::member_name<V>();
+  [[maybe_unused]] constexpr auto custom_name = customize::member_name<V>();
 
-  if constexpr (custom_name.empty()) {
-    static_cast<void>(custom_name);
-#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
+  if constexpr (custom_name.empty() && nameof_member_supported<decltype(V)>) {
+#if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
-
-    return cstring<name.size()>{name};
 #else
-    return string_view{}; // Unsupported compiler.
+    constexpr auto name = string_view{};
 #endif
+    return cstring<name.size()>{name};
   } else {
     return cstring<custom_name.size()>{custom_name};
   }
