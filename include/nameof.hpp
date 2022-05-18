@@ -901,7 +901,7 @@ template <auto V>
 constexpr auto n() noexcept {
   [[maybe_unused]] constexpr auto custom_name = customize::member_name<V>();
 
-  if constexpr (custom_name.empty() && nameof_member_supported<decltype(V)>) {
+  if constexpr (custom_name.empty() && nameof_member_supported<decltype(V)>::value) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #else
