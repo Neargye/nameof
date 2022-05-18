@@ -37,8 +37,5 @@ int main() {
   std::cout << NAMEOF_ENUM(Language::English) << std::endl; // English
   std::cout << NAMEOF_ENUM(Language::😃) << std::endl; // Emoji
 
-  int 😃 = 42;
-  std::cout << NAMEOF(😃) << std::endl; // Emoji
-
   return 0;
 }
