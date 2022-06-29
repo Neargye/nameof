@@ -68,6 +68,7 @@
 #  pragma warning(disable : 26495) // Variable 'cstring<N>::chars_' is uninitialized.
 #  pragma warning(disable : 28020) // Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value.
 #  pragma warning(disable : 26451) // The expression '0<=_Param_(1)&&_Param_(1)<=1-1' is not true at this call.
+#  pragma warning(disable : 4514) // Unreferenced inline function has been removed.
 #endif
 
 // Checks nameof_type compiler compatibility.
@@ -961,7 +962,7 @@ template <typename E>
         return detail::strings_v<D>[idx];
       }
     } else {
-      return detail::strings_v<D>[i];
+      return detail::strings_v<D>[static_cast<std::size_t>(i)];
     }
   }
 
