@@ -834,7 +834,7 @@ string nameof_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   const auto name = string{dmg};
-  std::free(dmg);
+  free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
 
   return name;
@@ -845,7 +845,7 @@ string nameof_full_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   auto name = string{dmg};
-  std::free(dmg);
+  free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
     name = "const " + name;
@@ -868,7 +868,7 @@ string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
   const auto name = string{pretty_name(dmg)};
-  std::free(dmg);
+  free(dmg);
   assert(name.size() > 0 && "Type does not have a short name.");
 
   return name;
