@@ -96,7 +96,7 @@
 #endif
 
 // Checks nameof_member compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7 || defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
 #  undef  NAMEOF_MEMBER_SUPPORTED
 #  define NAMEOF_MEMBER_SUPPORTED 1
 #endif
@@ -921,6 +921,8 @@ constexpr auto n() noexcept {
   if constexpr (custom_name.empty() && nameof_member_supported<decltype(V)>::value) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+#elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
     constexpr auto name = string_view{};
 #endif
@@ -930,8 +932,38 @@ constexpr auto n() noexcept {
   }
 }
 
+#if defined(__clang__) || defined(__GNUC__)
 template <auto V>
 inline constexpr auto member_name_v = n<V>();
+#elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+template <typename From, typename Type>
+From get_base_type(Type From::*);
+
+template <typename T>
+union union_type {
+  char c = {};
+  T f;
+};
+
+template <typename T>
+inline constexpr auto v = T{};
+
+template <auto V>
+constexpr auto get_member_name() noexcept {
+  if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
+    return n<V>();
+  } else {
+    return n<&(constexpr_static_init<union_type<decltype(get_base_type(V))>>.f.*V)>();
+  }
+}
+
+template <auto V>
+inline constexpr auto member_name_v = get_member_name<V>();
+
+#else
+template <auto V>
+inline constexpr auto member_name_v = cstring<0>{string_view{}};
+#endif
 
 } // namespace nameof::detail
 
