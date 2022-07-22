@@ -45,6 +45,7 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #if !defined(NAMEOF_USING_ALIAS_STRING)
 #include <string>
@@ -980,10 +981,8 @@ inline constexpr bool is_nameof_member_supported = detail::nameof_member_support
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
 
 // Obtains simple (unqualified) name of enum variable.
-template <typename E>
+template <typename E, typename D = std::decay_t<E>, typename U = std::underlying_type_t<D>>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, string_view> {
-  using D = std::decay_t<E>;
-  using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
 
@@ -1002,11 +1001,29 @@ template <typename E>
   return {}; // Value out of range.
 }
 
+
+template <typename E, typename D = std::decay_t<E>, typename U = std::underlying_type_t<D>>
+[[nodiscard]] constexpr auto nameof_enum_or(E value) noexcept -> detail::enable_if_enum_t<E, string> {
+  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
+
+  const bool valid = static_cast<U>(value) >= static_cast<U>(detail::min_v<D>) && static_cast<U>(value) <= static_cast<U>(detail::max_v<D>);
+  if (const auto i = static_cast<int>(value) - detail::min_v<D>; valid) {
+    if constexpr (detail::is_sparse_v<D>) {
+      if (const auto idx = detail::indexes_v<D>[i]; idx != detail::invalid_index_v<D>) {
+        return detail::strings_v<D>[idx];
+      }
+    } else {
+      return detail::strings_v<D>[static_cast<std::size_t>(i)];
+    }
+  }
+
+  return std::to_string(static_cast<U>(value)); // Value out of range.
+}
+
 // Obtains simple (unqualified) name of enum-flags variable.
-template <typename E>
+template <typename E, typename D = std::decay_t<E>, typename U = std::underlying_type_t<D>>
 [[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, string> {
-  using D = std::decay_t<E>;
-  using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::count_v<D, true> > 0, "nameof::nameof_enum_flag requires enum-flags implementation.");
   constexpr auto size = detail::is_sparse_v<D, true> ? detail::count_v<D, true> : detail::range_size_v<D, true>;
@@ -1038,9 +1055,8 @@ template <typename E>
 
 // Obtains simple (unqualified) name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
-template <auto V>
+template <auto V, typename D = std::decay_t<decltype(V)>>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), string_view> {
-  using D = std::decay_t<decltype(V)>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr string_view name = detail::enum_name_v<D, V>;
   static_assert(name.size() > 0, "Enum value does not have a name.");
@@ -1049,10 +1065,9 @@ template <auto V>
 }
 
 // Obtains name of type, reference and cv-qualifiers are ignored.
-template <typename T>
+template <typename T, typename U = detail::identity<detail::remove_cvref_t<T>>>
 [[nodiscard]] constexpr string_view nameof_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  using U = detail::identity<detail::remove_cvref_t<T>>;
   constexpr string_view name = detail::type_name_v<U>;
   static_assert(name.size() > 0, "Type does not have a name.");
 
@@ -1060,10 +1075,9 @@ template <typename T>
 }
 
 // Obtains full name of type, with reference and cv-qualifiers.
-template <typename T>
+template <typename T, typename U = detail::identity<T>>
 [[nodiscard]] constexpr string_view nameof_full_type() noexcept {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  using U = detail::identity<T>;
   constexpr string_view name = detail::type_name_v<U>;
   static_assert(name.size() > 0, "Type does not have a full name.");
 
@@ -1071,10 +1085,9 @@ template <typename T>
 }
 
 // Obtains short name of type.
-template <typename T>
+template <typename T, typename U = detail::identity<detail::remove_cvref_t<T>>>
 [[nodiscard]] constexpr auto nameof_short_type() noexcept -> detail::enable_if_has_short_name_t<T, string_view> {
   static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  using U = detail::identity<detail::remove_cvref_t<T>>;
   constexpr string_view name = detail::pretty_name(detail::type_name_v<U>);
   static_assert(name.size() > 0, "Type does not have a short name.");
 
@@ -1122,6 +1135,9 @@ template <auto V>
 
 // Obtains name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
+
+// Obtains name of enum variable or stringified number if out of range.
+#define NAMEOF_ENUM_OR(...) ::nameof::nameof_enum_or<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS)
 
 // Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.

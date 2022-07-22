@@ -79,6 +79,8 @@ struct Long {
 
 enum class Color { RED = -12, GREEN = 7, BLUE = 15 };
 
+enum class OutOfRange { too_low = NAMEOF_ENUM_RANGE_MIN - 1, required_to_work = 0, too_high = NAMEOF_ENUM_RANGE_MAX + 1 };
+
 enum class Numbers : int { one = 1, two, three, many = 127 };
 
 enum Directions { Up = 85, Down = -42, Right = 120, Left = -120 };
@@ -285,6 +287,17 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nt_name == "three");
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(number::four).empty());
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
+  }
+
+  SECTION("automatic storage _or") {
+    constexpr OutOfRange low = OutOfRange::too_low;
+    constexpr OutOfRange high = OutOfRange::too_high;
+    auto low_name = nameof::nameof_enum_or(low);
+    auto high_name = nameof::nameof_enum_or(high);
+    constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
+    REQUIRE(low_name == "-121");
+    REQUIRE(high_name == "121");
+    REQUIRE(nameof::nameof_enum_or(oor[0]) == "121");
   }
 
   SECTION("static storage") {
