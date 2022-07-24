@@ -946,14 +946,14 @@ union union_type {
 };
 
 template <typename T>
-inline constexpr auto v = T{};
+inline constexpr auto static_v = T{};
 
 template <auto V>
 constexpr auto get_member_name() noexcept {
   if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
     return n<V>();
   } else {
-    return n<&(constexpr_static_init<union_type<decltype(get_base_type(V))>>.f.*V)>();
+    return n<&(static_v<union_type<decltype(get_base_type(V))>>.f.*V)>();
   }
 }
 
