@@ -914,7 +914,7 @@ string nameof_short_type_rtti(const char* tn) noexcept {
 }
 #endif
 
-template <auto V>
+template <auto V, auto U = V>
 constexpr auto n() noexcept {
   [[maybe_unused]] constexpr auto custom_name = customize::member_name<V>();
 
@@ -953,7 +953,7 @@ constexpr auto get_member_name() noexcept {
   if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
     return n<V>();
   } else {
-    return n<&(static_v<union_type<decltype(get_base_type(V))>>.f.*V)>();
+    return n<V, &(static_v<union_type<decltype(get_base_type(V))>>.f.*V)>();
   }
 }
 
