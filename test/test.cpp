@@ -107,6 +107,12 @@ struct nameof::customize::enum_range<number> {
   static_assert(max > min, "nameof::enum_range<number> requires max > min.");
 };
 
+enum class OutOfRange {
+  too_low = NAMEOF_ENUM_RANGE_MIN - 1,
+  required_to_work = 0,
+  too_high = NAMEOF_ENUM_RANGE_MAX + 1
+};
+
 struct TestRtti{
   struct Base { virtual ~Base() = default; };
   struct Derived : Base {};
@@ -440,6 +446,28 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(2)).empty());
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
+}
+
+TEST_CASE("nameof_enum_or") {
+  OutOfRange low = OutOfRange::too_low;
+  OutOfRange high = OutOfRange::too_high;
+  auto low_name = nameof::nameof_enum_or(low, "-121");
+  auto high_name = nameof::nameof_enum_or(high, "121");
+  constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
+  REQUIRE(low_name == "-121");
+  REQUIRE(high_name == "121");
+  REQUIRE(nameof::nameof_enum_or(oor[0], "121") == "121");
+}
+
+TEST_CASE("NAMEOF_ENUM_OR") {
+  OutOfRange low = OutOfRange::too_low;
+  OutOfRange high = OutOfRange::too_high;
+  auto low_name = NAMEOF_ENUM_OR(low, "-121");
+  auto high_name = NAMEOF_ENUM_OR(high, "121");
+  constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
+  REQUIRE(low_name == "-121");
+  REQUIRE(high_name == "121");
+  REQUIRE(NAMEOF_ENUM_OR(oor[0], "121") == "121");
 }
 
 #endif

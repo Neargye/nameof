@@ -979,7 +979,7 @@ inline constexpr bool is_nameof_member_supported = detail::nameof_member_support
 // Checks is nameof_enum supported compiler.
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
 
-// Obtains simple (unqualified) name of enum variable.
+// Obtains name of enum variable.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, string_view> {
   using D = std::decay_t<E>;
@@ -998,11 +998,22 @@ template <typename E>
     }
   }
 
-  assert(valid && "enum variable does not have a name.");
   return {}; // Value out of range.
 }
 
-// Obtains simple (unqualified) name of enum-flags variable.
+// Obtains name of enum variable or default value if enum variable out of range.
+template <typename E>
+[[nodiscard]] auto nameof_enum_or(E value, string_view default_value) noexcept -> detail::enable_if_enum_t<E, string> {
+  using D = std::decay_t<E>;
+
+  if (auto v = nameof_enum<D>(value); !v.empty()) {
+    return string{v.data(), v.size()};
+  }
+
+  return string{default_value.data(), default_value.size()};
+}
+
+// Obtains name of enum-flags variable.
 template <typename E>
 [[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
@@ -1032,11 +1043,10 @@ template <typename E>
     return name;
   }
 
-  assert(valid && "enum-flags variable does not have a name.");
   return {}; // Invalid value or out of range.
 }
 
-// Obtains simple (unqualified) name of static storage enum variable.
+// Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), string_view> {
@@ -1122,6 +1132,9 @@ template <auto V>
 
 // Obtains name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
+
+// Obtains name of enum variable or default value if enum variable out of range.
+#define NAMEOF_ENUM_OR(...) ::nameof::nameof_enum_or(__VA_ARGS__)
 
 // Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
