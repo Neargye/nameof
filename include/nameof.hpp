@@ -1003,7 +1003,7 @@ template <typename E>
 
 // Obtains name of enum variable or default value if enum variable out of range.
 template <typename E>
-[[nodiscard]] auto nameof_enum_or(E value, string_view default_value) noexcept -> detail::enable_if_enum_t<E, string> {
+[[nodiscard]] auto nameof_enum_or(E value, string_view default_value) -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
 
   if (auto v = nameof_enum<D>(value); !v.empty()) {

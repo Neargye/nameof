@@ -4,6 +4,7 @@
 * [`NAMEOF_FULL` obtains full name of variable, function, macro.](#nameof_full)
 * [`NAMEOF_RAW` obtains raw name of variable, function, macro.](#nameof_raw)
 * [`NAMEOF_ENUM` obtains name of enum variable.](#nameof_enum)
+* [`NAMEOF_ENUM_OR` Obtains name of enum variable or default value if enum variable out of range.](#nameof_enum_or)
 * [`NAMEOF_ENUM_CONST` obtains name of static storage enum variable.](#nameof_enum_const)
 * [`NAMEOF_ENUM_FLAG` obtains name of enum-flags variable.](#nameof_enum_flag)
 * [`NAMEOF_TYPE` obtains type name.](#nameof_type)
@@ -43,7 +44,7 @@
 
 ## `NAMEOF`
 
-* Obtains simple (unqualified) name of variable, function, macro.
+* Obtains name of variable, function, macro.
 
 * Returns `nameof::cstring` - constexpr implementation of an string. Marked `constexpr` and `noexcept`.
 
@@ -72,7 +73,7 @@
 
 ## `NAMEOF_FULL`
 
-* Obtains simple (unqualified) full (with template suffix) name of variable, function, macro.
+* Obtains full (with template suffix) name of variable, function, macro.
 
 * Returns `nameof::cstring` - constexpr implementation of an string. Marked `constexpr` and `noexcept`.
 
@@ -106,7 +107,7 @@
 
 ## `NAMEOF_ENUM`
 
-* Obtains simple (unqualified) name of enum variable.
+* Obtains name of enum variable.
 
 * Returns `string_view`. Marked `constexpr` and `noexcept`.
 
@@ -120,9 +121,17 @@
   nameof::nameof_enum(color) -> "RED"
   ```
 
+# `NAMEOF_ENUM_OR`
+
+* Obtains name of enum variable or default value if enum variable out of range.
+
+* Returns `string`.
+
+* If argument does not have name or [out of range](limitations.md#nameof-enum), returns `default_value`.
+
 ## `NAMEOF_ENUM_CONST`
 
-* Obtains simple (unqualified) name of static storage enum variable.
+* Obtains name of static storage enum variable.
 
 * Returns `string_view`. Marked `constexpr` and `noexcept`.
 
@@ -139,7 +148,7 @@
 
 ## `NAMEOF_ENUM_FLAG`
 
-* Obtains simple (unqualified) name of enum flag variable.
+* Obtains name of enum flag variable.
 
 * Returns `string`.
 
