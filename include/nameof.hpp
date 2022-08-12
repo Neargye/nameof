@@ -583,7 +583,7 @@ constexpr bool is_valid() noexcept {
   if constexpr (custom_name.empty()) {
     return n<E, v>().size() != 0;
   } else {
-    return name.size() != 0;
+    return custom_name.size() != 0;
   }
 #else
   return enum_name<E, static_cast<E>(V)>().size() != 0;
