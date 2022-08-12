@@ -287,7 +287,7 @@ class [[nodiscard]] cstring<0> {
 
   constexpr explicit cstring(string_view) noexcept {}
 
-  constexpr cstring() = delete;
+  constexpr cstring() = default;
 
   constexpr cstring(const cstring&) = default;
 
@@ -542,9 +542,8 @@ inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, std::de
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
-  [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(V);
 
-  if constexpr (custom_name.empty() && nameof_enum_supported<E>::value) {
+  if constexpr (nameof_enum_supported<E>::value) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
@@ -554,25 +553,42 @@ constexpr auto n() noexcept {
 #endif
     return cstring<name.size()>{name};
   } else {
+    return cstring<0>{};
+  }
+}
+
+template <typename E, E V>
+constexpr auto enum_name() noexcept {
+  static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
+  [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(V);
+
+  if constexpr (custom_name.empty()) {
+    return n<E, V>();
+  } else {
     return cstring<custom_name.size()>{custom_name};
   }
 }
 
 template <typename E, E V>
-inline constexpr auto enum_name_v = n<E, V>();
-
-template <typename E, E V>
-constexpr bool valid() noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::is_valid requires enum type.");
-
-  return n<E, static_cast<E>(V)>().size() != 0;
-}
-
-template <typename E, auto V, typename = void>
-struct is_valid : std::false_type {};
+inline constexpr auto enum_name_v = enum_name<E, V>();
 
 template <typename E, auto V>
-struct is_valid<E, V, std::void_t<decltype(valid<E, static_cast<E>(V)>())>> : std::bool_constant<valid<E, static_cast<E>(V)>()> {};
+constexpr bool is_valid() noexcept {
+  static_assert(is_enum_v<E>, "nameof::detail::is_valid requires enum type.");
+
+#if defined(__clang__) && __clang_major__ >= 16
+  // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
+  constexpr E v = __builtin_bit_cast(E, V);
+  [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(v);
+  if constexpr (custom_name.empty()) {
+    return n<E, v>().size() != 0;
+  } else {
+    return name.size() != 0;
+  }
+#else
+  return enum_name<E, static_cast<E>(V)>().size() != 0;
+#endif
+}
 
 template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr U ualue(std::size_t i) noexcept {
@@ -653,7 +669,7 @@ constexpr std::size_t values_count(const bool (&valid)[N]) noexcept {
 template <typename E, bool IsFlags, int Min, std::size_t... I>
 constexpr auto values(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::values requires enum type.");
-  constexpr bool valid[sizeof...(I)] = {is_valid<E, ualue<E, Min, IsFlags>(I)>::value...};
+  constexpr bool valid[sizeof...(I)] = {is_valid<E, ualue<E, Min, IsFlags>(I)>()...};
   constexpr std::size_t count = values_count(valid);
 
   if constexpr (count > 0) {
@@ -974,10 +990,9 @@ constexpr auto get_member_name() noexcept {
 
 template <auto V>
 inline constexpr auto member_name_v = get_member_name<V>();
-
 #else
 template <auto V>
-inline constexpr auto member_name_v = cstring<0>{string_view{}};
+inline constexpr auto member_name_v = cstring<0>{};
 #endif
 
 } // namespace nameof::detail
