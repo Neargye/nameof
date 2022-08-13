@@ -28,14 +28,16 @@
 
 struct MyString {
   MyString() : str{} {} // required
+  MyString(const char* s) : str{s} {} // required
   MyString(const char* s, std::size_t l) : str{s, l} {} // required
   bool empty() const { return str.empty(); } // required
+  std::size_t size() const { return str.size(); } // required
   auto begin() const { return str.begin(); } // required
   auto end() const { return str.end(); } // required
-  void append(std::size_t count, char c) { str.append(count, c); } // required
-  void append(const char* s, std::size_t size) { str.append(s, size); } // required
+  MyString& append(std::size_t count, char c) { str.append(count, c); return *this; } // required
+  MyString& append(const char* s) { str.append(s); return *this; } // required
+  MyString& append(const MyString& s) { str.append(s.str); return *this; } // required
 
-  std::size_t size() const { return str.size(); }
   int compare(const char* s) const { return str.compare(s); }
 
  private:
@@ -47,7 +49,8 @@ struct MyStringView {
   static constexpr auto npos = std::string_view::npos; // required
 
   constexpr MyStringView() : str{} {} // required
-  constexpr MyStringView(const char* cstr, std::size_t size) : str{cstr, size} {} // required
+  constexpr MyStringView(const char* s) : str{s} {} // required
+  constexpr MyStringView(const char* s, std::size_t size) : str{s, size} {} // required
   constexpr bool empty() const { return str.empty(); } // required
   constexpr std::size_t size() const { return str.size(); } // required
   constexpr const char* data() const { return str.data(); } // required
@@ -57,10 +60,10 @@ struct MyStringView {
   constexpr std::size_t find(char c) const { return str.find(c); } // required
   constexpr MyStringView substr(std::size_t p, std::size_t n) { return str.substr(p, n); } // required
   constexpr void remove_prefix(std::size_t n) { str.remove_prefix(n); } // required
-  constexpr int compare(MyStringView s) const { return str.compare(s); } // required
+  constexpr void remove_suffix(std::size_t n) { str.remove_suffix(n); } // required
+  constexpr int compare(MyStringView s) const { return str.compare(s.str); } // required
   friend constexpr bool operator==(MyStringView lhs, MyStringView rhs); // required
 
-  constexpr MyStringView(const char* cstr) : str{ cstr } {}
   constexpr int compare(const char* s) const { return str.compare(s); }
 
  private:

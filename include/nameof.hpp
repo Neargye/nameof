@@ -879,16 +879,16 @@ string nameof_full_type_rtti(const char* tn) {
   free(dmg);
   assert(name.size() > 0 && "Type does not have a name.");
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
-    name = "const " + name;
+    name = string{"const "}.append(name);
   }
   if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
-    name = "volatile " + name;
+    name = string{"volatile "}.append(name);
   }
   if constexpr (std::is_lvalue_reference_v<T>) {
-    name += '&';
+    name.append(1, '&');
   }
   if constexpr (std::is_rvalue_reference_v<T>) {
-    name += "&&";
+    name.append("&&");
   }
 
   return name;
@@ -898,7 +898,8 @@ template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  const auto name = string{pretty_name(dmg)};
+  const auto pname = pretty_name(dmg);
+  const auto name = string{pname.data(), pname.size()};
   free(dmg);
   assert(name.size() > 0 && "Type does not have a short name.");
 
@@ -920,16 +921,16 @@ string nameof_full_type_rtti(const char* tn) noexcept {
   auto name = string{tn};
   assert(name.size() > 0 && "Type does not have a name.");
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
-    name = "const " + name;
+    name = string{"const "}.append(name);
   }
   if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
-    name = "volatile " + name;
+    name = string{"volatile "}.append(name);
   }
   if constexpr (std::is_lvalue_reference_v<T>) {
-    name += '&';
+    name.append(1, '&');
   }
   if constexpr (std::is_rvalue_reference_v<T>) {
-    name += "&&";
+    name.append("&&");
   }
 
   return name;
