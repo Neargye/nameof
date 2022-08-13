@@ -477,9 +477,9 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
     name.remove_suffix(s);
   }
 
-  if (name.size() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
-                          (name.front() >= 'A' && name.front() <= 'Z') ||
-                          (name.front() == '_'))) {
+  if (name.size() > 0 && ((name[0] >= 'a' && name[0] <= 'z') ||
+                          (name[0] >= 'A' && name[0] <= 'Z') ||
+                          (name[0] == '_'))) {
     return name;
   }
 
