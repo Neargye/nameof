@@ -186,11 +186,11 @@ constexpr string_view member_name() noexcept {
 
 } // namespace nameof::customize
 
-template <std::size_t N>
+template <std::uint16_t N>
 class [[nodiscard]] cstring {
  public:
   using value_type      = const char;
-  using size_type       = std::size_t;
+  using size_type       = std::uint16_t;
   using difference_type = std::ptrdiff_t;
   using pointer         = const char*;
   using const_pointer   = const char*;
@@ -203,7 +203,7 @@ class [[nodiscard]] cstring {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  constexpr explicit cstring(string_view str) noexcept : cstring{str, std::make_index_sequence<N>{}} {
+  constexpr explicit cstring(string_view str) noexcept : cstring{str, std::make_integer_sequence<std::uint16_t, N>{}} {
     assert(str.size() > 0 && str.size() == N);
   }
 
@@ -262,17 +262,17 @@ class [[nodiscard]] cstring {
   [[nodiscard]] explicit operator string() const { return {begin(), end()}; }
 
  private:
-  template <std::size_t... I>
-  constexpr cstring(string_view str, std::index_sequence<I...>) noexcept : chars_{str[I]..., '\0'} {}
+  template <std::uint16_t... I>
+  constexpr cstring(string_view str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{str[I]..., '\0'} {}
 
-  char chars_[N + 1];
+  char chars_[static_cast<std::size_t>(N) + 1];
 };
 
 template <>
 class [[nodiscard]] cstring<0> {
  public:
   using value_type      = const char;
-  using size_type       = std::size_t;
+  using size_type       = std::uint16_t;
   using difference_type = std::ptrdiff_t;
   using pointer         = const char*;
   using const_pointer   = const char*;
@@ -336,67 +336,67 @@ class [[nodiscard]] cstring<0> {
   [[nodiscard]] explicit operator string() const { return {}; }
 };
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator==(const cstring<N>& lhs, string_view rhs) noexcept {
   return lhs.compare(rhs) == 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator==(string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) == 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator!=(const cstring<N>& lhs, string_view rhs) noexcept {
   return lhs.compare(rhs) != 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator!=(string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) != 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator>(const cstring<N>& lhs, string_view rhs) noexcept {
   return lhs.compare(rhs) > 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator>(string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) > 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator>=(const cstring<N>& lhs, string_view rhs) noexcept {
   return lhs.compare(rhs) >= 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator>=(string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) >= 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator<(const cstring<N>& lhs, string_view rhs) noexcept {
   return lhs.compare(rhs) < 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator<(string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) < 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator<=(const cstring<N>& lhs, string_view rhs) noexcept {
   return lhs.compare(rhs) <= 0;
 }
 
-template <std::size_t N>
+template <std::uint16_t N>
 [[nodiscard]] constexpr bool operator<=(string_view lhs, const cstring<N>& rhs) noexcept {
   return lhs.compare(rhs) <= 0;
 }
 
-template <typename Char, typename Traits, std::size_t N>
+template <typename Char, typename Traits, std::uint16_t N>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& srt) {
   for (const auto c : srt) {
     os.put(c);
