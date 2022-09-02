@@ -695,7 +695,7 @@ constexpr auto values() noexcept {
   static_assert(range_size > 0, "nameof::enum_range requires valid size.");
   static_assert(range_size < (std::numeric_limits<std::uint16_t>::max)(), "nameof::enum_range requires valid size.");
 
-  return values<E, IsFlags, reflected_min_v<E, IsFlags>>(std::make_index_sequence<range_size>{});
+  return values<E, IsFlags, min>(std::make_index_sequence<range_size>{});
 }
 
 template <typename E, bool IsFlags = false>
