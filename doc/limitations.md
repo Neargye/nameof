@@ -6,7 +6,7 @@
 
 ## Nameof Type
 
-* This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 7.
+* This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`).
 
 * nameof_type and nameof_type_rtti returns compiler-specific type name.
 
