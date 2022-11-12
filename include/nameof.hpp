@@ -973,6 +973,7 @@ From get_base_type(Type From::*);
 
 template <typename T>
 union union_type {
+  constexpr ~union_type() {}
   char c = {};
   T f;
 };
