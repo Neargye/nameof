@@ -979,9 +979,8 @@ union union_type {
 };
 
 template <typename T>
-struct union_type_holder
-{
-    constexpr static union_type<T> value;
+struct union_type_holder {
+  constexpr static union_type<T> value;
 };
 
 template <auto V>
