@@ -118,6 +118,15 @@ struct TestRtti{
   struct Derived : Base {};
 };
 
+struct StructMemberInitializationUsingNameof{
+  std::string teststringfield = std::string{nameof::nameof_member<&StructMemberInitializationUsingNameof::teststringfield>()};
+};
+
+struct StructWithNonConstexprDestructor{
+  ~StructWithNonConstexprDestructor(){}
+  int somefield;
+};
+
 SomeStruct struct_var;
 Long othervar;
 SomeStruct* ptr_s = &struct_var;
@@ -916,6 +925,8 @@ TEST_CASE("NAMEOF_MEMBER") {
   REQUIRE(NAMEOF_MEMBER(&Long::LL::field) == "field");
   constexpr auto member_ptr = &SomeStruct::somefield;
   REQUIRE(NAMEOF_MEMBER(member_ptr) == "somefield");
+  REQUIRE(NAMEOF_MEMBER(&StructMemberInitializationUsingNameof::teststringfield) == "teststringfield");
+  REQUIRE(NAMEOF_MEMBER(&StructWithNonConstexprDestructor::somefield) == "somefield");
 }
 
 TEST_CASE("nameof_member") {
@@ -924,6 +935,8 @@ TEST_CASE("nameof_member") {
   REQUIRE(nameof::nameof_member<&Long::LL::field>() == "field");
   constexpr auto member_ptr = &SomeStruct::somefield;
   REQUIRE(nameof::nameof_member<member_ptr>() == "somefield");
+  REQUIRE(nameof::nameof_member<&StructMemberInitializationUsingNameof::teststringfield>() == "teststringfield");
+  REQUIRE(nameof::nameof_member<&StructWithNonConstexprDestructor::somefield>() == "somefield");
 }
 
 #endif
