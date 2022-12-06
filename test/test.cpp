@@ -113,23 +113,10 @@ enum class OutOfRange {
   too_high = NAMEOF_ENUM_RANGE_MAX + 1
 };
 
-struct TestRtti{
+struct TestRtti {
   struct Base { virtual ~Base() = default; };
   struct Derived : Base {};
 };
-
-#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
-
-struct StructMemberInitializationUsingNameof{
-  std::string teststringfield = std::string{nameof::nameof_member<&StructMemberInitializationUsingNameof::teststringfield>()};
-};
-
-struct StructWithNonConstexprDestructor{
-  ~StructWithNonConstexprDestructor(){}
-  int somefield;
-};
-
-#endif
 
 SomeStruct struct_var;
 Long othervar;
@@ -922,6 +909,15 @@ TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
 #endif
 
 #if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
+
+struct StructMemberInitializationUsingNameof {
+  std::string teststringfield = std::string{nameof::nameof_member<&StructMemberInitializationUsingNameof::teststringfield>()};
+};
+
+struct StructWithNonConstexprDestructor {
+  ~StructWithNonConstexprDestructor() {}
+  int somefield;
+};
 
 TEST_CASE("NAMEOF_MEMBER") {
   REQUIRE(NAMEOF_MEMBER(&SomeStruct::somefield) == "somefield");
