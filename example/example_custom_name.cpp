@@ -40,7 +40,7 @@ constexpr std::string_view nameof::customize::enum_name<Color>(Color value) noex
     case Color::GREEN:
       return {}; // Empty string for default value.
   }
-  return {}; // Empty string for unknow value.
+  return {}; // Empty string for unknown value.
 }
 
 // Сustom definitions of names for enum.
@@ -51,7 +51,7 @@ constexpr std::string_view nameof::customize::enum_name<Numbers>(Numbers value) 
     case Numbers::One:
       return "the one";
     default:
-      return {}; // Empty string for default or unknow value.
+      return {}; // Empty string for default or unknown value.
   }
 }
 #endif
