@@ -988,7 +988,13 @@ constexpr auto get_member_name() noexcept {
   if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
     return n<V>();
   } else {
-    return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
+    constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
+    static_assert(is_defined, "Member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
+    if constexpr (is_defined) {
+        return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
+    } else {
+        return "";
+    }
   }
 }
 
