@@ -1023,7 +1023,7 @@ template<auto U>
 struct is_same<U, U> : std::true_type {};
 
 template<auto P>
-constexpr bool is_nullptr_v = is_same<P, static_cast<decltype(P)>(nullptr)>::value;
+constexpr bool is_nullptr_v = is_same<P, static_cast<std::remove_reference_t<decltype(P)>>(nullptr)>::value;
 
 template <auto V>
 constexpr auto p() noexcept {
