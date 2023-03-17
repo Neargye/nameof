@@ -46,7 +46,15 @@ struct SomeStruct {
   int SomeMethod2() const {
     throw std::runtime_error{"should not be called!"};
   }
+
+  static int somestaticfield;
+  constexpr static int someotherstaticfield = 21;
 };
+
+int SomeStruct::somestaticfield;
+
+int someglobalvariable = 0;
+const int someglobalconstvariable = 42;
 
 void SomeMethod3() {
   throw std::runtime_error{"should not be called!"};
@@ -937,6 +945,34 @@ TEST_CASE("nameof_member") {
   REQUIRE(nameof::nameof_member<member_ptr>() == "somefield");
   REQUIRE(nameof::nameof_member<&StructMemberInitializationUsingNameof::teststringfield>() == "teststringfield");
   REQUIRE(nameof::nameof_member<&StructWithNonConstexprDestructor::somefield>() == "somefield");
+}
+
+#endif
+
+#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED
+
+void somefunction() {}
+
+TEST_CASE("NAMEOF_POINTER") {
+  REQUIRE(NAMEOF_POINTER(&SomeStruct::somestaticfield) == "somestaticfield");
+  REQUIRE(NAMEOF_POINTER(&SomeStruct::someotherstaticfield) == "someotherstaticfield");
+  REQUIRE(NAMEOF_POINTER(static_cast<const char*>(nullptr)) == "nullptr");
+  REQUIRE(NAMEOF_POINTER(static_cast<int***>(nullptr)) == "nullptr");
+  constexpr auto global_ptr = &someglobalvariable;
+  REQUIRE(NAMEOF_POINTER(global_ptr) == "someglobalvariable");
+  REQUIRE(NAMEOF_POINTER(&someglobalconstvariable) == "someglobalconstvariable");
+  REQUIRE(NAMEOF_POINTER(&somefunction) == "somefunction");
+}
+
+TEST_CASE("nameof_pointer") {
+  REQUIRE(nameof::nameof_pointer<&SomeStruct::somestaticfield>() == "somestaticfield");
+  REQUIRE(nameof::nameof_pointer<&SomeStruct::someotherstaticfield>() == "someotherstaticfield");
+  REQUIRE(nameof::nameof_pointer<static_cast<const char*>(nullptr)>() == "nullptr");
+  REQUIRE(nameof::nameof_pointer<static_cast<int***>(nullptr)>() == "nullptr");
+  constexpr auto global_ptr = &someglobalvariable;
+  REQUIRE(nameof::nameof_pointer<global_ptr>() == "someglobalvariable");
+  REQUIRE(nameof::nameof_pointer<&someglobalconstvariable>() == "someglobalconstvariable");
+  REQUIRE(nameof::nameof_pointer<&somefunction>() == "somefunction");
 }
 
 #endif

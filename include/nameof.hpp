@@ -103,6 +103,12 @@
 #  define NAMEOF_MEMBER_SUPPORTED 1
 #endif
 
+// Checks nameof_pointer compiler compatibility.
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 7 || defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+#  undef  NAMEOF_POINTER_SUPPORTED
+#  define NAMEOF_POINTER_SUPPORTED 1
+#endif
+
 // Checks nameof_enum compiler compatibility.
 #if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
 #  undef  NAMEOF_ENUM_SUPPORTED
@@ -146,8 +152,8 @@ using std::string;
 namespace customize {
 
 // Enum value must be in range [NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]. By default NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 128.
-// If need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN and NAMEOF_ENUM_RANGE_MAX.
-// If need another range for specific enum type, add specialization enum_range for necessary enum type.
+// If you need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN and NAMEOF_ENUM_RANGE_MAX.
+// If you need another range for specific enum type, add specialization enum_range for necessary enum type.
 template <typename E>
 struct enum_range {
   static_assert(std::is_enum_v<E>, "nameof::customize::enum_range requires enum type.");
@@ -164,7 +170,7 @@ static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<std::int16_t>::max)()
 
 static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_MAX must be greater than NAMEOF_ENUM_RANGE_MIN.");
 
-// If need custom names for enum, add specialization enum_name for necessary enum type.
+// If you need custom names for enum, add specialization enum_name for necessary enum type.
 template <typename E>
 constexpr string_view enum_name(E) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::customize::enum_name requires enum type.");
@@ -172,15 +178,21 @@ constexpr string_view enum_name(E) noexcept {
   return {};
 }
 
-// If need custom name for type, add specialization type_name for necessary type.
+// If you need custom name for type, add specialization type_name for necessary type.
 template <typename T>
 constexpr string_view type_name() noexcept {
   return {};
 }
 
-// If need custom name for member, add specialization member_name for necessary type.
+// If you need custom name for member, add specialization member_name for necessary type.
 template <auto V>
 constexpr string_view member_name() noexcept {
+  return {};
+}
+
+// If you need custom name for a pointer, add specialization pointer_name for necessary type.
+template <auto V>
+constexpr string_view pointer_name() noexcept {
   return {};
 }
 
@@ -815,6 +827,14 @@ struct nameof_member_supported
     : std::false_type {};
 #endif
 
+template <typename... T>
+struct nameof_pointer_supported
+#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 template <typename T>
 struct identity {
@@ -1005,6 +1025,40 @@ template <auto V>
 inline constexpr auto member_name_v = cstring<0>{};
 #endif
 
+template<auto U, auto V>
+struct is_same : std::false_type {};
+
+template<auto U>
+struct is_same<U, U> : std::true_type {};
+
+template<auto P>
+constexpr bool is_nullptr_v = is_same<P, static_cast<std::remove_reference_t<decltype(P)>>(nullptr)>::value;
+
+template <auto V>
+constexpr auto p() noexcept {
+  [[maybe_unused]] constexpr auto custom_name =
+      customize::pointer_name<V>().empty() && is_nullptr_v<V> ? "nullptr" : customize::pointer_name<V>();
+
+  if constexpr (custom_name.empty() && nameof_pointer_supported<decltype(V)>::value) {
+#if defined(__clang__)
+    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+#elif defined(__GNUC__)
+    constexpr bool has_parenthesis = __PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 3] == ')';
+    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2 - has_parenthesis});
+#elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+#else
+    constexpr auto name = string_view{};
+#endif
+    return cstring<name.size()>{name};
+  } else {
+    return cstring<custom_name.size()>{custom_name};
+  }
+}
+
+template <auto V>
+inline constexpr auto pointer_name_v = p<V>();
+
 } // namespace nameof::detail
 
 // Checks is nameof_type supported compiler.
@@ -1015,6 +1069,9 @@ inline constexpr bool is_nameof_type_rtti_supported = detail::nameof_type_rtti_s
 
 // Checks is nameof_member supported compiler.
 inline constexpr bool is_nameof_member_supported = detail::nameof_member_supported<void>::value;
+
+// Checks is nameof_pointer supported compiler.
+inline constexpr bool is_nameof_pointer_supported = detail::nameof_pointer_supported<void>::value;
 
 // Checks is nameof_enum supported compiler.
 inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
@@ -1134,9 +1191,19 @@ template <typename T>
 // Obtains name of member.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_member() noexcept -> std::enable_if_t<std::is_member_pointer_v<decltype(V)>, string_view> {
-  static_assert(detail::nameof_member_supported<decltype(V)>::value, "nameof::nameof_memder unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::nameof_member_supported<decltype(V)>::value, "nameof::nameof_member unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr string_view name = detail::member_name_v<V>;
   static_assert(!name.empty(), "Member does not have a name.");
+
+  return name;
+}
+
+// Obtains name of a function, a global or class static variable.
+template <auto V>
+[[nodiscard]] constexpr auto nameof_pointer() noexcept -> std::enable_if_t<std::is_pointer_v<decltype(V)>, string_view> {
+  static_assert(detail::nameof_pointer_supported<decltype(V)>::value, "nameof::nameof_pointer unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  constexpr string_view name = detail::pointer_name_v<V>;
+  static_assert(!name.empty(), "Pointer does not have a name.");
 
   return name;
 }
@@ -1212,6 +1279,9 @@ template <auto V>
 
 // Obtains name of member.
 #define NAMEOF_MEMBER(...) ::nameof::nameof_member<__VA_ARGS__>()
+
+// Obtains name of a function, a global or class static variable.
+#define NAMEOF_POINTER(...) ::nameof::nameof_pointer<__VA_ARGS__>()
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop
