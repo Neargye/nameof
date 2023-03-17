@@ -938,7 +938,7 @@ TEST_CASE("nameof_member") {
 
 #if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED
 
-int somefunction();
+void somefunction() {}
 
 TEST_CASE("NAMEOF_POINTER") {
   REQUIRE(NAMEOF_POINTER(&SomeStruct::somestaticfield) == "somestaticfield");
