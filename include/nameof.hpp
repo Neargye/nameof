@@ -1189,7 +1189,7 @@ template <auto V>
   return name;
 }
 
-// Obtains name of a global or class static variable.
+// Obtains name of a function, a global or class static variable.
 template <auto V>
 [[nodiscard]] constexpr auto nameof_pointer() noexcept -> std::enable_if_t<std::is_pointer_v<decltype(V)>, string_view> {
   static_assert(detail::nameof_pointer_supported<decltype(V)>::value, "nameof::nameof_pointer unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -1271,7 +1271,7 @@ template <auto V>
 // Obtains name of member.
 #define NAMEOF_MEMBER(...) ::nameof::nameof_member<__VA_ARGS__>()
 
-// Obtains name of a global or class static variable.
+// Obtains name of a function, a global or class static variable.
 #define NAMEOF_POINTER(...) ::nameof::nameof_pointer<__VA_ARGS__>()
 
 #if defined(__clang__)
