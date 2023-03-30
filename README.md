@@ -28,6 +28,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * Compile-time
 * Name of variable, member variable
 * Name of type, variable type
+* Name of member, pointer
 * Name of function, member function
 * Name of enum, enum variable
 * Name of macro
@@ -149,9 +150,6 @@ CPMAddPackage(
 
 ## Compiler compatibility
 
-* Clang/LLVM >= 6
-* MSVC++ >= 14.11 / Visual Studio >= 2017
-* Xcode >= 10
-* GCC >= 7 (GCC >= 9 for NAMEOF_ENUM)
+Check in the [reference](doc/reference.md) for each features.
 
 ## Licensed under the [MIT License](LICENSE)

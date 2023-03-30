@@ -9,7 +9,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2016 - 2022 Daniil Goncharov <neargye@gmail.com>.
+// Copyright (c) 2016 - 2023 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
@@ -1009,7 +1009,7 @@ constexpr auto get_member_name() noexcept {
     return n<V>();
   } else {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
-    static_assert(is_defined, "Member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
+    static_assert(is_defined, "nameof::nameof_member member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
     if constexpr (is_defined) {
         return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
     } else {
@@ -1025,19 +1025,18 @@ template <auto V>
 inline constexpr auto member_name_v = cstring<0>{};
 #endif
 
-template<auto U, auto V>
+template <auto U, auto V>
 struct is_same : std::false_type {};
 
-template<auto U>
+template <auto U>
 struct is_same<U, U> : std::true_type {};
 
-template<auto P>
+template <auto P>
 constexpr bool is_nullptr_v = is_same<P, static_cast<std::remove_reference_t<decltype(P)>>(nullptr)>::value;
 
 template <auto V>
 constexpr auto p() noexcept {
-  [[maybe_unused]] constexpr auto custom_name =
-      customize::pointer_name<V>().empty() && is_nullptr_v<V> ? "nullptr" : customize::pointer_name<V>();
+  [[maybe_unused]] constexpr auto custom_name = customize::pointer_name<V>().empty() && is_nullptr_v<V> ? "nullptr" : customize::pointer_name<V>();
 
   if constexpr (custom_name.empty() && nameof_pointer_supported<decltype(V)>::value) {
 #if defined(__clang__)

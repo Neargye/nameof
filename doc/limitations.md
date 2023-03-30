@@ -16,6 +16,12 @@
 * To check if nameof_type_rtti is supported by your compiler use macro `NAMEOF_TYPE_RTTI_SUPPORTED` or constexpr constant `nameof::is_nameof_type_rtti_supported`.</br>
   If nameof_type_rtti is used on an unsupported compiler, a compilation error occurs. To suppress the error define the macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
 
+* To check is nameof_member supported compiler use macro `NAMEOF_MEMBER_SUPPORTED` or constexpr constant `nameof::is_nameof_member_supported`.</br>
+  If nameof_member used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+
+* To check is nameof_pointer supported compiler use macro `NAMEOF_POINTER_SUPPORTED` or constexpr constant `nameof::is_nameof_pointer_supported`.</br>
+  If nameof_pointer used on unsupported compiler, occurs the compilation error. To suppress error define macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+
 ## Nameof Enum
 
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 9.
