@@ -6,7 +6,7 @@ set(ADDITIONAL_MODULES_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${ADDITIONAL_MODULES_DIR}")
 
 project(nameof
-    VERSION "0.10.2"
+    VERSION "0.10.3"
     HOMEPAGE_URL "https://github.com/Neargye/nameof"
     DESCRIPTION "A library that provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum."
     LANGUAGES CXX
