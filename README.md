@@ -26,13 +26,12 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * Header-only
 * Dependency-free
 * Compile-time
-* Name of variable, member variable
+* Name of variable
 * Name of type, variable type
 * Name of member, pointer
 * Name of function, member function
-* Name of enum, enum variable
+* Name of enum, enum variable, enum-flags
 * Name of macro
-* Enum to string
 
 ## Documentation
 
@@ -61,6 +60,12 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   // Name of macro.
   NAMEOF(__LINE__) -> "__LINE__"
   NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
+
+  // Obtains full name of variable, function, macro.
+  NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
+
+  // Obtains raw name of variable, function, macro.
+  NAMEOF_RAW(somevar.some_method<int>()) -> "somevar.some_method<int>()"
   ```
 
 * Nameof enum
@@ -78,9 +83,13 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   NAMEOF_ENUM_CONST(Color::GREEN) -> "GREEN"
   nameof::nameof_enum<Color::GREEN>() -> "GREEN"
 
-  // Enum flag variable to string.
+  // Enum flags variable to string.
   NAMEOF_ENUM_FLAG(Color::GREEN | Color::BLUE) -> "GREEN|BLUE"
   nameof::nameof_enum_flag<Color::GREEN>() -> "GREEN|BLUE"
+
+  // Obtains name of enum variable or default value if enum variable out of range.
+  NAMEOF_ENUM_OR(Color::GREEN) -> "GREEN"
+  NAMEOF_ENUM_OR((Color)0, "none") -> "none"
   ```
 
 * Nameof type
@@ -109,19 +118,22 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
   NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
   NAMEOF_FULL_TYPE_RTTI(*ptr) -> "volatile const my::detail::Derived&"
   NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "Derived"
-  ```
 
-* Compile-time
+  struct A {
+    int this_is_the_name;
+  };
+  // Obtains name of member.
+  NAMEOF_MEMBER(&A::this_is_the_name) -> "this_is_the_name"
+  nameof::nameof_member(&A::this_is_the_name) -> "this_is_the_name"
 
-  ```cpp
-  constexpr auto somevar_name = NAMEOF(somevar);
-  // somevar_name -> "somevar"
-  constexpr auto color_name = NAMEOF_ENUM(Color::BLUE); // or nameof::nameof_enum(Color::BLUE)
-  // color_name -> "BLUE"
-  constexpr auto var_type_name = NAMEOF_TYPE_EXPR(var); // or nameof::nameof_type<decltype(var)>()
-  // var_type_name -> "int"
-  constexpr auto type_name = NAMEOF_TYPE(T); // or nameof::nameof_type<T>()
-  // type_name -> "int"
+  int someglobalvariable = 0;
+  // Obtains name of a function, a global or class static variable.
+  NAMEOF_POINTER(&someglobalconstvariable) == "someglobalconstvariable"
+  nameof::nameof_pointer(&someglobalconstvariable) == "someglobalconstvariable"
+
+  constexpr auto global_ptr = &someglobalvariable;
+  NAMEOF_POINTER(global_ptr) == "someglobalconstvariable"
+  nameof::nameof_pointer(global_ptr) == "someglobalconstvariable"
   ```
 
 ## Remarks
