@@ -2,6 +2,8 @@ name: ubuntu
 
 on: [push, pull_request]
 
+permissions: read-all
+
 jobs:
   ubuntu:
     runs-on: ubuntu-20.04
@@ -21,13 +23,13 @@ jobs:
         - { cc: "clang-15", cxx: "clang++-15" }
         - { cc: "clang-16", cxx: "clang++-16" }
 
-    name: "${{matrix.compiler.cc}}"
+    name: "${{ matrix.compiler.cc }}"
     steps:
     - uses: actions/checkout@v3
 
     - name: Configure clang
       run: |
-        if [[ "${{matrix.compiler.cc}}" == "clang"* ]]; then
+        if [[ "${{ matrix.compiler.cc }}" == "clang"* ]]; then
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
           sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-9 main"
           sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-10 main"
@@ -39,15 +41,15 @@ jobs:
           sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main"
           sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal main"
           sudo apt update
-          sudo apt install ${{matrix.compiler.cc}} -y
+          sudo apt install ${{ matrix.compiler.cc }} -y
         fi
 
     - name: Configure gcc
       run: |
-        if [[ "${{matrix.compiler.cc}}" == "gcc"* ]]; then
+        if [[ "${{ matrix.compiler.cc }}" == "gcc"* ]]; then
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt update
-          sudo apt install ${{matrix.compiler.cxx}} -y
+          sudo apt install ${{ matrix.compiler.cxx }} -y
         fi
 
     - name: Build Release
@@ -55,8 +57,8 @@ jobs:
         rm -rf build
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{matrix.compiler.cxx}}
-        cmake --build . --config Release
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+        cmake --build . -j 4 --config Release
         ctest --output-on-failure -C Release
 
     - name: Build Debug
@@ -64,6 +66,6 @@ jobs:
         rm -rf build
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${{matrix.compiler.cxx}}
-        cmake --build . --config Debug
+        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+        cmake --build . -j 4 --config Debug
         ctest --output-on-failure -C Debug

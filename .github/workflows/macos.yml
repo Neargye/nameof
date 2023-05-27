@@ -2,9 +2,11 @@ name: macos
 
 on: [push, pull_request]
 
+permissions: read-all
+
 jobs:
   build:
-    runs-on: ${{matrix.config.os}}
+    runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -12,7 +14,7 @@ jobs:
         - { os: macos-11  } # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md#xcode
         - { os: macos-12 } # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-12-Readme.md#xcode
 
-    name: "${{matrix.config.os}}"
+    name: "${{ matrix.config.os }}"
     steps:
     - uses: actions/checkout@v3
 
@@ -22,7 +24,7 @@ jobs:
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release
-        cmake --build . --config Release
+        cmake --build . -j 4 --config Release
         ctest --output-on-failure -C Release
 
     - name: Build Debug
@@ -31,5 +33,5 @@ jobs:
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=Debug
-        cmake --build . --config Debug
+        cmake --build . -j 4 --config Debug
         ctest --output-on-failure -C Debug
