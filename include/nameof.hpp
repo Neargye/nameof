@@ -47,15 +47,15 @@
 #include <utility>
 
 #if !defined(NAMEOF_USING_ALIAS_STRING)
-#include <string>
+#  include <string>
 #endif
 #if !defined(NAMEOF_USING_ALIAS_STRING_VIEW)
-#include <string_view>
+#  include <string_view>
 #endif
 
 #if __has_include(<cxxabi.h>)
-#include <cxxabi.h>
-#include <cstdlib>
+#  include <cxxabi.h>
+#  include <cstdlib>
 #endif
 
 #if defined(__clang__)
@@ -174,7 +174,6 @@ static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_
 template <typename E>
 constexpr string_view enum_name(E) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::customize::enum_name requires enum type.");
-
   return {};
 }
 
@@ -413,7 +412,6 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
   for (const auto c : srt) {
     os.put(c);
   }
-
   return os;
 }
 
@@ -853,11 +851,11 @@ using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<T> && !std:
 
 template <typename... T>
 constexpr auto n() noexcept {
-#  if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER) && !defined(__clang__)
   [[maybe_unused]] constexpr auto custom_name = customize::type_name<typename T::type...>();
 #else
   [[maybe_unused]] constexpr auto custom_name = customize::type_name<T...>();
-#  endif
+#endif
 
   if constexpr (custom_name.empty() && nameof_type_supported<T...>::value) {
 #if defined(__clang__)
@@ -870,7 +868,6 @@ constexpr auto n() noexcept {
     constexpr auto name = string_view{};
 #endif
     return cstring<name.size()>{name};
-
   } else {
     return cstring<custom_name.size()>{custom_name};
   }
@@ -927,16 +924,15 @@ string nameof_short_type_rtti(const char* tn) {
 }
 #else
 template <typename T>
-string nameof_type_rtti(const char* tn) noexcept {
+string nameof_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = string_view{tn};
   assert(!name.empty() && "Type does not have a name.");
-
   return {name.data(), name.size()};
 }
 
 template <typename T>
-string nameof_full_type_rtti(const char* tn) noexcept {
+string nameof_full_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   auto name = string{tn};
   assert(!name.empty() && "Type does not have a name.");
@@ -952,16 +948,14 @@ string nameof_full_type_rtti(const char* tn) noexcept {
   if constexpr (std::is_rvalue_reference_v<T>) {
     name.append("&&");
   }
-
   return name;
 }
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
-string nameof_short_type_rtti(const char* tn) noexcept {
+string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = pretty_name(tn);
   assert(!name.empty() && "Type does not have a short name.");
-
   return {name.data(), name.size()};
 }
 #endif
@@ -1011,9 +1005,9 @@ constexpr auto get_member_name() noexcept {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
     static_assert(is_defined, "nameof::nameof_member member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
     if constexpr (is_defined) {
-        return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
+      return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
     } else {
-        return "";
+      return "";
     }
   }
 }
@@ -1083,8 +1077,8 @@ template <typename E>
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires enum implementation and valid max and min.");
 
-  const bool valid = static_cast<U>(value) >= static_cast<U>(detail::min_v<D>) && static_cast<U>(value) <= static_cast<U>(detail::max_v<D>);
-  if (const auto i = static_cast<int>(value) - detail::min_v<D>; valid) {
+  if (static_cast<U>(value) >= static_cast<U>(detail::min_v<D>) && static_cast<U>(value) <= static_cast<U>(detail::max_v<D>)) {
+    const auto i = static_cast<int>(value) - detail::min_v<D>;
     if constexpr (detail::is_sparse_v<D>) {
       if (const auto idx = detail::indexes_v<D>[i]; idx != detail::invalid_index_v<D>) {
         return detail::strings_v<D>[idx];
@@ -1093,7 +1087,6 @@ template <typename E>
       return detail::strings_v<D>[static_cast<std::size_t>(i)];
     }
   }
-
   return {}; // Value out of range.
 }
 
@@ -1101,17 +1094,18 @@ template <typename E>
 template <typename E>
 [[nodiscard]] auto nameof_enum_or(E value, string_view default_value) -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
+  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_or unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::count_v<D> > 0, "nameof::nameof_enum_or requires enum implementation and valid max and min.");
 
   if (auto v = nameof_enum<D>(value); !v.empty()) {
     return string{v.data(), v.size()};
   }
-
   return string{default_value.data(), default_value.size()};
 }
 
 // Obtains name of enum-flags variable.
 template <typename E>
-[[nodiscard]] auto nameof_enum_flag(E value) -> detail::enable_if_enum_t<E, string> {
+[[nodiscard]] auto nameof_enum_flag(E value, char sep = '|') -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
   using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -1125,7 +1119,7 @@ template <typename E>
       if (const auto n = detail::strings_v<D, true>[i]; n != nullptr) {
         check_value |= v;
         if (!name.empty()) {
-          name.append(1, '|');
+          name.append(1, sep);
         }
         name.append(n);
       } else {
@@ -1134,11 +1128,9 @@ template <typename E>
     }
   }
 
-  const bool valid = check_value != 0 && check_value == static_cast<U>(value);
-  if (valid) {
+  if (check_value != 0 && check_value == static_cast<U>(value)) {
     return name;
   }
-
   return {}; // Invalid value or out of range.
 }
 
@@ -1150,7 +1142,6 @@ template <auto V>
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr string_view name = detail::enum_name_v<D, V>;
   static_assert(!name.empty(), "Enum value does not have a name.");
-
   return name;
 }
 
@@ -1161,7 +1152,6 @@ template <typename T>
   using U = detail::identity<detail::remove_cvref_t<T>>;
   constexpr string_view name = detail::type_name_v<U>;
   static_assert(!name.empty(), "Type does not have a name.");
-
   return name;
 }
 
@@ -1172,7 +1162,6 @@ template <typename T>
   using U = detail::identity<T>;
   constexpr string_view name = detail::type_name_v<U>;
   static_assert(!name.empty(), "Type does not have a full name.");
-
   return name;
 }
 
@@ -1183,7 +1172,6 @@ template <typename T>
   using U = detail::identity<detail::remove_cvref_t<T>>;
   constexpr string_view name = detail::pretty_name(detail::type_name_v<U>);
   static_assert(!name.empty(), "Type does not have a short name.");
-
   return name;
 }
 
@@ -1193,7 +1181,6 @@ template <auto V>
   static_assert(detail::nameof_member_supported<decltype(V)>::value, "nameof::nameof_member unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr string_view name = detail::member_name_v<V>;
   static_assert(!name.empty(), "Member does not have a name.");
-
   return name;
 }
 
@@ -1203,7 +1190,6 @@ template <auto V>
   static_assert(detail::nameof_pointer_supported<decltype(V)>::value, "nameof::nameof_pointer unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr string_view name = detail::pointer_name_v<V>;
   static_assert(!name.empty(), "Pointer does not have a name.");
-
   return name;
 }
 

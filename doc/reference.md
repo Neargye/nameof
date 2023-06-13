@@ -211,6 +211,7 @@
   flag = AnimalFlags::CanFly | AnimalFlags::Endangered;
   NAMEOF_ENUM_FLAG(flag) -> "CanFly|Endangered"
   nameof_enum_flag(flag) -> "CanFly|Endangered"
+  nameof_enum_flag(flag, '$') -> "CanFly$Endangered"
 
   NAMEOF_ENUM(HasClaws | CanFly) -> ""
   nameof_enum(HasClaws | CanFly) -> ""
