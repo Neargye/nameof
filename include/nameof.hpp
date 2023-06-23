@@ -996,7 +996,7 @@ consteval auto get_member_name() noexcept {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
     static_assert(is_defined, "nameof::nameof_member member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
     if constexpr (is_defined) {
-      return n<V, &(nonexist_object.*V)>();
+      return n<V, &(nonexist_object<decltype(get_base_type(V))>.*V)>();
     } else {
       return "";
     }
