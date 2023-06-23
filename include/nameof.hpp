@@ -968,7 +968,8 @@ constexpr auto n() noexcept {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+    constexpr auto name = pretty_name({__FUNCSIG__,
+                                       sizeof(__FUNCSIG__) - 18 + std::is_member_function_pointer_v<decltype(U)>});
 #else
     constexpr auto name = string_view{};
 #endif
@@ -986,26 +987,25 @@ template <typename From, typename Type>
 From get_base_type(Type From::*);
 
 template <typename T>
-union union_type {
-  constexpr ~union_type() {}
-  char c = {};
-  T f;
+extern T nonexist_object;
+
+template<class T>
+struct Store {
+    T v;
 };
 
-template <typename T>
-struct union_type_holder {
-  constexpr static union_type<T> value;
-};
+template<class T>
+Store(T) -> Store<T>;
 
 template <auto V>
-constexpr auto get_member_name() noexcept {
+consteval auto get_member_name() noexcept {
   if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
     return n<V>();
   } else {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
     static_assert(is_defined, "nameof::nameof_member member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
     if constexpr (is_defined) {
-      return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
+      return n<V, Store{&(nonexist_object<decltype(get_base_type(V))>.*V)}>();
     } else {
       return "";
     }
