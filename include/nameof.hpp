@@ -968,7 +968,8 @@ constexpr auto n() noexcept {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 16});
+    constexpr auto name = pretty_name({__FUNCSIG__,
+                                       sizeof(__FUNCSIG__) - 18 + std::is_member_function_pointer_v<decltype(U)>});
 #else
     constexpr auto name = string_view{};
 #endif
