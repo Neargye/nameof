@@ -989,7 +989,7 @@ template <typename T>
 extern T nonexist_object;
 
 template <auto V>
-constexpr auto get_member_name() noexcept {
+consteval auto get_member_name() noexcept {
   if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
     return n<V>();
   } else {
