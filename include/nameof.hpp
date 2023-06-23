@@ -986,16 +986,7 @@ template <typename From, typename Type>
 From get_base_type(Type From::*);
 
 template <typename T>
-union union_type {
-  constexpr ~union_type() {}
-  char c = {};
-  T f;
-};
-
-template <typename T>
-struct union_type_holder {
-  constexpr static union_type<T> value;
-};
+extern T nonexist_object;
 
 template <auto V>
 constexpr auto get_member_name() noexcept {
@@ -1005,7 +996,7 @@ constexpr auto get_member_name() noexcept {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
     static_assert(is_defined, "nameof::nameof_member member name can use only if the struct is already fully defined. Please use NAMEOF macro, or separate definition and declaration.");
     if constexpr (is_defined) {
-      return n<V, &(union_type_holder<decltype(get_base_type(V))>::value.f.*V)>();
+      return n<V, &(nonexist_object.*V)>();
     } else {
       return "";
     }
