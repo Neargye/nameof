@@ -85,7 +85,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 
   // Enum flags variable to string.
   NAMEOF_ENUM_FLAG(Color::GREEN | Color::BLUE) -> "GREEN|BLUE"
-  nameof::nameof_enum_flag<Color::GREEN>() -> "GREEN|BLUE"
+  nameof::nameof_enum_flag<Color::GREEN | Color::BLUE>() -> "GREEN|BLUE"
 
   // Obtains name of enum variable or default value if enum variable out of range.
   NAMEOF_ENUM_OR(Color::GREEN) -> "GREEN"
