@@ -32,7 +32,7 @@ struct MyString {
   MyString(const char* s, std::size_t l) : str{s, l} {} // required
   bool empty() const { return str.empty(); } // required
   MyString& append(std::size_t count, char c) { str.append(count, c); return *this; } // required
-  MyString& append(const char* s) { str.append(s); return *this; } // required
+  MyString& append(const char* s, std::size_t count) { str.append(s, count); return *this; } // required
   MyString& append(const MyString& s) { str.append(s.str); return *this; } // required
 
   std::size_t size() const { return str.size(); }
