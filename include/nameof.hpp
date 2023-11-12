@@ -573,7 +573,6 @@ constexpr auto n() noexcept {
 
 template <typename E, E V>
 constexpr auto enum_name() noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::n requires enum type.");
   [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(V);
 
   if constexpr (custom_name.empty()) {
@@ -589,8 +588,6 @@ inline constexpr auto enum_name_v = enum_name<E, V>();
 
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::is_valid requires enum type.");
-
 #if defined(__clang__) && __clang_major__ >= 16
   // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
   constexpr E v = __builtin_bit_cast(E, V);
@@ -607,8 +604,6 @@ constexpr bool is_valid() noexcept {
 
 template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr U ualue(std::size_t i) noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::ualue requires enum type.");
-
   if constexpr (std::is_same_v<U, bool>) { // bool special case
     static_assert(O == 0, "nameof::detail::ualue requires valid offset.");
 
@@ -622,15 +617,11 @@ constexpr U ualue(std::size_t i) noexcept {
 
 template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr E value(std::size_t i) noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::value requires enum type.");
-
   return static_cast<E>(ualue<E, O, IsFlags>(i));
 }
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr int reflected_min() noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::reflected_min requires enum type.");
-
   if constexpr (IsFlags) {
     return 0;
   } else {
@@ -647,8 +638,6 @@ constexpr int reflected_min() noexcept {
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr int reflected_max() noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::reflected_max requires enum type.");
-
   if constexpr (IsFlags) {
     return std::numeric_limits<U>::digits - 1;
   } else {
@@ -766,8 +755,6 @@ inline constexpr auto names_v = names<E, IsFlags>(std::make_index_sequence<count
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr bool is_sparse() noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::is_sparse requires enum type.");
-
   if constexpr (count_v<E, IsFlags> == 0) {
     return false;
   } else if constexpr (std::is_same_v<U, bool>) { // bool special case
@@ -786,8 +773,6 @@ inline constexpr bool is_sparse_v = is_sparse<E, IsFlags>();
 
 template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
 [[nodiscard]] constexpr E enum_value(std::size_t i) noexcept {
-  static_assert(is_enum_v<E>, "nameof::detail::enum_value requires enum type.");
-
   if constexpr (is_sparse_v<E, IsFlags>) {
     return values_v<E, IsFlags>[i];
   } else {
@@ -1118,7 +1103,7 @@ template <typename E>
         if (!name.empty()) {
           name.append(1, sep);
         }
-        name.append(n);
+        name.append(n.data(), n.size());
       } else {
         return {}; // Value out of range.
       }
