@@ -664,7 +664,7 @@ constexpr int reflected_max() noexcept {
 
 template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t I>
 constexpr void valid_count(bool* valid, std::size_t& count) noexcept {
-#define NAMEOF_ENUM_V(O)                                           \
+#define NAMEOF_ENUM_V(O)                                          \
   if constexpr ((I + O) < Size) {                                 \
     if constexpr (is_valid<E, ualue<E, Min, IsFlags>(I + O)>()) { \
       valid[I + O] = true;                                        \
@@ -772,7 +772,7 @@ template <typename E, bool IsFlags = false>
 inline constexpr bool is_sparse_v = is_sparse<E, IsFlags>();
 
 template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
-[[nodiscard]] constexpr E enum_value(std::size_t i) noexcept {
+constexpr E enum_value(std::size_t i) noexcept {
   if constexpr (is_sparse_v<E, IsFlags>) {
     return values_v<E, IsFlags>[i];
   } else {
