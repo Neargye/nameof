@@ -567,7 +567,7 @@ constexpr auto n() noexcept {
 #endif
     return name;
   } else {
-    return cstring<0>{};
+    return string_view{};
   }
 }
 
@@ -731,9 +731,6 @@ constexpr auto values() noexcept {
 
 template <typename E, bool IsFlags = false>
 inline constexpr auto values_v = values<E, IsFlags>();
-
-template <typename E, bool IsFlags = false, typename D = std::decay_t<E>>
-using values_t = decltype((values_v<D, IsFlags>));
 
 template <typename E, bool IsFlags = false>
 inline constexpr auto count_v = values_v<E, IsFlags>.size();
