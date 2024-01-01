@@ -1,37 +1,14 @@
-[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://bit.ly/3OMysM8)
-
-```text
- _   _                             __    _____
-| \ | |                           / _|  / ____|_     _
-|  \| | __ _ _ __ ___   ___  ___ | |_  | |   _| |_ _| |_
-| . ` |/ _` | '_ ` _ \ / _ \/ _ \|  _| | |  |_   _|_   _|
-| |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
-|_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
-```
-
 [![Github releases](https://img.shields.io/github/release/Neargye/nameof.svg)](https://github.com/Neargye/nameof/releases)
-[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://conan.io/center/nameof)
+[![Conan package](https://img.shields.io/badge/Conan-package-blueviolet)](https://conan.io/center/recipes/nameof)
 [![Vcpkg package](https://img.shields.io/badge/Vcpkg-package-blueviolet)](https://github.com/microsoft/vcpkg/tree/master/ports/nameof)
 [![License](https://img.shields.io/github/license/Neargye/nameof.svg)](LICENSE)
-[![Try online](https://img.shields.io/badge/try-online-blue.svg)](https://wandbox.org/permlink/PBBzVKlbMIfC3WOk)
 [![Compiler explorer](https://img.shields.io/badge/compiler_explorer-online-blue.svg)](https://godbolt.org/z/s_ecko)
 
 # Nameof C++
 
 Header-only C++17 library provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum.
 
-## Features
-
-* C++17
-* Header-only
-* Dependency-free
-* Compile-time
-* Name of variable
-* Name of type, variable type
-* Name of member, pointer
-* Name of function, member function
-* Name of enum, enum variable, enum-flags
-* Name of macro
+If you like this project, please consider donating to one of the funds that help victims of the war in Ukraine: https://u24.gov.ua.
 
 ## Documentation
 
@@ -39,7 +16,7 @@ Header-only C++17 library provides nameof macros and functions to simply obtain 
 * [Limitations](doc/limitations.md)
 * [Integration](#Integration)
 
-## [Examples](example/example.cpp)
+## [Features & Examples](example/example.cpp)
 
 * Nameof
 
