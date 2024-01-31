@@ -5,7 +5,7 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// version 0.10.3
+// version 0.10.4
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
@@ -34,7 +34,7 @@
 
 #define NAMEOF_VERSION_MAJOR 0
 #define NAMEOF_VERSION_MINOR 10
-#define NAMEOF_VERSION_PATCH 3
+#define NAMEOF_VERSION_PATCH 4
 
 #include <array>
 #include <cassert>
