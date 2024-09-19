@@ -1115,61 +1115,57 @@ template <typename E>
 
 // Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
-template <auto V>
-[[nodiscard]] constexpr auto nameof_enum() noexcept -> detail::enable_if_enum_t<decltype(V), string_view> {
+template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
+[[nodiscard]] constexpr auto nameof_enum() noexcept {
   using D = std::decay_t<decltype(V)>;
+  static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires member enum type.");
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  constexpr string_view name = detail::enum_name_v<D, V>;
-  static_assert(!name.empty(), "Enum value does not have a name.");
-  return name;
+  return detail::enum_name_v<D, V>;
 }
 
 // Obtains name of type, reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr string_view nameof_type() noexcept {
-  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = detail::identity<detail::remove_cvref_t<T>>;
-  constexpr string_view name = detail::type_name_v<U>;
-  static_assert(!name.empty(), "Type does not have a name.");
-  return name;
+  static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return detail::type_name_v<U>;
 }
 
 // Obtains full name of type, with reference and cv-qualifiers.
 template <typename T>
 [[nodiscard]] constexpr string_view nameof_full_type() noexcept {
-  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = detail::identity<T>;
-  constexpr string_view name = detail::type_name_v<U>;
-  static_assert(!name.empty(), "Type does not have a full name.");
-  return name;
+  static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return detail::type_name_v<U>;
 }
 
 // Obtains short name of type.
-template <typename T>
-[[nodiscard]] constexpr auto nameof_short_type() noexcept -> detail::enable_if_has_short_name_t<T, string_view> {
-  static_assert(detail::nameof_type_supported<T>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+template <typename T, detail::enable_if_has_short_name_t<T, int> = 0>
+[[nodiscard]] constexpr auto nameof_short_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
+  static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(!std::is_array_v<T> && !std::is_pointer_v<T>, "nameof::nameof_member requires non array and non pointer type.");
   constexpr string_view name = detail::pretty_name(detail::type_name_v<U>);
   static_assert(!name.empty(), "Type does not have a short name.");
-  return name;
+  return cstring<name.size()>{name};
 }
 
 // Obtains name of member.
-template <auto V>
-[[nodiscard]] constexpr auto nameof_member() noexcept -> std::enable_if_t<std::is_member_pointer_v<decltype(V)>, string_view> {
-  static_assert(detail::nameof_member_supported<decltype(V)>::value, "nameof::nameof_member unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  constexpr string_view name = detail::member_name_v<V>;
-  static_assert(!name.empty(), "Member does not have a name.");
-  return name;
+template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> = 0>
+[[nodiscard]] constexpr auto nameof_member() noexcept {
+  using U = decltype(V);
+  static_assert(std::is_member_pointer_v<U>, "nameof::nameof_member requires member pointer type.");
+  static_assert(detail::nameof_member_supported<U>::value, "nameof::nameof_member unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return detail::member_name_v<V>;
 }
 
 // Obtains name of a function, a global or class static variable.
-template <auto V>
-[[nodiscard]] constexpr auto nameof_pointer() noexcept -> std::enable_if_t<std::is_pointer_v<decltype(V)>, string_view> {
-  static_assert(detail::nameof_pointer_supported<decltype(V)>::value, "nameof::nameof_pointer unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  constexpr string_view name = detail::pointer_name_v<V>;
-  static_assert(!name.empty(), "Pointer does not have a name.");
-  return name;
+template <auto V, std::enable_if_t<std::is_pointer_v<decltype(V)>, int> = 0>
+[[nodiscard]] constexpr auto nameof_pointer() noexcept {
+  using U = decltype(V);
+  static_assert(std::is_pointer_v<U>, "nameof::nameof_pointer requires pointer type.");
+  static_assert(detail::nameof_pointer_supported<U>::value, "nameof::nameof_pointer unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  return detail::pointer_name_v<V>;
 }
 
 } // namespace nameof
