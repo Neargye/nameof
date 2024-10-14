@@ -16,6 +16,8 @@ jobs:
         - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-20.04" }
         - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-20.04" }
         - { cc: "gcc-12",   cxx: "g++-12",     os: "ubuntu-22.04" }
+        - { cc: "gcc-13",   cxx: "g++-12",     os: "ubuntu-22.04" }
+        - { cc: "gcc-14",   cxx: "g++-12",     os: "ubuntu-22.04" }
         - { cc: "clang-9",  cxx: "clang++-9",  os: "ubuntu-20.04" }
         - { cc: "clang-10", cxx: "clang++-10", os: "ubuntu-20.04" }
         - { cc: "clang-11", cxx: "clang++-11", os: "ubuntu-20.04" }
