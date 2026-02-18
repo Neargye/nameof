@@ -254,7 +254,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
 
-  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[N]; }
+  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[N - 1]; }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return size(); }
 
