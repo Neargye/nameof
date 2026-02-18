@@ -173,6 +173,86 @@ TEST_CASE("NAMEOF") {
   }
 }
 
+TEST_CASE("CSTRING") {
+    constexpr auto content = ::nameof::string_view("content");
+    constexpr auto cstring_N = ::nameof::cstring<content.size()>(content);
+
+    SECTION("construction") {
+        REQUIRE(cstring_N == content);
+
+        constexpr auto copy = ::nameof::cstring<cstring_N.size()>(cstring_N);
+        REQUIRE(copy == content);
+    }
+    SECTION("size_checking") {
+        REQUIRE(cstring_N.empty() == false);
+        REQUIRE(cstring_N.size() == content.size());
+        REQUIRE(cstring_N.length() == content.size());
+    }
+    SECTION("compare") {
+        REQUIRE(cstring_N.compare("b") > 0);
+        REQUIRE(cstring_N.compare(content) == 0);
+        REQUIRE(cstring_N.compare("d") < 0);
+
+        REQUIRE((cstring_N > "b") == true);
+        REQUIRE((cstring_N > "content") == false);
+        REQUIRE((cstring_N > "d") == false);
+        REQUIRE((cstring_N < "b") == false);
+        REQUIRE((cstring_N < "content") == false);
+        REQUIRE((cstring_N < "d") == true);
+        REQUIRE((cstring_N == "content") == true);
+        REQUIRE((cstring_N == "different") == false);
+        REQUIRE((cstring_N != "content") == false);
+        REQUIRE((cstring_N != "different") == true);
+    }
+    SECTION("retrieval") {
+        REQUIRE(cstring_N.str() == content);
+        REQUIRE(static_cast<::nameof::string>(cstring_N) == content);
+        REQUIRE(static_cast<::nameof::string_view>(cstring_N) == content);
+        REQUIRE(content.compare(cstring_N.data()) == 0);
+        REQUIRE(content.compare(cstring_N.c_str()) == 0);
+        REQUIRE(content.compare(static_cast<const char *>(cstring_N)) == 0);
+
+        REQUIRE(cstring_N[4] == 'e');
+
+        REQUIRE(cstring_N.front() == 'c');
+        REQUIRE(cstring_N.back() == 't');
+    }
+}
+
+TEST_CASE("CSTRING_0") {
+    constexpr auto empty = ::nameof::string_view("");
+    constexpr auto cstring_0 = ::nameof::cstring<empty.size()>(empty);
+
+    SECTION("construction") {
+        REQUIRE(cstring_0 == empty);
+
+        constexpr auto copy = ::nameof::cstring<cstring_0.size()>(cstring_0);
+        REQUIRE(copy == empty);
+    }
+    SECTION("size_checking") {
+        REQUIRE(cstring_0.empty() == true);
+        REQUIRE(cstring_0.size() == empty.size());
+        REQUIRE(cstring_0.length() == empty.size());
+    }
+    SECTION("compare") {
+        REQUIRE(cstring_0.compare(empty) == 0);
+        REQUIRE(cstring_0.compare("different") < 0);
+
+        REQUIRE((cstring_0 > "different") == false);
+        REQUIRE((cstring_0 < "different") == true);
+        REQUIRE((cstring_0 == "different") == false);
+        REQUIRE((cstring_0 != "different") == true);
+    }
+    SECTION("retrieval") {
+        REQUIRE(cstring_0.str() == empty);
+        REQUIRE(static_cast<::nameof::string>(cstring_0) == empty);
+        REQUIRE(static_cast<::nameof::string_view>(cstring_0) == empty);
+        REQUIRE(cstring_0.data() == nullptr);
+        REQUIRE(cstring_0.c_str() == nullptr);
+        REQUIRE(static_cast<const char *>(cstring_0) == nullptr);
+    }
+}
+
 TEST_CASE("NAMEOF_FULL") {
   SECTION("variable") {
     constexpr auto full_name = NAMEOF_FULL(othervar);
