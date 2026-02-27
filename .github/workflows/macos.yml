@@ -11,8 +11,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { os: macos-13 } # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-13-Readme.md#xcode
-        - { os: macos-14 } # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-14-Readme.md#xcode
+        - { os: macos-14 } # https://github.com/actions/runner-images/blob/main/images/macos/macos-14-Readme.md#xcode (Apple Silicon M1)
+        - { os: macos-15 } # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md#xcode (Apple Silicon M2)
+        - { os: macos-latest } # Always use the latest available macOS runner
 
     name: "${{ matrix.config.os }}"
     steps:

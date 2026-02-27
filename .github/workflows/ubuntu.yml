@@ -10,22 +10,21 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
-        - { cc: "gcc-9",    cxx: "g++-9",      os: "ubuntu-20.04" }
-        - { cc: "gcc-10",   cxx: "g++-10",     os: "ubuntu-20.04" }
-        - { cc: "gcc-10",   cxx: "g++-10",     os: "ubuntu-20.04" }
-        - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-20.04" }
-        - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-20.04" }
+        - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-22.04" }
         - { cc: "gcc-12",   cxx: "g++-12",     os: "ubuntu-22.04" }
-        - { cc: "gcc-13",   cxx: "g++-12",     os: "ubuntu-22.04" }
-        - { cc: "gcc-14",   cxx: "g++-12",     os: "ubuntu-22.04" }
-        - { cc: "clang-9",  cxx: "clang++-9",  os: "ubuntu-20.04" }
-        - { cc: "clang-10", cxx: "clang++-10", os: "ubuntu-20.04" }
-        - { cc: "clang-11", cxx: "clang++-11", os: "ubuntu-20.04" }
-        - { cc: "clang-12", cxx: "clang++-12", os: "ubuntu-20.04" }
-        - { cc: "clang-13", cxx: "clang++-13", os: "ubuntu-20.04" }
-        - { cc: "clang-14", cxx: "clang++-14", os: "ubuntu-20.04" }
-        - { cc: "clang-15", cxx: "clang++-15", os: "ubuntu-20.04" }
-        - { cc: "clang-16", cxx: "clang++-16", os: "ubuntu-20.04" }
+        - { cc: "gcc-13",   cxx: "g++-13",     os: "ubuntu-22.04" }
+        - { cc: "gcc-13",   cxx: "g++-13",     os: "ubuntu-24.04" }
+        - { cc: "gcc-14",   cxx: "g++-14",     os: "ubuntu-24.04" }
+        - { cc: "gcc-15",   cxx: "g++-15",     os: "ubuntu-24.04" }
+        - { cc: "clang-13", cxx: "clang++-13", os: "ubuntu-22.04" }
+        - { cc: "clang-14", cxx: "clang++-14", os: "ubuntu-22.04" }
+        - { cc: "clang-15", cxx: "clang++-15", os: "ubuntu-22.04" }
+        - { cc: "clang-16", cxx: "clang++-16", os: "ubuntu-22.04" }
+        - { cc: "clang-17", cxx: "clang++-17", os: "ubuntu-22.04" }
+        - { cc: "clang-18", cxx: "clang++-18", os: "ubuntu-22.04" }
+        - { cc: "clang-19", cxx: "clang++-19", os: "ubuntu-24.04" }
+        - { cc: "clang-20", cxx: "clang++-20", os: "ubuntu-24.04" }
+        - { cc: "clang-21", cxx: "clang++-21", os: "ubuntu-24.04" }
 
     name: "${{ matrix.compiler.cc }}"
     runs-on: ${{ matrix.compiler.os }}
@@ -35,16 +34,22 @@ jobs:
     - name: Configure clang
       run: |
         if [[ "${{ matrix.compiler.cc }}" == "clang"* ]]; then
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-9 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-10 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main"
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal main"
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          # Add repositories based on Ubuntu version
+          if [[ "${{ matrix.compiler.os }}" == "ubuntu-22.04" ]]; then
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-13 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main"
+          elif [[ "${{ matrix.compiler.os }}" == "ubuntu-24.04" ]]; then
+            sudo apt-add-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-19 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main"
+            sudo apt-add-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble main"
+          fi
           sudo apt update
           sudo apt install ${{ matrix.compiler.cc }} -y
         fi
