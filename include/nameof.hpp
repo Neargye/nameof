@@ -5,11 +5,11 @@
 // | |\  | (_| | | | | | |  __/ (_) | |   | |____|_|   |_|
 // |_| \_|\__,_|_| |_| |_|\___|\___/|_|    \_____|
 // https://github.com/Neargye/nameof
-// version 0.10.4
+// version 0.10.5
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2016 - 2024 Daniil Goncharov <neargye@gmail.com>.
+// Copyright (c) 2016 - 2026 Daniil Goncharov <neargye@gmail.com>.
 //
 // Permission is hereby  granted, free of charge, to any  person obtaining a copy
 // of this software and associated  documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@
 
 #define NAMEOF_VERSION_MAJOR 0
 #define NAMEOF_VERSION_MINOR 10
-#define NAMEOF_VERSION_PATCH 4
+#define NAMEOF_VERSION_PATCH 5
 
 #include <array>
 #include <cassert>
