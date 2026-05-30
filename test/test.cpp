@@ -137,7 +137,7 @@ const SomeClass<int> volatile * ptr_c = nullptr;
 const Color color = Color::RED;
 
 TEST_CASE("NAMEOF") {
-  SECTION("variable") {
+  SUBCASE("variable") {
     constexpr auto name = NAMEOF(othervar);
     REQUIRE(name == "othervar");
     REQUIRE(NAMEOF(struct_var) == "struct_var");
@@ -146,13 +146,13 @@ TEST_CASE("NAMEOF") {
     REQUIRE(NAMEOF(color) == "color");
   }
 
-  SECTION("member") {
+  SUBCASE("member") {
     REQUIRE(NAMEOF(struct_var.somefield) == "somefield");
     REQUIRE(NAMEOF((&struct_var)->somefield) == "somefield");
     REQUIRE(NAMEOF(othervar.ll.field) == "field");
   }
 
-  SECTION("function") {
+  SUBCASE("function") {
     REQUIRE(NAMEOF(&SomeStruct::SomeMethod1) == "SomeMethod1");
     REQUIRE(NAMEOF(struct_var.SomeMethod1(1)) == "SomeMethod1");
     REQUIRE(NAMEOF(&SomeStruct::SomeMethod2) == "SomeMethod2");
@@ -167,7 +167,7 @@ TEST_CASE("NAMEOF") {
     REQUIRE(NAMEOF(class_var.SomeMethod6<long int>()) == "SomeMethod6");
   }
 
-  SECTION("enum") {
+  SUBCASE("enum") {
     REQUIRE(NAMEOF(Color::RED) == "RED");
     REQUIRE(NAMEOF(Color::BLUE) == "BLUE");
   }
@@ -177,18 +177,18 @@ TEST_CASE("CSTRING") {
     constexpr auto content = ::nameof::string_view("content");
     constexpr auto cstring_N = ::nameof::cstring<content.size()>(content);
 
-    SECTION("construction") {
+    SUBCASE("construction") {
         REQUIRE(cstring_N == content);
 
         constexpr auto copy = ::nameof::cstring<cstring_N.size()>(cstring_N);
         REQUIRE(copy == content);
     }
-    SECTION("size_checking") {
+    SUBCASE("size_checking") {
         REQUIRE(cstring_N.empty() == false);
         REQUIRE(cstring_N.size() == content.size());
         REQUIRE(cstring_N.length() == content.size());
     }
-    SECTION("compare") {
+    SUBCASE("compare") {
         REQUIRE(cstring_N.compare("b") > 0);
         REQUIRE(cstring_N.compare(content) == 0);
         REQUIRE(cstring_N.compare("d") < 0);
@@ -204,7 +204,7 @@ TEST_CASE("CSTRING") {
         REQUIRE((cstring_N != "content") == false);
         REQUIRE((cstring_N != "different") == true);
     }
-    SECTION("retrieval") {
+    SUBCASE("retrieval") {
         REQUIRE(cstring_N.str() == content);
         REQUIRE(static_cast<::nameof::string>(cstring_N) == content);
         REQUIRE(static_cast<::nameof::string_view>(cstring_N) == content);
@@ -223,18 +223,18 @@ TEST_CASE("CSTRING_0") {
     constexpr auto empty = ::nameof::string_view("");
     constexpr auto cstring_0 = ::nameof::cstring<empty.size()>(empty);
 
-    SECTION("construction") {
+    SUBCASE("construction") {
         REQUIRE(cstring_0 == empty);
 
         constexpr auto copy = ::nameof::cstring<cstring_0.size()>(cstring_0);
         REQUIRE(copy == empty);
     }
-    SECTION("size_checking") {
+    SUBCASE("size_checking") {
         REQUIRE(cstring_0.empty() == true);
         REQUIRE(cstring_0.size() == empty.size());
         REQUIRE(cstring_0.length() == empty.size());
     }
-    SECTION("compare") {
+    SUBCASE("compare") {
         REQUIRE(cstring_0.compare(empty) == 0);
         REQUIRE(cstring_0.compare("different") < 0);
 
@@ -243,7 +243,7 @@ TEST_CASE("CSTRING_0") {
         REQUIRE((cstring_0 == "different") == false);
         REQUIRE((cstring_0 != "different") == true);
     }
-    SECTION("retrieval") {
+    SUBCASE("retrieval") {
         REQUIRE(cstring_0.str() == empty);
         REQUIRE(static_cast<::nameof::string>(cstring_0) == empty);
         REQUIRE(static_cast<::nameof::string_view>(cstring_0) == empty);
@@ -254,7 +254,7 @@ TEST_CASE("CSTRING_0") {
 }
 
 TEST_CASE("NAMEOF_FULL") {
-  SECTION("variable") {
+  SUBCASE("variable") {
     constexpr auto full_name = NAMEOF_FULL(othervar);
     REQUIRE(full_name == "othervar");
     REQUIRE(NAMEOF_FULL(struct_var) == "struct_var");
@@ -263,13 +263,13 @@ TEST_CASE("NAMEOF_FULL") {
     REQUIRE(NAMEOF_FULL(color) == "color");
   }
 
-  SECTION("member") {
+  SUBCASE("member") {
     REQUIRE(NAMEOF_FULL(struct_var.somefield) == "somefield");
     REQUIRE(NAMEOF_FULL((&struct_var)->somefield) == "somefield");
     REQUIRE(NAMEOF_FULL(othervar.ll.field) == "field");
   }
 
-  SECTION("function") {
+  SUBCASE("function") {
     REQUIRE(NAMEOF_FULL(&SomeStruct::SomeMethod1) == "SomeMethod1");
     REQUIRE(NAMEOF_FULL(struct_var.SomeMethod1(1)) == "SomeMethod1");
     REQUIRE(NAMEOF_FULL(&SomeStruct::SomeMethod2) == "SomeMethod2");
@@ -284,14 +284,14 @@ TEST_CASE("NAMEOF_FULL") {
     REQUIRE(NAMEOF_FULL(class_var.SomeMethod6<long int>()) == "SomeMethod6<long int>");
   }
 
-  SECTION("enum") {
+  SUBCASE("enum") {
     REQUIRE(NAMEOF_FULL(Color::RED) == "RED");
     REQUIRE(NAMEOF_FULL(Color::BLUE) == "BLUE");
   }
 }
 
 TEST_CASE("NAMEOF_RAW") {
-  SECTION("variable") {
+  SUBCASE("variable") {
     constexpr auto raw_name = NAMEOF_RAW(othervar);
     REQUIRE(raw_name == "othervar");
     REQUIRE(NAMEOF_RAW(struct_var) == "struct_var");
@@ -303,7 +303,7 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(color) == "color");
   }
 
-  SECTION("member") {
+  SUBCASE("member") {
     REQUIRE(NAMEOF_RAW(struct_var.somefield) == "struct_var.somefield");
     REQUIRE(NAMEOF_RAW(struct_var.somefield++) == "struct_var.somefield++");
     REQUIRE(NAMEOF_RAW((&struct_var)->somefield) == "(&struct_var)->somefield");
@@ -315,7 +315,7 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(struct_var.somefield + ref_s.somefield) == "struct_var.somefield + ref_s.somefield");
   }
 
-  SECTION("function") {
+  SUBCASE("function") {
     REQUIRE(NAMEOF_RAW(&SomeStruct::SomeMethod1) == "&SomeStruct::SomeMethod1");
     REQUIRE(NAMEOF_RAW(struct_var.SomeMethod1(1)) == "struct_var.SomeMethod1(1)");
     REQUIRE(NAMEOF_RAW(&SomeStruct::SomeMethod2) == "&SomeStruct::SomeMethod2");
@@ -330,12 +330,12 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(class_var.SomeMethod6<long int>()) == "class_var.SomeMethod6<long int>()");
   }
 
-  SECTION("enum") {
+  SUBCASE("enum") {
     REQUIRE(NAMEOF_RAW(Color::RED) == "Color::RED");
     REQUIRE(NAMEOF_RAW(Color::BLUE) == "Color::BLUE");
   }
 
-  SECTION("macro") {
+  SUBCASE("macro") {
     REQUIRE(NAMEOF_RAW(__cplusplus) == "__cplusplus");
     REQUIRE(NAMEOF_RAW(__LINE__) == "__LINE__");
     REQUIRE(NAMEOF_RAW(__FILE__) == "__FILE__");
@@ -347,7 +347,7 @@ TEST_CASE("NAMEOF_RAW") {
 static_assert(nameof::is_nameof_enum_supported, "nameof::nameof_enum: Unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
 TEST_CASE("nameof_enum") {
-  SECTION("automatic storage") {
+  SUBCASE("automatic storage") {
     constexpr Color cr = Color::RED;
     constexpr auto cr_name = nameof::nameof_enum(cr);
     Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
@@ -381,7 +381,7 @@ TEST_CASE("nameof_enum") {
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
   }
 
-  SECTION("static storage") {
+  SUBCASE("static storage") {
     constexpr Color cr = Color::RED;
     constexpr auto cr_name = nameof::nameof_enum<cr>();
     constexpr Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
