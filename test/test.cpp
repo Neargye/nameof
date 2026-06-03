@@ -30,6 +30,16 @@
 #include <string>
 #include <stdexcept>
 
+#if (defined(_MSVC_LANG) ? (_MSVC_LANG >= 202002L) : (__cplusplus >= 202002L)) && defined(__cpp_lib_format) && (__cpp_lib_format >= 201907L) && __has_include(<format>)
+#  include <format>
+#  define NAMEOF_TEST_HAS_STD_FORMAT 1
+#endif
+
+#if __has_include(<fmt/format.h>)
+#  include <fmt/format.h>
+#  define NAMEOF_TEST_HAS_FMT_FORMAT 1
+#endif
+
 #ifdef NDEBUG
 #  define NAMEOF_DEBUG_REQUIRE(...) REQUIRE(__VA_ARGS__)
 #else
@@ -247,10 +257,31 @@ TEST_CASE("CSTRING_0") {
         REQUIRE(cstring_0.str() == empty);
         REQUIRE(static_cast<::nameof::string>(cstring_0) == empty);
         REQUIRE(static_cast<::nameof::string_view>(cstring_0) == empty);
-        REQUIRE(cstring_0.data() == nullptr);
-        REQUIRE(cstring_0.c_str() == nullptr);
-        REQUIRE(static_cast<const char *>(cstring_0) == nullptr);
+        REQUIRE(cstring_0.data() != nullptr);
+        REQUIRE(cstring_0.c_str() != nullptr);
+        REQUIRE(static_cast<const char *>(cstring_0) != nullptr);
+        REQUIRE(cstring_0.begin() == cstring_0.end());
+        REQUIRE(cstring_0.cbegin() == cstring_0.cend());
     }
+}
+
+TEST_CASE("CSTRING_FORMAT") {
+#if defined(NAMEOF_TEST_HAS_STD_FORMAT)
+  SUBCASE("std::format") {
+    using short_type_t = decltype(NAMEOF_SHORT_TYPE(SomeStruct));
+    REQUIRE(std::is_default_constructible_v<std::formatter<short_type_t, char>>);
+    REQUIRE(std::is_default_constructible_v<std::formatter<::nameof::cstring<0>, char>>);
+  }
+#endif
+
+#if defined(NAMEOF_TEST_HAS_FMT_FORMAT)
+  SUBCASE("fmt::format") {
+    constexpr auto some_struct = NAMEOF_SHORT_TYPE(SomeStruct);
+    constexpr auto empty = ::nameof::cstring<0>{};
+    REQUIRE(fmt::format("{}", some_struct) == "SomeStruct");
+    REQUIRE(fmt::format("{}", empty).empty());
+  }
+#endif
 }
 
 TEST_CASE("NAMEOF_FULL") {

@@ -174,25 +174,25 @@ static_assert(NAMEOF_ENUM_RANGE_MAX > NAMEOF_ENUM_RANGE_MIN, "NAMEOF_ENUM_RANGE_
 template <typename E>
 constexpr string_view enum_name(E) noexcept {
   static_assert(std::is_enum_v<E>, "nameof::customize::enum_name requires enum type.");
-  return {};
+  return string_view{""};
 }
 
 // If you need custom name for type, add specialization type_name for necessary type.
 template <typename T>
 constexpr string_view type_name() noexcept {
-  return {};
+  return string_view{""};
 }
 
 // If you need custom name for member, add specialization member_name for necessary type.
 template <auto V>
 constexpr string_view member_name() noexcept {
-  return {};
+  return string_view{""};
 }
 
 // If you need custom name for a pointer, add specialization pointer_name for necessary type.
 template <auto V>
 constexpr string_view pointer_name() noexcept {
-  return {};
+  return string_view{""};
 }
 
 } // namespace nameof::customize
@@ -215,7 +215,7 @@ class [[nodiscard]] cstring {
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   constexpr explicit cstring(string_view str) noexcept : cstring{str, std::make_integer_sequence<std::uint16_t, N>{}} {
-    assert(str.size() > 0 && str.size() == N);
+    assert(str.size() == N);
   }
 
   constexpr cstring() = delete;
@@ -242,9 +242,9 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
 
-  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return end(); }
+  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
 
-  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return begin(); }
+  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
 
   [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 
@@ -310,25 +310,25 @@ class [[nodiscard]] cstring<0> {
 
   cstring& operator=(cstring&&) = default;
 
-  [[nodiscard]] constexpr const_pointer data() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_; }
 
   [[nodiscard]] constexpr size_type size() const noexcept { return 0; }
 
-  [[nodiscard]] constexpr const_iterator begin() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const_iterator begin() const noexcept { return data(); }
 
-  [[nodiscard]] constexpr const_iterator end() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const_iterator end() const noexcept { return data() + size(); }
 
-  [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
 
-  [[nodiscard]] constexpr const_iterator cend() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
 
-  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return {}; }
+  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
 
-  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return {}; }
+  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
 
-  [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return {}; }
+  [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 
-  [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return {}; }
+  [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
 
@@ -336,15 +336,18 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{}.compare(str); }
 
-  [[nodiscard]] constexpr const char* c_str() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr const char* c_str() const noexcept { return chars_; }
 
   [[nodiscard]] string str() const { return {}; }
 
   [[nodiscard]] constexpr operator string_view() const noexcept { return {}; }
 
-  [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return nullptr; }
+  [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return chars_; }
 
   [[nodiscard]] explicit operator string() const { return {}; }
+
+private:
+  static constexpr char chars_[1] = {};
 };
 
 template <std::uint16_t N>
@@ -1067,7 +1070,7 @@ template <typename E>
       return detail::names_v<D>[static_cast<std::size_t>(v - detail::min_v<D>)];
     }
   }
-  return {}; // Value out of range.
+  return string_view{""};
 }
 
 // Obtains name of enum variable or default value if enum variable out of range.
@@ -1169,6 +1172,31 @@ template <auto V, std::enable_if_t<std::is_pointer_v<decltype(V)>, int> = 0>
 }
 
 } // namespace nameof
+
+#if __has_include(<format>) && defined(__cpp_lib_format)
+#include <format>
+
+template <std::uint16_t N>
+struct std::formatter<nameof::cstring<N>, char> : std::formatter<std::string_view, char> {
+    template <typename FormatContext>
+    auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
+        return std::formatter<std::string_view, char>::format(std::string_view{value.data(), value.size()}, ctx);
+    }
+};
+#endif
+
+
+#if __has_include(<fmt/format.h>) && defined(FMT_VERSION)
+#include <fmt/format.h>
+
+template <std::uint16_t N>
+struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
+    template <typename FormatContext>
+    auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
+        return fmt::formatter<fmt::string_view>::format(fmt::string_view{value.data(), value.size()}, ctx);
+    }
+};
+#endif
 
 // Obtains name of variable, function, macro.
 #define NAMEOF(...) []() constexpr noexcept {                         \
