@@ -11,12 +11,12 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { os: macos-14 } # https://github.com/actions/runner-images/blob/main/images/macos/macos-14-Readme.md#xcode (Apple Silicon M1)
-        - { os: macos-15 } # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md#xcode (Apple Silicon M2)
+        - { os: macos-14 } # https://github.com/actions/runner-images/blob/main/images/macos/macos-14-arm64-Readme.md#xcode
+        - { os: macos-15 } # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md#xcode
 
     name: "${{ matrix.config.os }}"
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Build Release
       run: |

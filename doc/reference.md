@@ -54,7 +54,7 @@
 
 * Obtains name of variable, function, macro.
 
-* Returns `nameof::cstring` - constexpr implementation of an string. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
@@ -88,7 +88,7 @@
 
 * Obtains full (with template suffix) name of variable, function, macro.
 
-* Returns `nameof::cstring` - constexpr implementation of an string. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
@@ -111,7 +111,7 @@
 
 * Obtains raw name of variable, function, macro.
 
-* Returns `nameof::cstring` - constexpr implementation of an string. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
@@ -173,7 +173,7 @@
 
 * Obtains name of static storage enum variable.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * This version is much lighter on the compile times and is not restricted to the enum_range [limitation](limitations.md#nameof-enum).
 
@@ -226,7 +226,7 @@
 
 * Obtains type name, reference and cv-qualifiers are ignored.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * In all cases, reference and cv-qualifiers are ignored by `NAMEOF_TYPE` (that is, `NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
 
@@ -252,7 +252,7 @@
 
 * Obtains full type name, with reference and cv-qualifiers.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
 
@@ -275,7 +275,7 @@
 
 * Obtains short type name.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
 
@@ -298,7 +298,7 @@
 
 * Obtains string name type of expression, reference and cv-qualifiers are ignored.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
 
@@ -324,7 +324,7 @@
 
 * Obtains full type name of expression, with reference and cv-qualifiers.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
 
@@ -348,7 +348,7 @@
 
 * Obtains short type name of expression.
 
-* Returns `string_view`. Marked `constexpr` and `noexcept`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
 
@@ -420,7 +420,7 @@
 
 * Obtains name of member.
 
-* Returns `string_view`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type.
 
 * Examples
 
@@ -442,7 +442,7 @@
 
 * Obtains name of a function, a global or class static variable.
 
-* Returns `string_view`.
+* Returns reference to `nameof::cstring`, a constexpr null-terminated string type.
 
 * Examples
   ```cpp

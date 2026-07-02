@@ -28,7 +28,9 @@
 #include <nameof.hpp>
 
 #include <string>
+#include <string_view>
 #include <stdexcept>
+#include <type_traits>
 
 #if (defined(_MSVC_LANG) ? (_MSVC_LANG >= 202002L) : (__cplusplus >= 202002L)) && defined(__cpp_lib_format) && (__cpp_lib_format >= 201907L) && __has_include(<format>)
 #  include <format>
@@ -59,6 +61,10 @@ struct SomeStruct {
 
   static int somestaticfield;
   constexpr static int someotherstaticfield = 21;
+};
+
+struct NameOfTest {
+  int some_member;
 };
 
 int SomeStruct::somestaticfield;
@@ -146,6 +152,37 @@ const SomeClass<int> volatile * ptr_c = nullptr;
 
 const Color color = Color::RED;
 
+template <typename Name>
+void require_cstring_contract(const Name& name, ::nameof::string_view expected) {
+  const auto view = static_cast<::nameof::string_view>(name);
+
+  REQUIRE(view == expected);
+  REQUIRE(view.data() == name.data());
+  REQUIRE(name.data() == name.c_str());
+  REQUIRE(name.c_str() != nullptr);
+  REQUIRE(name.c_str()[name.size()] == '\0');
+  REQUIRE(std::char_traits<char>::length(name.c_str()) == name.size());
+}
+
+template <typename Name>
+void require_string_view_uses_cstring_storage(::nameof::string_view view, const Name& storage, ::nameof::string_view expected) {
+  require_cstring_contract(storage, expected);
+  REQUIRE(view == expected);
+  REQUIRE(view.data() == storage.data());
+}
+
+void require_string_view_contract(::nameof::string_view view, ::nameof::string_view expected) {
+  REQUIRE(view == expected);
+  REQUIRE(view.data() != nullptr);
+  REQUIRE(view.data()[view.size()] == '\0');
+}
+
+void require_string_contract(const ::nameof::string& value, ::nameof::string_view expected) {
+  REQUIRE(value == expected);
+  REQUIRE(value.c_str() != nullptr);
+  REQUIRE(value.c_str()[value.size()] == '\0');
+}
+
 TEST_CASE("NAMEOF") {
   SUBCASE("variable") {
     constexpr auto name = NAMEOF(othervar);
@@ -181,11 +218,25 @@ TEST_CASE("NAMEOF") {
     REQUIRE(NAMEOF(Color::RED) == "RED");
     REQUIRE(NAMEOF(Color::BLUE) == "BLUE");
   }
+
+  SUBCASE("string_view") {
+    std::string_view initialized = NAMEOF(othervar);
+    auto assigned = std::string_view{};
+    assigned = NAMEOF(struct_var.somefield);
+    require_string_view_contract(initialized, "othervar");
+    require_string_view_contract(assigned, "somefield");
+    require_cstring_contract(NAMEOF(othervar), "othervar");
+  }
 }
 
 TEST_CASE("CSTRING") {
     constexpr auto content = ::nameof::string_view("content");
     constexpr auto cstring_N = ::nameof::cstring<content.size()>(content);
+
+    static_assert(std::is_convertible_v<const decltype(cstring_N)&, ::nameof::string_view>);
+    static_assert(!std::is_convertible_v<decltype(cstring_N), ::nameof::string_view>);
+    static_assert(std::is_constructible_v<::nameof::string, const decltype(cstring_N)&>);
+    static_assert(!std::is_convertible_v<const decltype(cstring_N)&, ::nameof::string>);
 
     SUBCASE("construction") {
         REQUIRE(cstring_N == content);
@@ -216,11 +267,13 @@ TEST_CASE("CSTRING") {
     }
     SUBCASE("retrieval") {
         REQUIRE(cstring_N.str() == content);
+        REQUIRE(::nameof::string{cstring_N} == content);
         REQUIRE(static_cast<::nameof::string>(cstring_N) == content);
         REQUIRE(static_cast<::nameof::string_view>(cstring_N) == content);
         REQUIRE(content.compare(cstring_N.data()) == 0);
         REQUIRE(content.compare(cstring_N.c_str()) == 0);
         REQUIRE(content.compare(static_cast<const char *>(cstring_N)) == 0);
+        require_cstring_contract(cstring_N, content);
 
         REQUIRE(cstring_N[4] == 'e');
 
@@ -232,6 +285,11 @@ TEST_CASE("CSTRING") {
 TEST_CASE("CSTRING_0") {
     constexpr auto empty = ::nameof::string_view("");
     constexpr auto cstring_0 = ::nameof::cstring<empty.size()>(empty);
+
+    static_assert(std::is_convertible_v<const decltype(cstring_0)&, ::nameof::string_view>);
+    static_assert(!std::is_convertible_v<decltype(cstring_0), ::nameof::string_view>);
+    static_assert(std::is_constructible_v<::nameof::string, const decltype(cstring_0)&>);
+    static_assert(!std::is_convertible_v<const decltype(cstring_0)&, ::nameof::string>);
 
     SUBCASE("construction") {
         REQUIRE(cstring_0 == empty);
@@ -255,10 +313,13 @@ TEST_CASE("CSTRING_0") {
     }
     SUBCASE("retrieval") {
         REQUIRE(cstring_0.str() == empty);
+        REQUIRE(::nameof::string{cstring_0} == empty);
         REQUIRE(static_cast<::nameof::string>(cstring_0) == empty);
         REQUIRE(static_cast<::nameof::string_view>(cstring_0) == empty);
         REQUIRE(cstring_0.data() != nullptr);
         REQUIRE(cstring_0.c_str() != nullptr);
+        REQUIRE(static_cast<::nameof::string_view>(cstring_0).data() == cstring_0.data());
+        require_cstring_contract(cstring_0, empty);
         REQUIRE(static_cast<const char *>(cstring_0) != nullptr);
         REQUIRE(cstring_0.begin() == cstring_0.end());
         REQUIRE(cstring_0.cbegin() == cstring_0.cend());
@@ -268,7 +329,7 @@ TEST_CASE("CSTRING_0") {
 TEST_CASE("CSTRING_FORMAT") {
 #if defined(NAMEOF_TEST_HAS_STD_FORMAT)
   SUBCASE("std::format") {
-    using short_type_t = decltype(NAMEOF_SHORT_TYPE(SomeStruct));
+    using short_type_t = std::remove_cv_t<std::remove_reference_t<decltype(NAMEOF_SHORT_TYPE(SomeStruct))>>;
     REQUIRE(std::is_default_constructible_v<std::formatter<short_type_t, char>>);
     REQUIRE(std::is_default_constructible_v<std::formatter<::nameof::cstring<0>, char>>);
   }
@@ -318,6 +379,15 @@ TEST_CASE("NAMEOF_FULL") {
   SUBCASE("enum") {
     REQUIRE(NAMEOF_FULL(Color::RED) == "RED");
     REQUIRE(NAMEOF_FULL(Color::BLUE) == "BLUE");
+  }
+
+  SUBCASE("string_view") {
+    std::string_view initialized = NAMEOF_FULL(SomeMethod4<int, float>);
+    auto assigned = std::string_view{};
+    assigned = NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>);
+    require_string_view_contract(initialized, "SomeMethod4<int, float>");
+    require_string_view_contract(assigned, "SomeMethod6<long int>");
+    require_cstring_contract(NAMEOF_FULL(SomeMethod4<int, float>), "SomeMethod4<int, float>");
   }
 }
 
@@ -371,6 +441,15 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(__LINE__) == "__LINE__");
     REQUIRE(NAMEOF_RAW(__FILE__) == "__FILE__");
   }
+
+  SUBCASE("string_view") {
+    std::string_view initialized = NAMEOF_RAW(&struct_var);
+    auto assigned = std::string_view{};
+    assigned = NAMEOF_RAW(struct_var.somefield + ref_s.somefield);
+    require_string_view_contract(initialized, "&struct_var");
+    require_string_view_contract(assigned, "struct_var.somefield + ref_s.somefield");
+    require_cstring_contract(NAMEOF_RAW(&struct_var), "&struct_var");
+  }
 }
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
@@ -382,8 +461,10 @@ TEST_CASE("nameof_enum") {
     constexpr Color cr = Color::RED;
     constexpr auto cr_name = nameof::nameof_enum(cr);
     Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+    const auto blue_name = nameof::nameof_enum(Color::BLUE);
     REQUIRE(cr_name == "RED");
-    REQUIRE(nameof::nameof_enum(Color::BLUE) == "BLUE");
+    REQUIRE(blue_name == "BLUE");
+    require_string_view_contract(blue_name, "BLUE");
     REQUIRE(nameof::nameof_enum(cm[1]) == "GREEN");
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Color>(0)).empty());
 
@@ -418,6 +499,7 @@ TEST_CASE("nameof_enum") {
     constexpr Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
     REQUIRE(cr_name == "RED");
     REQUIRE(nameof::nameof_enum<Color::BLUE>() == "BLUE");
+    require_cstring_contract(nameof::nameof_enum<Color::BLUE>(), "BLUE");
     REQUIRE(nameof::nameof_enum<cm[1]>() == "GREEN");
 
     constexpr Numbers no = Numbers::one;
@@ -440,14 +522,33 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum<number::two>() == "two");
     REQUIRE(nt_name == "three");
     REQUIRE(nameof::nameof_enum<number::four>() == "four");
+
+    auto blue_view = std::string_view{};
+    blue_view = nameof::nameof_enum<Color::BLUE>();
+    require_string_view_uses_cstring_storage(blue_view, nameof::detail::enum_name_v<Color, Color::BLUE>, "BLUE");
+
+    constexpr auto invalid_color = static_cast<Color>(0);
+    auto empty_view = std::string_view{};
+    empty_view = nameof::nameof_enum<invalid_color>();
+    require_string_view_uses_cstring_storage(empty_view, nameof::detail::enum_name_v<Color, invalid_color>, "");
+  }
+
+  SUBCASE("empty result") {
+    const auto empty_name = nameof::nameof_enum(static_cast<Color>(0));
+    REQUIRE(empty_name.empty());
+    require_string_view_contract(empty_name, "");
   }
 }
 
 TEST_CASE("nameof_enum_flag") {
   constexpr AnimalFlags af = AnimalFlags::HasClaws;
   auto af_name = nameof::nameof_enum_flag(af);
+  const auto empty_af_name = nameof::nameof_enum_flag(static_cast<AnimalFlags>(0));
   AnimalFlags afm[3] = {AnimalFlags::HasClaws, AnimalFlags::CanFly, AnimalFlags::EatsFish};
   REQUIRE(af_name == "HasClaws");
+  require_string_contract(af_name, "HasClaws");
+  REQUIRE(empty_af_name.empty());
+  require_string_contract(empty_af_name, "");
   REQUIRE(nameof::nameof_enum_flag(AnimalFlags::EatsFish) == "EatsFish");
   REQUIRE(nameof::nameof_enum_flag(afm[1]) == "CanFly");
   NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
@@ -477,8 +578,10 @@ TEST_CASE("NAMEOF_ENUM") {
   constexpr Color cr = Color::RED;
   constexpr auto cr_name = NAMEOF_ENUM(cr);
   Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
+  const auto blue_name = NAMEOF_ENUM(Color::BLUE);
   REQUIRE(cr_name == "RED");
-  REQUIRE(NAMEOF_ENUM(Color::BLUE) == "BLUE");
+  REQUIRE(blue_name == "BLUE");
+  require_string_view_contract(blue_name, "BLUE");
   REQUIRE(NAMEOF_ENUM(cm[1]) == "GREEN");
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Color>(0)).empty());
 
@@ -535,13 +638,21 @@ TEST_CASE("NAMEOF_ENUM_CONST") {
   REQUIRE(NAMEOF_ENUM_CONST(number::two) == "two");
   REQUIRE(nt_name == "three");
   REQUIRE(NAMEOF_ENUM_CONST(number::four) == "four");
+
+  auto green_view = std::string_view{};
+  green_view = NAMEOF_ENUM_CONST(Color::GREEN);
+  require_string_view_uses_cstring_storage(green_view, nameof::detail::enum_name_v<Color, Color::GREEN>, "GREEN");
 }
 
 TEST_CASE("NAMEOF_ENUM_FLAG") {
   constexpr AnimalFlags af = AnimalFlags::HasClaws;
   auto af_name = NAMEOF_ENUM_FLAG(af);
+  const auto empty_af_name = NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0));
   AnimalFlags afm[3] = {AnimalFlags::HasClaws, AnimalFlags::CanFly, AnimalFlags::EatsFish};
   REQUIRE(af_name == "HasClaws");
+  require_string_contract(af_name, "HasClaws");
+  REQUIRE(empty_af_name.empty());
+  require_string_contract(empty_af_name, "");
   REQUIRE(NAMEOF_ENUM_FLAG(afm[1]) == "CanFly");
   REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::EatsFish) == "EatsFish");
   REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::Endangered) == "Endangered");
@@ -575,7 +686,18 @@ TEST_CASE("nameof_enum_or") {
   constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
   REQUIRE(low_name == "-121");
   REQUIRE(high_name == "121");
+  require_string_contract(low_name, "-121");
+  require_string_contract(high_name, "121");
   REQUIRE(nameof::nameof_enum_or(oor[0], "121") == "121");
+
+  constexpr auto fallback = ::nameof::cstring<8>{"fallback"};
+  constexpr auto empty_fallback = ::nameof::cstring<0>{};
+  const auto fallback_name = nameof::nameof_enum_or(OutOfRange::too_low, fallback);
+  const auto empty_fallback_name = nameof::nameof_enum_or(OutOfRange::too_high, empty_fallback);
+  REQUIRE(fallback_name == "fallback");
+  REQUIRE(empty_fallback_name.empty());
+  require_string_contract(fallback_name, "fallback");
+  require_string_contract(empty_fallback_name, "");
 }
 
 TEST_CASE("NAMEOF_ENUM_OR") {
@@ -649,6 +771,15 @@ TEST_CASE("nameof::nameof_type") {
 
   REQUIRE(nameof::nameof_type<Color>() == "Color");
 #endif
+
+  using SomeStructName = nameof::detail::identity<SomeStruct>;
+  const auto storage_view = static_cast<::nameof::string_view>(nameof::detail::type_name_v<SomeStructName>);
+  auto type_view = std::string_view{};
+  type_view = nameof::nameof_type<SomeStruct>();
+  REQUIRE(type_view == storage_view);
+  REQUIRE(type_view.data() == storage_view.data());
+  require_cstring_contract(nameof::nameof_type<SomeStruct>(), storage_view);
+  require_cstring_contract(nameof::detail::type_name_v<SomeStructName>, storage_view);
 }
 
 TEST_CASE("nameof::nameof_full_type") {
@@ -705,6 +836,15 @@ TEST_CASE("nameof::nameof_full_type") {
 
   REQUIRE(nameof::nameof_full_type<Color>() == "Color");
 #endif
+
+  using SomeStructReferenceName = nameof::detail::identity<SomeStruct&>;
+  const auto storage_view = static_cast<::nameof::string_view>(nameof::detail::type_name_v<SomeStructReferenceName>);
+  auto type_view = std::string_view{};
+  type_view = nameof::nameof_full_type<SomeStruct&>();
+  REQUIRE(type_view == storage_view);
+  REQUIRE(type_view.data() == storage_view.data());
+  require_cstring_contract(nameof::nameof_full_type<SomeStruct&>(), storage_view);
+  require_cstring_contract(nameof::detail::type_name_v<SomeStructReferenceName>, storage_view);
 }
 
 TEST_CASE("nameof::nameof_short_type") {
@@ -723,6 +863,12 @@ TEST_CASE("nameof::nameof_short_type") {
   REQUIRE(nameof::nameof_short_type<Long::LL>() == "LL");
 
   REQUIRE(nameof::nameof_short_type<Color>() == "Color");
+
+  using SomeStructName = nameof::detail::identity<SomeStruct>;
+  auto short_type_view = std::string_view{};
+  short_type_view = nameof::nameof_short_type<SomeStruct>();
+  require_string_view_uses_cstring_storage(short_type_view, nameof::detail::short_type_name_v<SomeStructName>, "SomeStruct");
+  require_cstring_contract(nameof::nameof_short_type<Long::LL>(), "LL");
 }
 
 TEST_CASE("NAMEOF_TYPE") {
@@ -779,6 +925,11 @@ TEST_CASE("NAMEOF_TYPE") {
 
   REQUIRE(NAMEOF_TYPE(Color) == "Color");
 #endif
+
+  using SomeStructName = nameof::detail::identity<SomeStruct>;
+  const auto storage_view = static_cast<::nameof::string_view>(nameof::detail::type_name_v<SomeStructName>);
+  std::string_view type_view = NAMEOF_TYPE(SomeStruct);
+  require_string_view_uses_cstring_storage(type_view, NAMEOF_TYPE(SomeStruct), storage_view);
 }
 
 TEST_CASE("NAMEOF_TYPE_EXPR") {
@@ -826,6 +977,11 @@ TEST_CASE("NAMEOF_TYPE_EXPR") {
 
   REQUIRE(NAMEOF_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "SomeClass<int>");
 #endif
+
+  using SomeStructName = nameof::detail::identity<SomeStruct>;
+  const auto storage_view = static_cast<::nameof::string_view>(nameof::detail::type_name_v<SomeStructName>);
+  std::string_view type_view = NAMEOF_TYPE_EXPR(struct_var);
+  require_string_view_uses_cstring_storage(type_view, NAMEOF_TYPE_EXPR(struct_var), storage_view);
 }
 
 TEST_CASE("NAMEOF_FULL_TYPE") {
@@ -882,6 +1038,11 @@ TEST_CASE("NAMEOF_FULL_TYPE") {
 
   REQUIRE(NAMEOF_FULL_TYPE(Color) == "Color");
 #endif
+
+  using SomeStructReferenceName = nameof::detail::identity<SomeStruct&>;
+  const auto storage_view = static_cast<::nameof::string_view>(nameof::detail::type_name_v<SomeStructReferenceName>);
+  std::string_view type_view = NAMEOF_FULL_TYPE(SomeStruct&);
+  require_string_view_uses_cstring_storage(type_view, NAMEOF_FULL_TYPE(SomeStruct&), storage_view);
 }
 
 TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
@@ -929,6 +1090,11 @@ TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
 
   REQUIRE(NAMEOF_FULL_TYPE_EXPR(std::declval<const SomeClass<int>>()) == "const SomeClass<int>&&");
 #endif
+
+  using SomeStructReferenceName = nameof::detail::identity<SomeStruct&>;
+  const auto storage_view = static_cast<::nameof::string_view>(nameof::detail::type_name_v<SomeStructReferenceName>);
+  std::string_view type_view = NAMEOF_FULL_TYPE_EXPR(ref_s);
+  require_string_view_uses_cstring_storage(type_view, NAMEOF_FULL_TYPE_EXPR(ref_s), storage_view);
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE") {
@@ -947,6 +1113,11 @@ TEST_CASE("NAMEOF_SHORT_TYPE") {
   REQUIRE(NAMEOF_SHORT_TYPE(Long::LL) == "LL");
 
   REQUIRE(NAMEOF_SHORT_TYPE(Color) == "Color");
+
+  using SomeStructName = nameof::detail::identity<SomeStruct>;
+  auto short_type_view = std::string_view{};
+  short_type_view = NAMEOF_SHORT_TYPE(SomeStruct);
+  require_string_view_uses_cstring_storage(short_type_view, nameof::detail::short_type_name_v<SomeStructName>, "SomeStruct");
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
@@ -1046,6 +1217,10 @@ TEST_CASE("NAMEOF_MEMBER") {
   REQUIRE(NAMEOF_MEMBER(member_ptr) == "somefield");
   REQUIRE(NAMEOF_MEMBER(&StructMemberInitializationUsingNameof::teststringfield) == "teststringfield");
   REQUIRE(NAMEOF_MEMBER(&StructWithNonConstexprDestructor::somefield) == "somefield");
+
+  auto member_view = std::string_view{};
+  member_view = NAMEOF_MEMBER(&NameOfTest::some_member);
+  require_string_view_uses_cstring_storage(member_view, nameof::detail::member_name_v<&NameOfTest::some_member>, "some_member");
 }
 
 TEST_CASE("nameof_member") {
@@ -1056,6 +1231,14 @@ TEST_CASE("nameof_member") {
   REQUIRE(nameof::nameof_member<member_ptr>() == "somefield");
   REQUIRE(nameof::nameof_member<&StructMemberInitializationUsingNameof::teststringfield>() == "teststringfield");
   REQUIRE(nameof::nameof_member<&StructWithNonConstexprDestructor::somefield>() == "somefield");
+  require_cstring_contract(nameof::nameof_member<&SomeStruct::SomeMethod1>(), "SomeMethod1");
+}
+
+TEST_CASE("string_view_regression") {
+  std::string_view name{};
+  name = nameof::nameof_member<&NameOfTest::some_member>();
+  REQUIRE(name == "some_member");
+  require_string_view_uses_cstring_storage(name, nameof::detail::member_name_v<&NameOfTest::some_member>, "some_member");
 }
 
 #endif
@@ -1073,6 +1256,10 @@ TEST_CASE("NAMEOF_POINTER") {
   REQUIRE(NAMEOF_POINTER(global_ptr) == "someglobalvariable");
   REQUIRE(NAMEOF_POINTER(&someglobalconstvariable) == "someglobalconstvariable");
   REQUIRE(NAMEOF_POINTER(&somefunction) == "somefunction");
+
+  auto pointer_view = std::string_view{};
+  pointer_view = NAMEOF_POINTER(&someglobalconstvariable);
+  require_string_view_uses_cstring_storage(pointer_view, nameof::detail::pointer_name_v<&someglobalconstvariable>, "someglobalconstvariable");
 }
 
 TEST_CASE("nameof_pointer") {
@@ -1084,6 +1271,14 @@ TEST_CASE("nameof_pointer") {
   REQUIRE(nameof::nameof_pointer<global_ptr>() == "someglobalvariable");
   REQUIRE(nameof::nameof_pointer<&someglobalconstvariable>() == "someglobalconstvariable");
   REQUIRE(nameof::nameof_pointer<&somefunction>() == "somefunction");
+
+  auto pointer_view = std::string_view{};
+  pointer_view = nameof::nameof_pointer<&somefunction>();
+  require_string_view_uses_cstring_storage(pointer_view, nameof::detail::pointer_name_v<&somefunction>, "somefunction");
+
+  auto nullptr_view = std::string_view{};
+  nullptr_view = nameof::nameof_pointer<static_cast<const char*>(nullptr)>();
+  require_string_view_uses_cstring_storage(nullptr_view, nameof::detail::pointer_name_v<static_cast<const char*>(nullptr)>, "nullptr");
 }
 
 #endif

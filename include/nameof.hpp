@@ -266,7 +266,9 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] string str() const { return {begin(), end()}; }
 
-  [[nodiscard]] constexpr operator string_view() const noexcept { return {data(), size()}; }
+  [[nodiscard]] constexpr operator string_view() const& noexcept { return {data(), size()}; }
+
+  [[nodiscard]] constexpr operator string_view() const&& noexcept = delete;
 
   [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return data(); }
 
@@ -340,7 +342,9 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] string str() const { return {}; }
 
-  [[nodiscard]] constexpr operator string_view() const noexcept { return {}; }
+  [[nodiscard]] constexpr operator string_view() const& noexcept { return {data(), size()}; }
+
+  [[nodiscard]] constexpr operator string_view() const&& noexcept = delete;
 
   [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return chars_; }
 
@@ -566,11 +570,11 @@ constexpr auto n() noexcept {
 #elif defined(_MSC_VER)
     constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
-    constexpr auto name = string_view{};
+    constexpr auto name = string_view{""};
 #endif
     return name;
   } else {
-    return string_view{};
+    return string_view{""};
   }
 }
 
@@ -846,7 +850,7 @@ constexpr auto n() noexcept {
 #elif defined(_MSC_VER)
     constexpr string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
 #else
-    constexpr auto name = string_view{};
+    constexpr auto name = string_view{""};
 #endif
     return cstring<name.size()>{name};
   } else {
@@ -856,6 +860,36 @@ constexpr auto n() noexcept {
 
 template <typename... T>
 inline constexpr auto type_name_v = n<T...>();
+
+template <typename T>
+constexpr auto short_type_name() noexcept {
+  constexpr auto name = pretty_name(type_name_v<T>);
+  static_assert(!name.empty(), "Type does not have a short name.");
+  return cstring<name.size()>{name};
+}
+
+template <typename T>
+inline constexpr auto short_type_name_v = short_type_name<T>();
+
+template <typename G, bool RemoveSuffix>
+constexpr auto nameof_expr() noexcept {
+  constexpr auto name = pretty_name(G::get(), RemoveSuffix);
+  static_assert(!name.empty(), "Expression does not have a name.");
+  return cstring<name.size()>{name};
+}
+
+template <typename G, bool RemoveSuffix>
+inline constexpr auto nameof_expr_v = nameof_expr<G, RemoveSuffix>();
+
+template <typename G>
+constexpr auto nameof_raw_expr() noexcept {
+  constexpr auto name = G::get();
+  static_assert(!name.empty(), "Expression does not have a name.");
+  return cstring<name.size()>{name};
+}
+
+template <typename G>
+inline constexpr auto nameof_raw_expr_v = nameof_raw_expr<G>();
 
 #if __has_include(<cxxabi.h>)
 template <typename T>
@@ -949,10 +983,9 @@ constexpr auto n() noexcept {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-    constexpr auto name = pretty_name({__FUNCSIG__,
-                                       sizeof(__FUNCSIG__) - 18 + std::is_member_function_pointer_v<decltype(U)>});
+    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 18 + std::is_member_function_pointer_v<decltype(U)>});
 #else
-    constexpr auto name = string_view{};
+    constexpr auto name = string_view{""};
 #endif
     return cstring<name.size()>{name};
   } else {
@@ -1022,7 +1055,7 @@ constexpr auto p() noexcept {
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
     constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
-    constexpr auto name = string_view{};
+    constexpr auto name = string_view{""};
 #endif
     return cstring<name.size()>{name};
   } else {
@@ -1119,7 +1152,7 @@ template <typename E>
 // Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
-[[nodiscard]] constexpr auto nameof_enum() noexcept {
+[[nodiscard]] constexpr const auto& nameof_enum() noexcept {
   using D = std::decay_t<decltype(V)>;
   static_assert(std::is_enum_v<D>, "nameof::nameof_enum requires member enum type.");
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -1128,7 +1161,7 @@ template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
 
 // Obtains name of type, reference and cv-qualifiers are ignored.
 template <typename T>
-[[nodiscard]] constexpr string_view nameof_type() noexcept {
+[[nodiscard]] constexpr const auto& nameof_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
   static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::type_name_v<U>;
@@ -1136,7 +1169,7 @@ template <typename T>
 
 // Obtains full name of type, with reference and cv-qualifiers.
 template <typename T>
-[[nodiscard]] constexpr string_view nameof_full_type() noexcept {
+[[nodiscard]] constexpr const auto& nameof_full_type() noexcept {
   using U = detail::identity<T>;
   static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::type_name_v<U>;
@@ -1144,18 +1177,16 @@ template <typename T>
 
 // Obtains short name of type.
 template <typename T, detail::enable_if_has_short_name_t<T, int> = 0>
-[[nodiscard]] constexpr auto nameof_short_type() noexcept {
+[[nodiscard]] constexpr const auto& nameof_short_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
   static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   static_assert(!std::is_array_v<T> && !std::is_pointer_v<T>, "nameof::nameof_member requires non array and non pointer type.");
-  constexpr string_view name = detail::pretty_name(detail::type_name_v<U>);
-  static_assert(!name.empty(), "Type does not have a short name.");
-  return cstring<name.size()>{name};
+  return detail::short_type_name_v<U>;
 }
 
 // Obtains name of member.
 template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> = 0>
-[[nodiscard]] constexpr auto nameof_member() noexcept {
+[[nodiscard]] constexpr const auto& nameof_member() noexcept {
   using U = decltype(V);
   static_assert(std::is_member_pointer_v<U>, "nameof::nameof_member requires member pointer type.");
   static_assert(detail::nameof_member_supported<U>::value, "nameof::nameof_member unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -1164,7 +1195,7 @@ template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> =
 
 // Obtains name of a function, a global or class static variable.
 template <auto V, std::enable_if_t<std::is_pointer_v<decltype(V)>, int> = 0>
-[[nodiscard]] constexpr auto nameof_pointer() noexcept {
+[[nodiscard]] constexpr const auto& nameof_pointer() noexcept {
   using U = decltype(V);
   static_assert(std::is_pointer_v<U>, "nameof::nameof_pointer requires pointer type.");
   static_assert(detail::nameof_pointer_supported<U>::value, "nameof::nameof_pointer unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -1199,31 +1230,34 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #endif
 
 // Obtains name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept {                         \
-  ::std::void_t<decltype(__VA_ARGS__)>();                             \
-  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__); \
-  static_assert(!_name.empty(), "Expression does not have a name.");  \
-  constexpr auto _size = _name.size();                                \
-  constexpr auto _nameof = ::nameof::cstring<_size>{_name};           \
-  return _nameof; }()
+#define NAMEOF(...) []() constexpr noexcept -> const auto& { \
+  ::std::void_t<decltype(__VA_ARGS__)>();                    \
+  struct _nameof_getter {                                    \
+    static constexpr ::nameof::string_view get() noexcept {  \
+      return ::nameof::string_view{#__VA_ARGS__};            \
+    }                                                        \
+  };                                                         \
+  return ::nameof::detail::nameof_expr_v<_nameof_getter, true>; }()
 
 // Obtains full name of variable, function, macro.
-#define NAMEOF_FULL(...) []() constexpr noexcept {                           \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                    \
-  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(!_name.empty(), "Expression does not have a name.");         \
-  constexpr auto _size = _name.size();                                       \
-  constexpr auto _nameof_full = ::nameof::cstring<_size>{_name};             \
-  return _nameof_full; }()
+#define NAMEOF_FULL(...) []() constexpr noexcept -> const auto& { \
+  ::std::void_t<decltype(__VA_ARGS__)>();                         \
+  struct _nameof_getter {                                         \
+    static constexpr ::nameof::string_view get() noexcept {       \
+      return ::nameof::string_view{#__VA_ARGS__};                 \
+    }                                                             \
+  };                                                              \
+  return ::nameof::detail::nameof_expr_v<_nameof_getter, false>; }()
 
 // Obtains raw name of variable, function, macro.
-#define NAMEOF_RAW(...) []() constexpr noexcept {                    \
-  ::std::void_t<decltype(__VA_ARGS__)>();                            \
-  constexpr auto _name = ::nameof::string_view{#__VA_ARGS__};        \
-  static_assert(!_name.empty(), "Expression does not have a name."); \
-  constexpr auto _size = _name.size();                               \
-  constexpr auto _nameof_raw = ::nameof::cstring<_size>{_name};      \
-  return _nameof_raw; }()
+#define NAMEOF_RAW(...) []() constexpr noexcept -> const auto& { \
+  ::std::void_t<decltype(__VA_ARGS__)>();                        \
+  struct _nameof_getter {                                        \
+    static constexpr ::nameof::string_view get() noexcept {      \
+      return ::nameof::string_view{#__VA_ARGS__};                \
+    }                                                            \
+  };                                                             \
+  return ::nameof::detail::nameof_raw_expr_v<_nameof_getter>; }()
 
 // Obtains name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
