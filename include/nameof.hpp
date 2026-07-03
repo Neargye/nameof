@@ -265,7 +265,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
-  [[nodiscard]] string str() const { return {begin(), end()}; }
+  [[nodiscard]] string str() const { return {data(), size()}; }
 
   [[nodiscard]] constexpr operator string_view() const& noexcept { return {data(), size()}; }
 
@@ -273,7 +273,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return data(); }
 
-  [[nodiscard]] explicit operator string() const { return {begin(), end()}; }
+  [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
  private:
   template <std::uint16_t... I>
@@ -341,7 +341,7 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] constexpr const char* c_str() const noexcept { return chars_; }
 
-  [[nodiscard]] string str() const { return {}; }
+  [[nodiscard]] string str() const { return {data(), size()}; }
 
   [[nodiscard]] constexpr operator string_view() const& noexcept { return {data(), size()}; }
 
@@ -349,7 +349,7 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return chars_; }
 
-  [[nodiscard]] explicit operator string() const { return {}; }
+  [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
 private:
   static constexpr char chars_[1] = {};
