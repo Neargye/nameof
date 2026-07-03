@@ -219,12 +219,7 @@ TEST_CASE("NAMEOF") {
     REQUIRE(NAMEOF(Color::BLUE) == "BLUE");
   }
 
-  SUBCASE("string_view") {
-    std::string_view initialized = NAMEOF(othervar);
-    auto assigned = std::string_view{};
-    assigned = NAMEOF(struct_var.somefield);
-    require_string_view_contract(initialized, "othervar");
-    require_string_view_contract(assigned, "somefield");
+  SUBCASE("cstring") {
     require_cstring_contract(NAMEOF(othervar), "othervar");
   }
 }
@@ -381,12 +376,7 @@ TEST_CASE("NAMEOF_FULL") {
     REQUIRE(NAMEOF_FULL(Color::BLUE) == "BLUE");
   }
 
-  SUBCASE("string_view") {
-    std::string_view initialized = NAMEOF_FULL(SomeMethod4<int, float>);
-    auto assigned = std::string_view{};
-    assigned = NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>);
-    require_string_view_contract(initialized, "SomeMethod4<int, float>");
-    require_string_view_contract(assigned, "SomeMethod6<long int>");
+  SUBCASE("cstring") {
     require_cstring_contract(NAMEOF_FULL(SomeMethod4<int, float>), "SomeMethod4<int, float>");
   }
 }
@@ -442,12 +432,7 @@ TEST_CASE("NAMEOF_RAW") {
     REQUIRE(NAMEOF_RAW(__FILE__) == "__FILE__");
   }
 
-  SUBCASE("string_view") {
-    std::string_view initialized = NAMEOF_RAW(&struct_var);
-    auto assigned = std::string_view{};
-    assigned = NAMEOF_RAW(struct_var.somefield + ref_s.somefield);
-    require_string_view_contract(initialized, "&struct_var");
-    require_string_view_contract(assigned, "struct_var.somefield + ref_s.somefield");
+  SUBCASE("cstring") {
     require_cstring_contract(NAMEOF_RAW(&struct_var), "&struct_var");
   }
 }

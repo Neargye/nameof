@@ -871,26 +871,6 @@ constexpr auto short_type_name() noexcept {
 template <typename T>
 inline constexpr auto short_type_name_v = short_type_name<T>();
 
-template <typename G, bool RemoveSuffix>
-constexpr auto nameof_expr() noexcept {
-  constexpr auto name = pretty_name(G::get(), RemoveSuffix);
-  static_assert(!name.empty(), "Expression does not have a name.");
-  return cstring<name.size()>{name};
-}
-
-template <typename G, bool RemoveSuffix>
-inline constexpr auto nameof_expr_v = nameof_expr<G, RemoveSuffix>();
-
-template <typename G>
-constexpr auto nameof_raw_expr() noexcept {
-  constexpr auto name = G::get();
-  static_assert(!name.empty(), "Expression does not have a name.");
-  return cstring<name.size()>{name};
-}
-
-template <typename G>
-inline constexpr auto nameof_raw_expr_v = nameof_raw_expr<G>();
-
 #if __has_include(<cxxabi.h>)
 template <typename T>
 string nameof_type_rtti(const char* tn) {
@@ -1230,34 +1210,31 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #endif
 
 // Obtains name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept -> const auto& { \
-  ::std::void_t<decltype(__VA_ARGS__)>();                    \
-  struct _nameof_getter {                                    \
-    static constexpr ::nameof::string_view get() noexcept {  \
-      return ::nameof::string_view{#__VA_ARGS__};            \
-    }                                                        \
-  };                                                         \
-  return ::nameof::detail::nameof_expr_v<_nameof_getter, true>; }()
+#define NAMEOF(...) []() constexpr noexcept {                         \
+  ::std::void_t<decltype(__VA_ARGS__)>();                             \
+  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__); \
+  static_assert(!_name.empty(), "Expression does not have a name.");  \
+  constexpr auto _size = _name.size();                                \
+  constexpr auto _nameof = ::nameof::cstring<_size>{_name};           \
+  return _nameof; }()
 
 // Obtains full name of variable, function, macro.
-#define NAMEOF_FULL(...) []() constexpr noexcept -> const auto& { \
-  ::std::void_t<decltype(__VA_ARGS__)>();                         \
-  struct _nameof_getter {                                         \
-    static constexpr ::nameof::string_view get() noexcept {       \
-      return ::nameof::string_view{#__VA_ARGS__};                 \
-    }                                                             \
-  };                                                              \
-  return ::nameof::detail::nameof_expr_v<_nameof_getter, false>; }()
+#define NAMEOF_FULL(...) []() constexpr noexcept {                           \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                    \
+  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
+  static_assert(!_name.empty(), "Expression does not have a name.");         \
+  constexpr auto _size = _name.size();                                       \
+  constexpr auto _nameof_full = ::nameof::cstring<_size>{_name};             \
+  return _nameof_full; }()
 
 // Obtains raw name of variable, function, macro.
-#define NAMEOF_RAW(...) []() constexpr noexcept -> const auto& { \
-  ::std::void_t<decltype(__VA_ARGS__)>();                        \
-  struct _nameof_getter {                                        \
-    static constexpr ::nameof::string_view get() noexcept {      \
-      return ::nameof::string_view{#__VA_ARGS__};                \
-    }                                                            \
-  };                                                             \
-  return ::nameof::detail::nameof_raw_expr_v<_nameof_getter>; }()
+#define NAMEOF_RAW(...) []() constexpr noexcept {                    \
+  ::std::void_t<decltype(__VA_ARGS__)>();                            \
+  constexpr auto _name = ::nameof::string_view{#__VA_ARGS__};        \
+  static_assert(!_name.empty(), "Expression does not have a name."); \
+  constexpr auto _size = _name.size();                               \
+  constexpr auto _nameof_raw = ::nameof::cstring<_size>{_name};      \
+  return _nameof_raw; }()
 
 // Obtains name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
