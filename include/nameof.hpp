@@ -993,12 +993,12 @@ From get_base_type(Type From::*);
 template <typename T>
 extern T nonexist_object;
 
-template <class T>
+template <typename T>
 struct Store {
   T v;
 };
 
-template <class T>
+template <typename T>
 Store(T) -> Store<T>;
 
 template <auto V>
