@@ -23,23 +23,24 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#define NAMEOF_ENUM_RANGE_MIN -120
-#define NAMEOF_ENUM_RANGE_MAX 120
-#include <nameof.hpp>
-
 #include <string>
 #include <string_view>
 #include <stdexcept>
 #include <type_traits>
 
-#if (defined(_MSVC_LANG) ? (_MSVC_LANG >= 202002L) : (__cplusplus >= 202002L)) && defined(__cpp_lib_format) && (__cpp_lib_format >= 201907L) && __has_include(<format>)
-#  include <format>
-#  define NAMEOF_TEST_HAS_STD_FORMAT 1
-#endif
-
 #if __has_include(<fmt/format.h>)
 #  include <fmt/format.h>
-#  define NAMEOF_TEST_HAS_FMT_FORMAT 1
+#  if defined(FMT_VERSION)
+#    define NAMEOF_TEST_HAS_FMT_FORMAT 1
+#  endif
+#endif
+
+#define NAMEOF_ENUM_RANGE_MIN -120
+#define NAMEOF_ENUM_RANGE_MAX 120
+#include <nameof.hpp>
+
+#if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
+#  define NAMEOF_TEST_HAS_STD_FORMAT 1
 #endif
 
 #ifdef NDEBUG
@@ -325,8 +326,12 @@ TEST_CASE("CSTRING_FORMAT") {
 #if defined(NAMEOF_TEST_HAS_STD_FORMAT)
   SUBCASE("std::format") {
     using short_type_t = std::remove_cv_t<std::remove_reference_t<decltype(NAMEOF_SHORT_TYPE(SomeStruct))>>;
+    constexpr auto some_struct = NAMEOF_SHORT_TYPE(SomeStruct);
+    constexpr auto empty = ::nameof::cstring<0>{};
     REQUIRE(std::is_default_constructible_v<std::formatter<short_type_t, char>>);
     REQUIRE(std::is_default_constructible_v<std::formatter<::nameof::cstring<0>, char>>);
+    REQUIRE(std::format("{}", some_struct) == "SomeStruct");
+    REQUIRE(std::format("{}", empty).empty());
   }
 #endif
 

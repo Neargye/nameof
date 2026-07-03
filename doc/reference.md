@@ -50,6 +50,8 @@
   #include <nameof.hpp>
   ```
 
+* `std::format` support for `nameof::cstring` is enabled automatically when `<format>` is available. For `fmt`, include `fmt/format.h` before `nameof.hpp`:
+
 ## `NAMEOF`
 
 * Obtains name of variable, function, macro.

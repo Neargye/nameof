@@ -1184,28 +1184,28 @@ template <auto V, std::enable_if_t<std::is_pointer_v<decltype(V)>, int> = 0>
 
 } // namespace nameof
 
-#if __has_include(<format>) && defined(__cpp_lib_format)
-#include <format>
+#if __has_include(<format>)
+#  include <format>
 
+#  if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
 template <std::uint16_t N>
 struct std::formatter<nameof::cstring<N>, char> : std::formatter<std::string_view, char> {
-    template <typename FormatContext>
-    auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
-        return std::formatter<std::string_view, char>::format(std::string_view{value.data(), value.size()}, ctx);
-    }
+  template <typename FormatContext>
+  auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
+    return std::formatter<std::string_view, char>::format(std::string_view{value.data(), value.size()}, ctx);
+  }
 };
+#  endif
 #endif
 
 
-#if __has_include(<fmt/format.h>) && defined(FMT_VERSION)
-#include <fmt/format.h>
-
+#if defined(FMT_VERSION)
 template <std::uint16_t N>
 struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
-    template <typename FormatContext>
-    auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
-        return fmt::formatter<fmt::string_view>::format(fmt::string_view{value.data(), value.size()}, ctx);
-    }
+  template <typename FormatContext>
+  auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
+    return fmt::formatter<fmt::string_view>::format(fmt::string_view{value.data(), value.size()}, ctx);
+  }
 };
 #endif
 
