@@ -1186,6 +1186,14 @@ TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
   REQUIRE(NAMEOF_SHORT_TYPE_RTTI(cv_ref) == "Derived");
 }
 
+#if __has_include(<cxxabi.h>)
+TEST_CASE("NAMEOF_TYPE_RTTI demangle fallback") {
+  REQUIRE(nameof::detail::nameof_type_rtti<void>("not_a_mangled_type") == "not_a_mangled_type");
+  REQUIRE(nameof::detail::nameof_full_type_rtti<const int&>("not_a_mangled_type") == "const not_a_mangled_type&");
+  REQUIRE(nameof::detail::nameof_short_type_rtti<void>("some_namespace::not_a_mangled_type") == "not_a_mangled_type");
+}
+#endif
+
 #endif
 
 #if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED

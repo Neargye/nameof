@@ -56,6 +56,7 @@
 #if __has_include(<cxxabi.h>)
 #  include <cxxabi.h>
 #  include <cstdlib>
+#  include <memory>
 #endif
 
 #if defined(__clang__)
@@ -871,25 +872,8 @@ constexpr auto short_type_name() noexcept {
 template <typename T>
 inline constexpr auto short_type_name_v = short_type_name<T>();
 
-#if __has_include(<cxxabi.h>)
 template <typename T>
-string nameof_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  const auto name = string{dmg};
-  free(dmg);
-  assert(!name.empty() && "Type does not have a name.");
-
-  return name;
-}
-
-template <typename T>
-string nameof_full_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  auto name = string{dmg};
-  free(dmg);
-  assert(!name.empty() && "Type does not have a name.");
+string full_type_name(string name) {
   if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
     name = string{"const "}.append(name);
   }
@@ -902,26 +886,64 @@ string nameof_full_type_rtti(const char* tn) {
   if constexpr (std::is_rvalue_reference_v<T>) {
     name.append("&&");
   }
-
   return name;
+}
+
+#if __has_include(<cxxabi.h>)
+using demangle_ptr = std::unique_ptr<char, decltype(&std::free)>;
+
+struct demangled_name {
+  demangle_ptr p;
+  string_view v;
+
+  [[nodiscard]] string_view view() const noexcept { return v; }
+  [[nodiscard]] bool empty() const noexcept { return v.empty(); }
+  [[nodiscard]] string str() const { return {v.data(), v.size()}; }
+};
+
+inline demangled_name demangle(const char* tn) {
+  assert(tn != nullptr);
+  if (tn == nullptr) {
+    return {demangle_ptr{nullptr, &std::free}, string_view{""}};
+  }
+  int status = 0;
+  demangle_ptr p{abi::__cxa_demangle(tn, nullptr, nullptr, &status), &std::free};
+  if (status != 0) {
+    p.reset();
+  }
+  const auto v = p ? string_view{p.get()} : string_view{tn};
+  return {std::move(p), v};
+}
+
+template <typename T>
+string nameof_type_rtti(const char* tn) {
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  const auto name = demangle(tn);
+  assert(!name.empty() && "Type does not have a name.");
+  return name.str();
+}
+
+template <typename T>
+string nameof_full_type_rtti(const char* tn) {
+  static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  const auto name = demangle(tn);
+  assert(!name.empty() && "Type does not have a name.");
+  return full_type_name<T>(name.str());
 }
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto dmg = abi::__cxa_demangle(tn, nullptr, nullptr, nullptr);
-  const auto pname = pretty_name(dmg);
-  const auto name = string{pname.data(), pname.size()};
-  free(dmg);
+  const auto full_name = demangle(tn);
+  const auto name = pretty_name(full_name.view());
   assert(!name.empty() && "Type does not have a short name.");
-
-  return name;
+  return {name.data(), name.size()};
 }
 #else
 template <typename T>
 string nameof_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = string_view{tn};
+  const auto name = string_view{tn != nullptr ? tn : ""};
   assert(!name.empty() && "Type does not have a name.");
   return {name.data(), name.size()};
 }
@@ -929,27 +951,15 @@ string nameof_type_rtti(const char* tn) {
 template <typename T>
 string nameof_full_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  auto name = string{tn};
+  const auto name = string_view{tn != nullptr ? tn : ""};
   assert(!name.empty() && "Type does not have a name.");
-  if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
-    name = string{"const "}.append(name);
-  }
-  if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
-    name = string{"volatile "}.append(name);
-  }
-  if constexpr (std::is_lvalue_reference_v<T>) {
-    name.append(1, '&');
-  }
-  if constexpr (std::is_rvalue_reference_v<T>) {
-    name.append("&&");
-  }
-  return name;
+  return full_type_name<T>({name.data(), name.size()});
 }
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "nameof::nameof_type_rtti unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = pretty_name(tn);
+  const auto name = pretty_name(tn != nullptr ? tn : "");
   assert(!name.empty() && "Type does not have a short name.");
   return {name.data(), name.size()};
 }
