@@ -10,6 +10,7 @@ project(nameof
     LANGUAGES CXX
 )
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 set(CPACK_PACKAGE_VENDOR "Daniil Goncharov")
 
@@ -23,6 +24,19 @@ option(NAMEOF_OPT_BUILD_EXAMPLES "Build nameof examples" ${IS_TOPLEVEL_PROJECT})
 option(NAMEOF_OPT_BUILD_TESTS "Build and perform nameof tests" ${IS_TOPLEVEL_PROJECT})
 option(NAMEOF_OPT_INSTALL "Generate and install nameof target" ${IS_TOPLEVEL_PROJECT})
 
+set(EXPORT_NAMESPACE "${PROJECT_NAME}::")
+
+add_library("${PROJECT_NAME}" INTERFACE)
+add_library("${EXPORT_NAMESPACE}${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
+set(INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+target_include_directories(${PROJECT_NAME}
+    INTERFACE
+        $<BUILD_INTERFACE:${INCLUDES}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+
 if(NAMEOF_OPT_BUILD_EXAMPLES)
     add_subdirectory(example)
 endif()
@@ -32,31 +46,14 @@ if(NAMEOF_OPT_BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-include(CMakePackageConfigHelpers)
-
-set(EXPORT_NAMESPACE "${PROJECT_NAME}::")
-
-add_library("${PROJECT_NAME}" INTERFACE)
-add_library("${EXPORT_NAMESPACE}${PROJECT_NAME}" ALIAS "${PROJECT_NAME}")
-set(INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
-
-target_include_directories(${PROJECT_NAME}
-        INTERFACE
-            $<BUILD_INTERFACE:${INCLUDES}>
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
 if(NAMEOF_OPT_INSTALL)
     list(APPEND CMAKE_MODULE_PATH "${ADDITIONAL_MODULES_DIR}/GenPkgConfig")
     include(GenPkgConfig)
     include(CPackComponent)
-    include(CMakePackageConfigHelpers)
-    
+
     string(REPLACE "/${CMAKE_LIBRARY_ARCHITECTURE}" "" CMAKE_INSTALL_LIBDIR_ARCHIND "${CMAKE_INSTALL_LIBDIR}")
     install(TARGETS "${PROJECT_NAME}"
         EXPORT ${PROJECT_NAME}
-        INCLUDES
-            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-            # COMPONENT "${SDK_COMPONENT_NAME}" # component is not allowed for includes! Headers are installed separately! Includes only marks the headers for export
     )
 
     file(GLOB_RECURSE HEADERS "${INCLUDES}/*.h" "${INCLUDES}/*.hxx" "${INCLUDES}/*.hpp")
@@ -107,7 +104,7 @@ if(NAMEOF_OPT_INSTALL)
     write_basic_package_version_file(
         "${CMAKE_CONFIG_VERSION_FILE_NAME}"
         #VERSION "100500.100500.100500"  # any version of same bitness suits. CMake cannot compare to infinity, so use a large number we expect to be greater than any future version
-        VERSION ${_VERSION}
+        VERSION "${PROJECT_VERSION}"
         COMPATIBILITY AnyNewerVersion
         ARCH_INDEPENDENT
     )

@@ -92,14 +92,14 @@ function(configure_pkg_config_file_vars TARGET _NAME _INSTALL_LIB_DIR _INSTALL_I
 		set(_URL "${CPACK_PACKAGE_HOMEPAGE_URL}")
 	endif()
 
-	if(INSTALL_INCLUDE_DIR)
+	if(_INSTALL_INCLUDE_DIR)
 	else()
-		set(INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
+		set(_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
 	endif()
 
-	if(INSTALL_LIB_DIR)
+	if(_INSTALL_LIB_DIR)
 	else()
-		set(INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
+		set(_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
 	endif()
 
 	set(PKG_CONFIG_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/${_NAME}.pc")
@@ -121,8 +121,8 @@ function(configure_pkg_config_file_vars TARGET _NAME _INSTALL_LIB_DIR _INSTALL_I
 	string(REPLACE ">" "$<ANGLE-R>" NEEDS_LIBS_ESCAPED "${NEEDS_LIBS_ESCAPED}")
 
 	list(APPEND header "prefix=${CMAKE_INSTALL_PREFIX}")
-	list(APPEND header "$<IF:$<OR:$<BOOL:${PUBLIC_LIBS}>,${NEEDS_LIB_DIR}>,libdir=\${prefix}/${INSTALL_LIB_DIR},>")
-	list(APPEND header "$<IF:$<BOOL:${PUBLIC_INCLUDES}>,includedir=\${prefix}/${INSTALL_INCLUDE_DIR},>")
+	list(APPEND header "$<IF:$<OR:$<BOOL:${PUBLIC_LIBS}>,${NEEDS_LIB_DIR}>,libdir=\${prefix}/${_INSTALL_LIB_DIR},>")
+	list(APPEND header "$<IF:$<BOOL:${PUBLIC_INCLUDES}>,includedir=\${prefix}/${_INSTALL_INCLUDE_DIR},>")
 
 
 	list(APPEND libSpecific "Name: ${_NAME}")
@@ -198,7 +198,7 @@ function(configure_pkg_config_file_vars TARGET _NAME _INSTALL_LIB_DIR _INSTALL_I
 
 	set(LINK_CURRENT_OBJECT_FLAG "$<IF:${IS_OBJECT},${PROPERLY_JOINED_TARGET_OBJECTS},>")
 	
-	list(APPEND libSpecific "$<IF:$<OR:$<BOOL:${PUBLIC_LIBS}>,${NEEDS_LIBS},${IS_OBJECT}>,Libs: -L\${libdir} ${LINK_CURRENT_LIB_FLAG} ${LINK_CURRENT_OBJECT_FLAG} $<IF:$<BOOL:${PUBLIC_LIBS}>,-l$<JOIN:$<REMOVE_DUPLICATES:${PUBLIC_LIBS}>, -l>,>,>\n$<IF:$<OR:$<BOOL:${PUBLIC_INCLUDES}>,$<BOOL:${PUBLIC_COMPILE_FLAGS}>>,Cflags: -I\${includedir} $<JOIN:$<REMOVE_DUPLICATES:${PUBLIC_COMPILE_FLAGS}>,>,>")
+	list(APPEND libSpecific "$<IF:$<OR:$<BOOL:${PUBLIC_LIBS}>,${NEEDS_LIBS},${IS_OBJECT}>,Libs: -L\${libdir} ${LINK_CURRENT_LIB_FLAG} ${LINK_CURRENT_OBJECT_FLAG} $<IF:$<BOOL:${PUBLIC_LIBS}>,-l$<JOIN:$<REMOVE_DUPLICATES:${PUBLIC_LIBS}>, -l>,>,>\n$<IF:$<OR:$<BOOL:${PUBLIC_INCLUDES}>,$<BOOL:${PUBLIC_COMPILE_FLAGS}>>,Cflags: -I\${includedir}$<IF:$<BOOL:${PUBLIC_COMPILE_FLAGS}>, $<JOIN:$<REMOVE_DUPLICATES:${PUBLIC_COMPILE_FLAGS}>,>,>,>")
 
 
 	list(JOIN header "\n" header)
