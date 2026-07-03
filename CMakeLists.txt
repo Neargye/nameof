@@ -1,6 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.14)
-
-include(GNUInstallDirs)
+﻿cmake_minimum_required(VERSION 3.22)
 
 set(ADDITIONAL_MODULES_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${ADDITIONAL_MODULES_DIR}")
@@ -11,6 +9,8 @@ project(nameof
     DESCRIPTION "A library that provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum."
     LANGUAGES CXX
 )
+include(GNUInstallDirs)
+
 set(CPACK_PACKAGE_VENDOR "Daniil Goncharov")
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)

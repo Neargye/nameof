@@ -12,7 +12,6 @@ jobs:
         compiler:
         - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-22.04" }
         - { cc: "gcc-12",   cxx: "g++-12",     os: "ubuntu-22.04" }
-        - { cc: "gcc-13",   cxx: "g++-13",     os: "ubuntu-22.04" }
         - { cc: "gcc-13",   cxx: "g++-13",     os: "ubuntu-24.04" }
         - { cc: "gcc-14",   cxx: "g++-14",     os: "ubuntu-24.04" }
         - { cc: "gcc-15",   cxx: "g++-15",     os: "ubuntu-24.04" }
@@ -20,8 +19,8 @@ jobs:
         - { cc: "clang-14", cxx: "clang++-14", os: "ubuntu-22.04" }
         - { cc: "clang-15", cxx: "clang++-15", os: "ubuntu-22.04" }
         - { cc: "clang-16", cxx: "clang++-16", os: "ubuntu-22.04" }
-        - { cc: "clang-17", cxx: "clang++-17", os: "ubuntu-22.04" }
-        - { cc: "clang-18", cxx: "clang++-18", os: "ubuntu-22.04" }
+        - { cc: "clang-17", cxx: "clang++-17", os: "ubuntu-24.04" }
+        - { cc: "clang-18", cxx: "clang++-18", os: "ubuntu-24.04" }
         - { cc: "clang-19", cxx: "clang++-19", os: "ubuntu-24.04" }
         - { cc: "clang-20", cxx: "clang++-20", os: "ubuntu-24.04" }
         - { cc: "clang-21", cxx: "clang++-21", os: "ubuntu-24.04" }
@@ -29,55 +28,46 @@ jobs:
 
     name: "${{ matrix.compiler.cc }}"
     runs-on: ${{ matrix.compiler.os }}
+    env:
+      CC: ${{ matrix.compiler.cc }}
+      CXX: ${{ matrix.compiler.cxx }}
     steps:
     - uses: actions/checkout@v7
 
     - name: Configure clang
+      if: ${{ startsWith(matrix.compiler.cc, 'clang') }}
       run: |
-        if [[ "${{ matrix.compiler.cc }}" == "clang"* ]]; then
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/llvm-archive-keyring.gpg > /dev/null
-          # Add repositories based on Ubuntu version
-          if [[ "${{ matrix.compiler.os }}" == "ubuntu-22.04" ]]; then
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-13 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-          elif [[ "${{ matrix.compiler.os }}" == "ubuntu-24.04" ]]; then
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-22 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-            echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-          fi
-          sudo apt update
-          sudo apt install ${{ matrix.compiler.cc }} -y
-        fi
+        wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/llvm-archive-keyring.gpg > /dev/null
+
+        clang_version="${{ matrix.compiler.cc }}"
+        clang_version="${clang_version#clang-}"
+        ubuntu_codename="$(lsb_release -cs)"
+
+        echo "deb [signed-by=/etc/apt/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/${ubuntu_codename}/ llvm-toolchain-${ubuntu_codename}-${clang_version} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+        sudo apt update
+        sudo apt install -y ${{ matrix.compiler.cc }}
 
     - name: Configure gcc
+      if: ${{ startsWith(matrix.compiler.cc, 'gcc') }}
       run: |
-        if [[ "${{ matrix.compiler.cc }}" == "gcc"* ]]; then
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt update
-          sudo apt install ${{ matrix.compiler.cxx }} -y
-        fi
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+        sudo apt update
+        sudo apt install -y ${{ matrix.compiler.cxx }}
+
+    - name: Configure Release
+      run: cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Release
-      run: |
-        rm -rf build
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
-        cmake --build . -j 4 --config Release
-        ctest --output-on-failure -C Release
+      run: cmake --build build-release --parallel --config Release
+
+    - name: Test Release
+      run: ctest --test-dir build-release --output-on-failure -C Release
+
+    - name: Configure Debug
+      run: cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
 
     - name: Build Debug
-      run: |
-        rm -rf build
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
-        cmake --build . -j 4 --config Debug
-        ctest --output-on-failure -C Debug
+      run: cmake --build build-debug --parallel --config Debug
+
+    - name: Test Debug
+      run: ctest --test-dir build-debug --output-on-failure -C Debug
