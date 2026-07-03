@@ -351,7 +351,7 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
-private:
+ private:
   static constexpr char chars_[1] = {};
 };
 
@@ -993,12 +993,12 @@ From get_base_type(Type From::*);
 template <typename T>
 extern T nonexist_object;
 
-template<class T>
+template <class T>
 struct Store {
-    T v;
+  T v;
 };
 
-template<class T>
+template <class T>
 Store(T) -> Store<T>;
 
 template <auto V>
