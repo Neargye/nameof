@@ -4,7 +4,7 @@
 * [`NAMEOF_FULL` obtains full name of variable, function, macro.](#nameof_full)
 * [`NAMEOF_RAW` obtains raw name of variable, function, macro.](#nameof_raw)
 * [`NAMEOF_ENUM` obtains name of enum variable.](#nameof_enum)
-* [`NAMEOF_ENUM_OR` Obtains name of enum variable or default value if enum variable out of range.](#nameof_enum_or)
+* [`NAMEOF_ENUM_OR` obtains name of enum variable or default value if enum variable out of range.](#nameof_enum_or)
 * [`NAMEOF_ENUM_CONST` obtains name of static storage enum variable.](#nameof_enum_const)
 * [`NAMEOF_ENUM_FLAG` obtains name of enum-flags variable.](#nameof_enum_flag)
 * [`NAMEOF_TYPE` obtains type name.](#nameof_type)
@@ -14,7 +14,7 @@
 * [`NAMEOF_FULL_TYPE_EXPR` obtains full type name of expression.](#nameof_full_type_expr)
 * [`NAMEOF_SHORT_TYPE_EXPR` obtains short type name of expression.](#nameof_short_type_expr)
 * [`NAMEOF_TYPE_RTTI` obtains type name, using RTTI.](#nameof_type_rtti)
-* [`NAMEOF_FULL_TYPE_RTTI` obtains short type name, using RTTI.](#nameof_full_type_rtti)
+* [`NAMEOF_FULL_TYPE_RTTI` obtains full type name, using RTTI.](#nameof_full_type_rtti)
 * [`NAMEOF_SHORT_TYPE_RTTI` obtains short type name, using RTTI.](#nameof_short_type_rtti)
 * [`NAMEOF_MEMBER` obtains name of member.](#nameof_member)
 * [`NAMEOF_POINTER` obtains name of a function, a global or class static variable.](#nameof_pointer)
@@ -54,7 +54,7 @@
 
 * Obtains name of variable, function, macro.
 
-* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
@@ -76,7 +76,6 @@
 
     // Name of macro.
     NAMEOF(__LINE__) -> "__LINE__"
-    NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
     ```
 
 * Compiler compatibility
@@ -88,7 +87,7 @@
 
 * Obtains full (with template suffix) name of variable, function, macro.
 
-* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
@@ -111,7 +110,7 @@
 
 * Obtains raw name of variable, function, macro.
 
-* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * If argument does not have name, occurs the compilation error `"Expression does not have a name."`.
 
@@ -148,7 +147,7 @@
   Visual Studio >= 2017 and C++ >= 17</br>
   GCC >= 9 and C++ >= 17</br>
 
-# `NAMEOF_ENUM_OR`
+## `NAMEOF_ENUM_OR`
 
 * Obtains name of enum variable or default value if enum variable out of range.
 
@@ -202,19 +201,19 @@
 * Examples
 
   ```cpp
-  enum class AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
-  auto flag = AnimalFlags::Endangered;
+  enum AnimalFlags { HasClaws = 1 << 0, CanFly = 1 << 1, EatsFish = 1 << 2, Endangered = 1 << 3 };
+  auto flag = Endangered;
 
   NAMEOF_ENUM_FLAG(flag) -> "Endangered"
-  nameof_enum_flag(flag) -> "Endangered"
+  nameof::nameof_enum_flag(flag) -> "Endangered"
 
-  flag = AnimalFlags::CanFly | AnimalFlags::Endangered;
+  flag = static_cast<AnimalFlags>(CanFly | Endangered);
   NAMEOF_ENUM_FLAG(flag) -> "CanFly|Endangered"
-  nameof_enum_flag(flag) -> "CanFly|Endangered"
-  nameof_enum_flag(flag, '$') -> "CanFly$Endangered"
+  nameof::nameof_enum_flag(flag) -> "CanFly|Endangered"
+  nameof::nameof_enum_flag(flag, '$') -> "CanFly$Endangered"
 
-  NAMEOF_ENUM(HasClaws | CanFly) -> ""
-  nameof_enum(HasClaws | CanFly) -> ""
+  NAMEOF_ENUM(static_cast<AnimalFlags>(HasClaws | CanFly)) -> ""
+  nameof::nameof_enum(static_cast<AnimalFlags>(HasClaws | CanFly)) -> ""
   ```
 
 * Compiler compatibility
@@ -262,7 +261,7 @@
 
   ```cpp
   using T = const int&;
-  NAMEOF_TYPE(T) -> "const int&"
+  NAMEOF_FULL_TYPE(T) -> "const int&"
   nameof::nameof_full_type<T>() -> "const int&"
   ```
 
@@ -296,7 +295,7 @@
 
 ## `NAMEOF_TYPE_EXPR`
 
-* Obtains string name type of expression, reference and cv-qualifiers are ignored.
+* Obtains type name of expression, reference and cv-qualifiers are ignored.
 
 * Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
@@ -394,9 +393,15 @@
 * Examples
 
   ```cpp
-  volatile const my::detail::Base* ptr = new my::detail::Derived();
+  my::detail::Base* ptr = new my::detail::Derived();
+  volatile const my::detail::Base& cv_ref = *ptr;
   NAMEOF_FULL_TYPE_RTTI(cv_ref) -> "volatile const my::detail::Derived&"
-  ``
+  ```
+
+* Compiler compatibility
+  Clang/LLVM >= 5 and C++ >= 17 and RTTI enabled</br>
+  Visual Studio >= 2017 and C++ >= 17 and RTTI enabled</br>
+  GCC >= 7 and C++ >= 17 and RTTI enabled</br>
 
 ## `NAMEOF_SHORT_TYPE_RTTI`
 
@@ -430,7 +435,7 @@
   };
   // ..
   NAMEOF_MEMBER(&A::this_is_the_name) -> "this_is_the_name"
-  nameof::nameof_member(&A::this_is_the_name) -> "this_is_the_name"
+  nameof::nameof_member<&A::this_is_the_name>() -> "this_is_the_name"
   ```
 
 * Compiler compatibility
@@ -447,13 +452,14 @@
 * Examples
   ```cpp
   int someglobalvariable = 0;
+  const int someglobalconstvariable = 42;
   // ..
   NAMEOF_POINTER(&someglobalconstvariable) == "someglobalconstvariable"
-  nameof::nameof_pointer(&someglobalconstvariable) == "someglobalconstvariable"
+  nameof::nameof_pointer<&someglobalconstvariable>() == "someglobalconstvariable"
 
   constexpr auto global_ptr = &someglobalvariable;
-  NAMEOF_POINTER(global_ptr) == "someglobalconstvariable"
-  nameof::nameof_pointer(global_ptr) == "someglobalconstvariable"
+  NAMEOF_POINTER(global_ptr) == "someglobalvariable"
+  nameof::nameof_pointer<global_ptr>() == "someglobalvariable"
   ```
 
 * Compiler compatibility

@@ -37,7 +37,6 @@ If you like this project, please consider donating to one of the funds that help
 
   // Name of macro.
   NAMEOF(__LINE__) -> "__LINE__"
-  NAMEOF(NAMEOF(structvar)) -> "NAMEOF"
 
   // Obtains full name of variable, function, macro.
   NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
@@ -61,12 +60,15 @@ If you like this project, please consider donating to one of the funds that help
   NAMEOF_ENUM_CONST(Color::GREEN) -> "GREEN"
   nameof::nameof_enum<Color::GREEN>() -> "GREEN"
 
+  enum AnimalFlags { HasClaws = 1, CanFly = 2, EatsFish = 4 };
+
   // Enum flags variable to string.
-  NAMEOF_ENUM_FLAG(Color::GREEN | Color::BLUE) -> "GREEN|BLUE"
-  nameof::nameof_enum_flag<Color::GREEN | Color::BLUE>() -> "GREEN|BLUE"
+  auto flag = static_cast<AnimalFlags>(CanFly | EatsFish);
+  NAMEOF_ENUM_FLAG(flag) -> "CanFly|EatsFish"
+  nameof::nameof_enum_flag(flag) -> "CanFly|EatsFish"
 
   // Obtains name of enum variable or default value if enum variable out of range.
-  NAMEOF_ENUM_OR(Color::GREEN) -> "GREEN"
+  NAMEOF_ENUM_OR(Color::GREEN, "none") -> "GREEN"
   NAMEOF_ENUM_OR((Color)0, "none") -> "none"
   ```
 
@@ -94,7 +96,7 @@ If you like this project, please consider donating to one of the funds that help
   my::detail::Base* ptr = new my::detail::Derived();
   // Name of type, using rtti.
   NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
-  NAMEOF_FULL_TYPE_RTTI(*ptr) -> "volatile const my::detail::Derived&"
+  NAMEOF_FULL_TYPE_RTTI(*ptr) -> "my::detail::Derived&"
   NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "Derived"
 
   struct A {
@@ -102,16 +104,17 @@ If you like this project, please consider donating to one of the funds that help
   };
   // Obtains name of member.
   NAMEOF_MEMBER(&A::this_is_the_name) -> "this_is_the_name"
-  nameof::nameof_member(&A::this_is_the_name) -> "this_is_the_name"
+  nameof::nameof_member<&A::this_is_the_name>() -> "this_is_the_name"
 
   int someglobalvariable = 0;
+  const int someglobalconstvariable = 42;
   // Obtains name of a function, a global or class static variable.
   NAMEOF_POINTER(&someglobalconstvariable) == "someglobalconstvariable"
-  nameof::nameof_pointer(&someglobalconstvariable) == "someglobalconstvariable"
+  nameof::nameof_pointer<&someglobalconstvariable>() == "someglobalconstvariable"
 
   constexpr auto global_ptr = &someglobalvariable;
-  NAMEOF_POINTER(global_ptr) == "someglobalconstvariable"
-  nameof::nameof_pointer(global_ptr) == "someglobalconstvariable"
+  NAMEOF_POINTER(global_ptr) == "someglobalvariable"
+  nameof::nameof_pointer<global_ptr>() == "someglobalvariable"
   ```
 
 ## Remarks
