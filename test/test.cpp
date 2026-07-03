@@ -25,6 +25,7 @@
 
 #include <string>
 #include <string_view>
+#include <sstream>
 #include <stdexcept>
 #include <type_traits>
 
@@ -138,6 +139,39 @@ enum class OutOfRange {
   too_high = NAMEOF_ENUM_RANGE_MAX + 1
 };
 
+enum class CustomEnum { default_name = 1, custom_name = 2 };
+
+struct CustomNameTarget {
+  int member = 0;
+};
+
+inline int custom_pointer_value = 0;
+
+template <>
+constexpr nameof::string_view nameof::customize::enum_name<CustomEnum>(CustomEnum value) noexcept {
+  switch (value) {
+    case CustomEnum::custom_name:
+      return "custom enum";
+    default:
+      return {};
+  }
+}
+
+template <>
+constexpr nameof::string_view nameof::customize::type_name<CustomNameTarget>() noexcept {
+  return "CustomType";
+}
+
+template <>
+constexpr nameof::string_view nameof::customize::member_name<&CustomNameTarget::member>() noexcept {
+  return "custom_member";
+}
+
+template <>
+constexpr nameof::string_view nameof::customize::pointer_name<&custom_pointer_value>() noexcept {
+  return "custom_pointer";
+}
+
 struct TestRtti {
   struct Base { virtual ~Base() = default; };
   struct Derived : Base {};
@@ -166,6 +200,14 @@ void require_cstring_contract(const Name& name, ::nameof::string_view expected) 
 }
 
 template <typename Name>
+void require_expression_cstring_contract(const Name& name, ::nameof::string_view expected) {
+  static_assert(!std::is_convertible_v<Name, ::nameof::string_view>);
+  static_assert(std::is_convertible_v<const Name&, ::nameof::string_view>);
+  static_assert(std::is_constructible_v<::nameof::string, Name>);
+  require_cstring_contract(name, expected);
+}
+
+template <typename Name>
 void require_string_view_uses_cstring_storage(::nameof::string_view view, const Name& storage, ::nameof::string_view expected) {
   require_cstring_contract(storage, expected);
   REQUIRE(view == expected);
@@ -182,6 +224,47 @@ void require_string_contract(const ::nameof::string& value, ::nameof::string_vie
   REQUIRE(value == expected);
   REQUIRE(value.c_str() != nullptr);
   REQUIRE(value.c_str()[value.size()] == '\0');
+}
+
+template <typename Name>
+void require_static_cstring_api_contract(const Name& name, ::nameof::string_view expected) {
+  static_assert(std::is_convertible_v<const Name&, ::nameof::string_view>);
+  static_assert(!std::is_convertible_v<Name, ::nameof::string_view>);
+  static_assert(std::is_constructible_v<::nameof::string, const Name&>);
+  require_cstring_contract(name, expected);
+  require_string_contract(::nameof::string{name}, expected);
+}
+
+TEST_CASE("support constants") {
+#if defined(NAMEOF_ENUM_SUPPORTED)
+  static_assert(nameof::is_nameof_enum_supported);
+#else
+  static_assert(!nameof::is_nameof_enum_supported);
+#endif
+
+#if defined(NAMEOF_TYPE_SUPPORTED)
+  static_assert(nameof::is_nameof_type_supported);
+#else
+  static_assert(!nameof::is_nameof_type_supported);
+#endif
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  static_assert(nameof::is_nameof_type_rtti_supported);
+#else
+  static_assert(!nameof::is_nameof_type_rtti_supported);
+#endif
+
+#if defined(NAMEOF_MEMBER_SUPPORTED)
+  static_assert(nameof::is_nameof_member_supported);
+#else
+  static_assert(!nameof::is_nameof_member_supported);
+#endif
+
+#if defined(NAMEOF_POINTER_SUPPORTED)
+  static_assert(nameof::is_nameof_pointer_supported);
+#else
+  static_assert(!nameof::is_nameof_pointer_supported);
+#endif
 }
 
 TEST_CASE("NAMEOF") {
@@ -221,7 +304,9 @@ TEST_CASE("NAMEOF") {
   }
 
   SUBCASE("cstring") {
-    require_cstring_contract(NAMEOF(othervar), "othervar");
+    constexpr auto name = NAMEOF(othervar);
+    require_expression_cstring_contract(name, "othervar");
+    require_string_contract(::nameof::string{NAMEOF(othervar)}, "othervar");
   }
 }
 
@@ -251,15 +336,35 @@ TEST_CASE("CSTRING") {
         REQUIRE(cstring_N.compare("d") < 0);
 
         REQUIRE((cstring_N > "b") == true);
+        REQUIRE(("b" < cstring_N) == true);
         REQUIRE((cstring_N > "content") == false);
         REQUIRE((cstring_N > "d") == false);
         REQUIRE((cstring_N < "b") == false);
         REQUIRE((cstring_N < "content") == false);
         REQUIRE((cstring_N < "d") == true);
+        REQUIRE((cstring_N >= "b") == true);
+        REQUIRE((cstring_N >= "content") == true);
+        REQUIRE((cstring_N >= "d") == false);
+        REQUIRE((cstring_N <= "b") == false);
+        REQUIRE((cstring_N <= "content") == true);
+        REQUIRE((cstring_N <= "d") == true);
+        REQUIRE(("d" > cstring_N) == true);
+        REQUIRE(("d" >= cstring_N) == true);
+        REQUIRE(("b" <= cstring_N) == true);
+        REQUIRE(("content" >= cstring_N) == true);
+        REQUIRE(("content" <= cstring_N) == true);
         REQUIRE((cstring_N == "content") == true);
+        REQUIRE(("content" == cstring_N) == true);
         REQUIRE((cstring_N == "different") == false);
         REQUIRE((cstring_N != "content") == false);
         REQUIRE((cstring_N != "different") == true);
+        REQUIRE(("different" != cstring_N) == true);
+    }
+    SUBCASE("iterators") {
+        REQUIRE(::nameof::string{cstring_N.begin(), cstring_N.end()} == content);
+        REQUIRE(::nameof::string{cstring_N.cbegin(), cstring_N.cend()} == content);
+        REQUIRE(::nameof::string{cstring_N.rbegin(), cstring_N.rend()} == "tnetnoc");
+        REQUIRE(::nameof::string{cstring_N.crbegin(), cstring_N.crend()} == "tnetnoc");
     }
     SUBCASE("retrieval") {
         REQUIRE(cstring_N.str() == content);
@@ -275,6 +380,11 @@ TEST_CASE("CSTRING") {
 
         REQUIRE(cstring_N.front() == 'c');
         REQUIRE(cstring_N.back() == 't');
+    }
+    SUBCASE("stream") {
+        std::ostringstream os;
+        os << cstring_N;
+        REQUIRE(os.str() == content);
     }
 }
 
@@ -303,9 +413,25 @@ TEST_CASE("CSTRING_0") {
         REQUIRE(cstring_0.compare("different") < 0);
 
         REQUIRE((cstring_0 > "different") == false);
+        REQUIRE(("different" > cstring_0) == true);
         REQUIRE((cstring_0 < "different") == true);
+        REQUIRE((cstring_0 >= "") == true);
+        REQUIRE(("" >= cstring_0) == true);
+        REQUIRE((cstring_0 <= "") == true);
+        REQUIRE(("" <= cstring_0) == true);
+        REQUIRE((cstring_0 >= "different") == false);
+        REQUIRE(("different" <= cstring_0) == false);
+        REQUIRE((cstring_0 <= "different") == true);
+        REQUIRE(("different" >= cstring_0) == true);
         REQUIRE((cstring_0 == "different") == false);
         REQUIRE((cstring_0 != "different") == true);
+    }
+    SUBCASE("iterators") {
+        REQUIRE(cstring_0.begin() == cstring_0.end());
+        REQUIRE(cstring_0.cbegin() == cstring_0.cend());
+        REQUIRE(cstring_0.rbegin() == cstring_0.rend());
+        REQUIRE(cstring_0.crbegin() == cstring_0.crend());
+        REQUIRE(::nameof::string{cstring_0.rbegin(), cstring_0.rend()}.empty());
     }
     SUBCASE("retrieval") {
         REQUIRE(cstring_0.str() == empty);
@@ -320,6 +446,11 @@ TEST_CASE("CSTRING_0") {
         REQUIRE(cstring_0.begin() == cstring_0.end());
         REQUIRE(cstring_0.cbegin() == cstring_0.cend());
     }
+    SUBCASE("stream") {
+        std::ostringstream os;
+        os << cstring_0;
+        REQUIRE(os.str().empty());
+    }
 }
 
 TEST_CASE("CSTRING_FORMAT") {
@@ -331,7 +462,10 @@ TEST_CASE("CSTRING_FORMAT") {
     REQUIRE(std::is_default_constructible_v<std::formatter<short_type_t, char>>);
     REQUIRE(std::is_default_constructible_v<std::formatter<::nameof::cstring<0>, char>>);
     REQUIRE(std::format("{}", some_struct) == "SomeStruct");
+    REQUIRE(std::format("{:^12}", some_struct) == " SomeStruct ");
+    REQUIRE(std::format("{:.4}", some_struct) == "Some");
     REQUIRE(std::format("{}", empty).empty());
+    REQUIRE(std::format("{:>3}", empty) == "   ");
   }
 #endif
 
@@ -340,7 +474,10 @@ TEST_CASE("CSTRING_FORMAT") {
     constexpr auto some_struct = NAMEOF_SHORT_TYPE(SomeStruct);
     constexpr auto empty = ::nameof::cstring<0>{};
     REQUIRE(fmt::format("{}", some_struct) == "SomeStruct");
+    REQUIRE(fmt::format("{:^12}", some_struct) == " SomeStruct ");
+    REQUIRE(fmt::format("{:.4}", some_struct) == "Some");
     REQUIRE(fmt::format("{}", empty).empty());
+    REQUIRE(fmt::format("{:>3}", empty) == "   ");
   }
 #endif
 }
@@ -382,7 +519,9 @@ TEST_CASE("NAMEOF_FULL") {
   }
 
   SUBCASE("cstring") {
-    require_cstring_contract(NAMEOF_FULL(SomeMethod4<int, float>), "SomeMethod4<int, float>");
+    constexpr auto name = NAMEOF_FULL(SomeMethod4<int, float>);
+    require_expression_cstring_contract(name, "SomeMethod4<int, float>");
+    require_string_contract(::nameof::string{NAMEOF_FULL(SomeMethod4<int, float>)}, "SomeMethod4<int, float>");
   }
 }
 
@@ -438,7 +577,9 @@ TEST_CASE("NAMEOF_RAW") {
   }
 
   SUBCASE("cstring") {
-    require_cstring_contract(NAMEOF_RAW(&struct_var), "&struct_var");
+    constexpr auto name = NAMEOF_RAW(&struct_var);
+    require_expression_cstring_contract(name, "&struct_var");
+    require_string_contract(::nameof::string{NAMEOF_RAW(&struct_var)}, "&struct_var");
   }
 }
 
@@ -699,9 +840,83 @@ TEST_CASE("NAMEOF_ENUM_OR") {
   REQUIRE(low_name == "-121");
   REQUIRE(high_name == "121");
   REQUIRE(NAMEOF_ENUM_OR(oor[0], "121") == "121");
+  require_string_contract(low_name, "-121");
+  require_string_contract(high_name, "121");
 }
 
 #endif
+
+TEST_CASE("customize") {
+#if defined(NAMEOF_ENUM_SUPPORTED)
+  REQUIRE(nameof::nameof_enum(CustomEnum::custom_name) == "custom enum");
+  REQUIRE(nameof::nameof_enum(CustomEnum::default_name) == "default_name");
+  require_string_view_contract(nameof::nameof_enum(CustomEnum::custom_name), "custom enum");
+  require_cstring_contract(nameof::nameof_enum<CustomEnum::custom_name>(), "custom enum");
+  require_cstring_contract(NAMEOF_ENUM_CONST(CustomEnum::custom_name), "custom enum");
+#endif
+
+#if defined(NAMEOF_TYPE_SUPPORTED)
+  require_cstring_contract(nameof::nameof_type<CustomNameTarget>(), "CustomType");
+  require_cstring_contract(nameof::nameof_full_type<CustomNameTarget>(), "CustomType");
+  require_cstring_contract(nameof::nameof_short_type<CustomNameTarget>(), "CustomType");
+  require_cstring_contract(NAMEOF_TYPE(CustomNameTarget), "CustomType");
+#endif
+
+#if defined(NAMEOF_MEMBER_SUPPORTED)
+  require_cstring_contract(nameof::nameof_member<&CustomNameTarget::member>(), "custom_member");
+  require_cstring_contract(NAMEOF_MEMBER(&CustomNameTarget::member), "custom_member");
+#endif
+
+#if defined(NAMEOF_POINTER_SUPPORTED)
+  require_cstring_contract(nameof::nameof_pointer<&custom_pointer_value>(), "custom_pointer");
+  require_cstring_contract(NAMEOF_POINTER(&custom_pointer_value), "custom_pointer");
+#endif
+}
+
+TEST_CASE("static cstring api contract") {
+#if defined(NAMEOF_ENUM_SUPPORTED)
+  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_enum<Color::BLUE>())>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_ENUM_CONST(Color::BLUE))>);
+  require_static_cstring_api_contract(nameof::nameof_enum<Color::BLUE>(), "BLUE");
+  require_static_cstring_api_contract(NAMEOF_ENUM_CONST(Color::BLUE), "BLUE");
+#endif
+
+#if defined(NAMEOF_TYPE_SUPPORTED)
+  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_type<SomeStruct>())>);
+  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_full_type<SomeStruct&>())>);
+  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_short_type<SomeStruct>())>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_TYPE(SomeStruct))>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_FULL_TYPE(SomeStruct&))>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_SHORT_TYPE(SomeStruct))>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_TYPE_EXPR(struct_var))>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_FULL_TYPE_EXPR(ref_s))>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_SHORT_TYPE_EXPR(struct_var))>);
+
+  require_static_cstring_api_contract(nameof::nameof_type<SomeStruct>(), NAMEOF_TYPE(SomeStruct));
+  require_static_cstring_api_contract(nameof::nameof_full_type<SomeStruct&>(), NAMEOF_FULL_TYPE(SomeStruct&));
+  require_static_cstring_api_contract(nameof::nameof_short_type<SomeStruct>(), "SomeStruct");
+  require_static_cstring_api_contract(NAMEOF_TYPE(SomeStruct), NAMEOF_TYPE(SomeStruct));
+  require_static_cstring_api_contract(NAMEOF_FULL_TYPE(SomeStruct&), NAMEOF_FULL_TYPE(SomeStruct&));
+  require_static_cstring_api_contract(NAMEOF_SHORT_TYPE(SomeStruct), "SomeStruct");
+  require_static_cstring_api_contract(NAMEOF_TYPE_EXPR(struct_var), NAMEOF_TYPE(SomeStruct));
+  require_static_cstring_api_contract(NAMEOF_FULL_TYPE_EXPR(ref_s), NAMEOF_FULL_TYPE(SomeStruct&));
+  require_static_cstring_api_contract(NAMEOF_SHORT_TYPE_EXPR(struct_var), "SomeStruct");
+#endif
+
+#if defined(NAMEOF_MEMBER_SUPPORTED)
+  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_member<&SomeStruct::somefield>())>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_MEMBER(&SomeStruct::somefield))>);
+  require_static_cstring_api_contract(nameof::nameof_member<&SomeStruct::somefield>(), "somefield");
+  require_static_cstring_api_contract(NAMEOF_MEMBER(&SomeStruct::somefield), "somefield");
+#endif
+
+#if defined(NAMEOF_POINTER_SUPPORTED)
+  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_pointer<&someglobalconstvariable>())>);
+  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_POINTER(&someglobalconstvariable))>);
+  require_static_cstring_api_contract(nameof::nameof_pointer<&someglobalconstvariable>(), "someglobalconstvariable");
+  require_static_cstring_api_contract(NAMEOF_POINTER(&someglobalconstvariable), "someglobalconstvariable");
+#endif
+}
 
 #if defined(NAMEOF_TYPE_SUPPORTED)
 
@@ -1129,68 +1344,86 @@ TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
 
 TEST_CASE("NAMEOF_TYPE_RTTI") {
-  TestRtti::Base* ptr = new TestRtti::Derived();
+  TestRtti::Derived object;
+  TestRtti::Base* ptr = &object;
   const TestRtti::Base& const_ref = *ptr;
   volatile TestRtti::Base& volatile_ref = *ptr;
   volatile const TestRtti::Base& cv_ref = *ptr;
+  const auto ptr_name = NAMEOF_TYPE_RTTI(*ptr);
+  const auto const_ref_name = NAMEOF_TYPE_RTTI(const_ref);
+  const auto volatile_ref_name = NAMEOF_TYPE_RTTI(volatile_ref);
+  const auto cv_ref_name = NAMEOF_TYPE_RTTI(cv_ref);
 #if defined(__clang__) && !defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "TestRtti::Derived");
+  require_string_contract(ptr_name, "TestRtti::Derived");
+  require_string_contract(const_ref_name, "TestRtti::Derived");
+  require_string_contract(volatile_ref_name, "TestRtti::Derived");
+  require_string_contract(cv_ref_name, "TestRtti::Derived");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "struct TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "struct TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "struct TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "struct TestRtti::Derived");
+  require_string_contract(ptr_name, "struct TestRtti::Derived");
+  require_string_contract(const_ref_name, "struct TestRtti::Derived");
+  require_string_contract(volatile_ref_name, "struct TestRtti::Derived");
+  require_string_contract(cv_ref_name, "struct TestRtti::Derived");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_TYPE_RTTI(*ptr) == "TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(const_ref) == "TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(volatile_ref) == "TestRtti::Derived");
-  REQUIRE(NAMEOF_TYPE_RTTI(cv_ref) == "TestRtti::Derived");
+  require_string_contract(ptr_name, "TestRtti::Derived");
+  require_string_contract(const_ref_name, "TestRtti::Derived");
+  require_string_contract(volatile_ref_name, "TestRtti::Derived");
+  require_string_contract(cv_ref_name, "TestRtti::Derived");
 #endif
 }
 
 TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
-  TestRtti::Base* ptr = new TestRtti::Derived();
+  TestRtti::Derived object;
+  TestRtti::Base* ptr = &object;
   const TestRtti::Base& const_ref = *ptr;
   volatile TestRtti::Base& volatile_ref = *ptr;
   volatile const TestRtti::Base& cv_ref = *ptr;
+  const auto ptr_name = NAMEOF_FULL_TYPE_RTTI(*ptr);
+  const auto const_ref_name = NAMEOF_FULL_TYPE_RTTI(const_ref);
+  const auto volatile_ref_name = NAMEOF_FULL_TYPE_RTTI(volatile_ref);
+  const auto cv_ref_name = NAMEOF_FULL_TYPE_RTTI(cv_ref);
 #if defined(__clang__) && !defined(_MSC_VER)
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(volatile_ref) == "volatile TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(cv_ref) == "volatile const TestRtti::Derived&");
+  require_string_contract(ptr_name, "TestRtti::Derived&");
+  require_string_contract(const_ref_name, "const TestRtti::Derived&");
+  require_string_contract(volatile_ref_name, "volatile TestRtti::Derived&");
+  require_string_contract(cv_ref_name, "volatile const TestRtti::Derived&");
 #elif defined(_MSC_VER)
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "struct TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const struct TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(volatile_ref) == "volatile struct TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(cv_ref) == "volatile const struct TestRtti::Derived&");
+  require_string_contract(ptr_name, "struct TestRtti::Derived&");
+  require_string_contract(const_ref_name, "const struct TestRtti::Derived&");
+  require_string_contract(volatile_ref_name, "volatile struct TestRtti::Derived&");
+  require_string_contract(cv_ref_name, "volatile const struct TestRtti::Derived&");
 #elif defined(__GNUC__)
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(*ptr) == "TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(const_ref) == "const TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(volatile_ref) == "volatile TestRtti::Derived&");
-  REQUIRE(NAMEOF_FULL_TYPE_RTTI(cv_ref) == "volatile const TestRtti::Derived&");
+  require_string_contract(ptr_name, "TestRtti::Derived&");
+  require_string_contract(const_ref_name, "const TestRtti::Derived&");
+  require_string_contract(volatile_ref_name, "volatile TestRtti::Derived&");
+  require_string_contract(cv_ref_name, "volatile const TestRtti::Derived&");
 #endif
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
-  TestRtti::Base* ptr = new TestRtti::Derived();
+  TestRtti::Derived object;
+  TestRtti::Base* ptr = &object;
   const TestRtti::Base& const_ref = *ptr;
   volatile TestRtti::Base& volatile_ref = *ptr;
   volatile const TestRtti::Base& cv_ref = *ptr;
 
-  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(*ptr) == "Derived");
-  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(const_ref) == "Derived");
-  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(volatile_ref) == "Derived");
-  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(cv_ref) == "Derived");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(*ptr), "Derived");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(const_ref), "Derived");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(volatile_ref), "Derived");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(cv_ref), "Derived");
 }
 
 #if __has_include(<cxxabi.h>)
+TEST_CASE("NAMEOF_TYPE_RTTI demangle success") {
+  const auto name = typeid(TestRtti::Derived).name();
+  require_string_contract(nameof::detail::nameof_type_rtti<TestRtti::Derived>(name), "TestRtti::Derived");
+  require_string_contract(nameof::detail::nameof_full_type_rtti<const TestRtti::Derived&>(name), "const TestRtti::Derived&");
+  require_string_contract(nameof::detail::nameof_short_type_rtti<TestRtti::Derived>(name), "Derived");
+}
+
 TEST_CASE("NAMEOF_TYPE_RTTI demangle fallback") {
-  REQUIRE(nameof::detail::nameof_type_rtti<void>("not_a_mangled_type") == "not_a_mangled_type");
-  REQUIRE(nameof::detail::nameof_full_type_rtti<const int&>("not_a_mangled_type") == "const not_a_mangled_type&");
-  REQUIRE(nameof::detail::nameof_short_type_rtti<void>("some_namespace::not_a_mangled_type") == "not_a_mangled_type");
+  require_string_contract(nameof::detail::nameof_type_rtti<void>("not_a_mangled_type"), "not_a_mangled_type");
+  require_string_contract(nameof::detail::nameof_full_type_rtti<const int&>("not_a_mangled_type"), "const not_a_mangled_type&");
+  require_string_contract(nameof::detail::nameof_short_type_rtti<void>("some_namespace::not_a_mangled_type"), "not_a_mangled_type");
 }
 #endif
 
