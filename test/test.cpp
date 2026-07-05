@@ -141,6 +141,13 @@ enum class OutOfRange {
 
 enum class CustomEnum { default_name = 1, custom_name = 2 };
 
+namespace {
+enum class HiddenEnum { A = 1 };
+namespace {
+enum class NestedHiddenEnum { A = 1 };
+}
+}
+
 struct CustomNameTarget {
   int member = 0;
 };
@@ -156,6 +163,25 @@ constexpr nameof::string_view nameof::customize::enum_name<CustomEnum>(CustomEnu
       return {};
   }
 }
+
+#if defined(NAMEOF_ENUM_SUPPORTED)
+static_assert(nameof::detail::is_valid<Color, -12>(), "nameof::detail::is_valid requires valid enum values.");
+static_assert(!nameof::detail::is_valid<Color, 0>(), "nameof::detail::is_valid requires invalid enum values.");
+static_assert(nameof::detail::is_valid<Numbers, 127>(), "nameof::detail::is_valid requires valid enum values.");
+static_assert(!nameof::detail::is_valid<Numbers, 0>(), "nameof::detail::is_valid requires invalid enum values.");
+static_assert(nameof::detail::is_valid<AnimalFlags, 1>(), "nameof::detail::is_valid requires valid flag values.");
+static_assert(!nameof::detail::is_valid<AnimalFlags, 3>(), "nameof::detail::is_valid requires invalid flag values.");
+static_assert(nameof::detail::is_valid<CustomEnum, 2>(), "nameof::detail::is_valid requires custom enum names.");
+static_assert(!nameof::detail::is_valid<CustomEnum, 0>(), "nameof::detail::is_valid requires invalid custom enum values.");
+static_assert(nameof::detail::is_valid<HiddenEnum, 1>(), "nameof::detail::is_valid requires anonymous namespace enum values.");
+static_assert(!nameof::detail::is_valid<HiddenEnum, 0>(), "nameof::detail::is_valid requires invalid anonymous namespace enum values.");
+static_assert(nameof::nameof_enum(HiddenEnum::A) == "A", "nameof::nameof_enum requires anonymous namespace enum values.");
+static_assert(NAMEOF_ENUM_CONST(HiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires anonymous namespace enum values.");
+static_assert(nameof::detail::is_valid<NestedHiddenEnum, 1>(), "nameof::detail::is_valid requires nested anonymous namespace enum values.");
+static_assert(!nameof::detail::is_valid<NestedHiddenEnum, 0>(), "nameof::detail::is_valid requires invalid nested anonymous namespace enum values.");
+static_assert(nameof::nameof_enum(NestedHiddenEnum::A) == "A", "nameof::nameof_enum requires nested anonymous namespace enum values.");
+static_assert(NAMEOF_ENUM_CONST(NestedHiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires nested anonymous namespace enum values.");
+#endif
 
 template <>
 constexpr nameof::string_view nameof::customize::type_name<CustomNameTarget>() noexcept {

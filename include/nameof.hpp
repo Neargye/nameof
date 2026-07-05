@@ -504,6 +504,59 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
   return {}; // Invalid name.
 }
 
+constexpr bool enum_name_valid(string_view name) noexcept {
+#if defined(__clang__)
+  constexpr auto anonymous_namespace_size = sizeof("(anonymous namespace)::") - 1;
+  while (name.size() > anonymous_namespace_size &&
+         name[0] == '(' &&
+         name[1] == 'a' &&
+         name[10] == ' ' &&
+         name[20] == ')' &&
+         name[21] == ':' &&
+         name[22] == ':') {
+    name.remove_prefix(anonymous_namespace_size);
+  }
+#elif defined(__GNUC__)
+  constexpr auto gcc_anonymous_namespace_size = sizeof("{anonymous}::") - 1;
+  while (name.size() > gcc_anonymous_namespace_size &&
+         name[0] == '{' &&
+         name[1] == 'a' &&
+         name[10] == '}' &&
+         name[11] == ':' &&
+         name[12] == ':') {
+    name.remove_prefix(gcc_anonymous_namespace_size);
+  }
+  constexpr auto unnamed_namespace_size = sizeof("<unnamed>::") - 1;
+  while (name.size() > unnamed_namespace_size &&
+         name[0] == '<' &&
+         name[1] == 'u' &&
+         name[8] == '>' &&
+         name[9] == ':' &&
+         name[10] == ':') {
+    name.remove_prefix(unnamed_namespace_size);
+  }
+#elif defined(_MSC_VER)
+  constexpr auto msvc_anonymous_namespace_size = sizeof("`anonymous-namespace'::") - 1;
+  while (name.size() > msvc_anonymous_namespace_size &&
+         name[0] == '`' &&
+         name[1] == 'a' &&
+         name[10] == '-' &&
+         name[20] == '\'' &&
+         name[21] == ':' &&
+         name[22] == ':') {
+    name.remove_prefix(msvc_anonymous_namespace_size);
+  }
+#endif
+
+  return name.size() > 0 &&
+         name[0] != '(' &&
+         name[0] != '-' &&
+         !(name[0] >= '0' && name[0] <= '9') &&
+         ((name[0] >= 'a' && name[0] <= 'z') ||
+          (name[0] >= 'A' && name[0] <= 'Z') ||
+          (name[0] == '_'));
+}
+
 #if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
 #  define NAMEOF_ARRAY_CONSTEXPR 1
 #else
@@ -579,6 +632,33 @@ constexpr auto n() noexcept {
   }
 }
 
+template <auto V>
+constexpr bool nv() noexcept {
+  using E = decltype(V);
+  static_assert(is_enum_v<E>, "nameof::detail::nv requires enum type.");
+
+  if constexpr (nameof_enum_supported<E>::value) {
+#if defined(__GNUC__) && !defined(__clang__)
+    constexpr auto prefix = sizeof("constexpr bool nameof::detail::nv() [with auto V = ") - 1;
+    static_assert(sizeof(__PRETTY_FUNCTION__) > prefix + 2, "nameof::detail::nv requires valid __PRETTY_FUNCTION__.");
+    return enum_name_valid({__PRETTY_FUNCTION__ + prefix, sizeof(__PRETTY_FUNCTION__) - prefix - 2});
+#elif defined(__clang__)
+    constexpr auto prefix = sizeof("bool nameof::detail::nv() [V = ") - 1;
+    static_assert(sizeof(__PRETTY_FUNCTION__) > prefix + 2, "nameof::detail::nv requires valid __PRETTY_FUNCTION__.");
+    return enum_name_valid({__PRETTY_FUNCTION__ + prefix, sizeof(__PRETTY_FUNCTION__) - prefix - 2});
+#elif defined(_MSC_VER)
+    constexpr auto prefix = __FUNCSIG__[5] == 'c' ? sizeof("bool const __cdecl nameof::detail::nv<") - 1 : sizeof("bool __cdecl nameof::detail::nv<") - 1;
+    constexpr auto suffix = sizeof(">(void) noexcept") - 1;
+    static_assert(sizeof(__FUNCSIG__) > prefix + suffix + 1, "nameof::detail::nv requires valid __FUNCSIG__.");
+    return enum_name_valid({__FUNCSIG__ + prefix, sizeof(__FUNCSIG__) - prefix - suffix - 1});
+#else
+    return false;
+#endif
+  } else {
+    return false;
+  }
+}
+
 template <typename E, E V>
 constexpr auto enum_name() noexcept {
   [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(V);
@@ -604,7 +684,7 @@ constexpr bool is_valid() noexcept {
 #endif
   [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(v);
   if constexpr (custom_name.empty()) {
-    return n<E, v>().size() != 0;
+    return nv<v>();
   } else {
     return custom_name.size() != 0;
   }
