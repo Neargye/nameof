@@ -1183,7 +1183,7 @@ template <typename E>
   return string_view{""};
 }
 
-// Obtains name of enum variable or default value if enum variable out of range.
+// Obtains name of enum value or default value if no name is available.
 template <typename E>
 [[nodiscard]] auto nameof_enum_or(E value, string_view default_value) -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
@@ -1197,7 +1197,7 @@ template <typename E>
   return string{default_value.data(), default_value.size()};
 }
 
-// Obtains name of enum-flags variable.
+// Obtains name of enum flag value.
 template <typename E>
 [[nodiscard]] auto nameof_enum_flag(E value, char sep = '|') -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
@@ -1216,7 +1216,7 @@ template <typename E>
         }
         name.append(n.data(), n.size());
       } else {
-        return {}; // Value out of range.
+        return {}; // Unnamed flag.
       }
     }
   }
@@ -1224,7 +1224,7 @@ template <typename E>
   if (check_value != 0 && check_value == static_cast<U>(value)) {
     return name;
   }
-  return {}; // Invalid value or out of range.
+  return {}; // Invalid value.
 }
 
 // Obtains name of static storage enum variable.
@@ -1337,14 +1337,14 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 // Obtains name of enum variable.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
-// Obtains name of enum variable or default value if enum variable out of range.
+// Obtains name of enum value or default value if no name is available.
 #define NAMEOF_ENUM_OR(...) ::nameof::nameof_enum_or(__VA_ARGS__)
 
 // Obtains name of static storage enum variable.
 // This version is much lighter on the compile times and is not restricted to the enum_range limitation.
 #define NAMEOF_ENUM_CONST(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
-// Obtains name of enum-flags variable.
+// Obtains name of enum flag value.
 #define NAMEOF_ENUM_FLAG(...) ::nameof::nameof_enum_flag<::std::decay_t<decltype(__VA_ARGS__)>>(__VA_ARGS__)
 
 // Obtains type name, reference and cv-qualifiers are ignored.

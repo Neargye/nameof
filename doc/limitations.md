@@ -26,12 +26,10 @@
 
 * This library uses a compiler-specific hack (based on `__PRETTY_FUNCTION__` / `__FUNCSIG__`), which works on Clang >= 5, MSVC >= 15.3 and GCC >= 9.
 
-* Do not use [nameof](https://github.com/Neargye/nameof) and [magic_enum](https://github.com/Neargye/magic_enum) in the same project to get enum name.
-
 * To check if nameof_enum is supported by your compiler use the macro `NAMEOF_ENUM_SUPPORTED` or constexpr constant `nameof::is_nameof_enum_supported`.</br>
   If nameof_enum is used on an unsupported compiler, a compilation error occurs. To suppress the error define the macro `NAMEOF_ENUM_NO_CHECK_SUPPORT`.
 
-* Enum value must be in range `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`.
+* Runtime reflection of ordinary enum values is limited to `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`. `NAMEOF_ENUM_CONST`, `nameof::nameof_enum<V>()`, `NAMEOF_ENUM_FLAG`, and `nameof::nameof_enum_flag()` are not restricted by this range.
 
   * By default `NAMEOF_ENUM_RANGE_MIN = -128`, `NAMEOF_ENUM_RANGE_MAX = 127`.
 
@@ -61,8 +59,8 @@
     };
     ```
 
-* Won't work if a value is aliased, support for enum-aliases is compiler-implementation-defined.
+* Names of aliased enum values are compiler-dependent.
 
-* Won't work if the enum is a forward declaration.
+* Forward-declared enums are not supported.
 
-* Intellisense Visual Studio may have some problems analyzing `nameof`.
+* Visual Studio IntelliSense may have problems analyzing some `nameof` expressions.

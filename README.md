@@ -7,7 +7,7 @@
 
 # Nameof C++
 
-Header-only C++17 library provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum.
+A header-only C++17 library that provides nameof macros and functions for obtaining the name of a variable, type, function, macro, or enum.
 
 If you like this project, please consider donating to one of the funds that help victims of the war in Ukraine: https://u24.gov.ua.
 
@@ -62,12 +62,12 @@ If you like this project, please consider donating to one of the funds that help
 
   enum AnimalFlags { HasClaws = 1, CanFly = 2, EatsFish = 4 };
 
-  // Enum flags variable to string.
+  // Enum flag value to string.
   auto flag = static_cast<AnimalFlags>(CanFly | EatsFish);
   NAMEOF_ENUM_FLAG(flag) -> "CanFly|EatsFish"
   nameof::nameof_enum_flag(flag) -> "CanFly|EatsFish"
 
-  // Obtains name of enum variable or default value if enum variable out of range.
+  // Obtains the name of an enum value, or the default value if no name is available.
   NAMEOF_ENUM_OR(Color::GREEN, "none") -> "GREEN"
   NAMEOF_ENUM_OR((Color)0, "none") -> "none"
   ```
@@ -123,7 +123,14 @@ If you like this project, please consider donating to one of the funds that help
 
 ## Integration
 
-You should add required file [nameof.hpp](include/nameof.hpp).
+To use the library directly, add [nameof.hpp](include/nameof.hpp) to your project.
+
+With an installed CMake package:
+
+```cmake
+find_package(nameof CONFIG REQUIRED)
+target_link_libraries(your_target PRIVATE nameof::nameof)
+```
 
 If you are using [vcpkg](https://github.com/Microsoft/vcpkg/) on your project for external dependencies, then you can use the [nameof package](https://github.com/microsoft/vcpkg/tree/master/ports/nameof).
 
@@ -143,6 +150,6 @@ CPMAddPackage(
 
 ## Compiler compatibility
 
-Check in the [reference](doc/reference.md) for each features.
+See the [reference](doc/reference.md) for the compiler requirements of each feature.
 
 ## Licensed under the [MIT License](LICENSE)

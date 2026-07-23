@@ -4,9 +4,9 @@
 * [`NAMEOF_FULL` obtains full name of variable, function, macro.](#nameof_full)
 * [`NAMEOF_RAW` obtains raw name of variable, function, macro.](#nameof_raw)
 * [`NAMEOF_ENUM` obtains name of enum variable.](#nameof_enum)
-* [`NAMEOF_ENUM_OR` obtains name of enum variable or default value if enum variable out of range.](#nameof_enum_or)
-* [`NAMEOF_ENUM_CONST` obtains name of static storage enum variable.](#nameof_enum_const)
-* [`NAMEOF_ENUM_FLAG` obtains name of enum-flags variable.](#nameof_enum_flag)
+* [`NAMEOF_ENUM_OR` obtains the name of an enum value, or a default value if no name is available.](#nameof_enum_or)
+* [`NAMEOF_ENUM_CONST` obtains the name of an enum value at compile time.](#nameof_enum_const)
+* [`NAMEOF_ENUM_FLAG` obtains the name of an enum flag value.](#nameof_enum_flag)
 * [`NAMEOF_TYPE` obtains type name.](#nameof_type)
 * [`NAMEOF_FULL_TYPE` obtains full type name.](#nameof_full_type)
 * [`NAMEOF_SHORT_TYPE` obtains short type name.](#nameof_short_type)
@@ -49,6 +49,8 @@
   #define NAMEOF_USING_ALIAS_STRING_VIEW using string_view = my_lib::StringView;
   #include <nameof.hpp>
   ```
+
+  The aliases must provide the subset of `std::string` and `std::string_view` operations used by nameof. See the tested [minimal interface](../test/test_aliases.cpp).
 
 * `std::format` support for `nameof::cstring` is enabled automatically when `<format>` is available. For `fmt`, include `fmt/format.h` before `nameof.hpp`.
 
@@ -134,7 +136,7 @@
 
 * Returns `string_view`. Marked `constexpr` and `noexcept`.
 
-* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `string_view`, in debug occurs assert.
+* If the argument does not have a name or is [out of range](limitations.md#nameof-enum), returns an empty `string_view`.
 
 * Examples
 
@@ -151,11 +153,11 @@
 
 ## `NAMEOF_ENUM_OR`
 
-* Obtains name of enum variable or default value if enum variable out of range.
+* Obtains the name of an enum value, or a default value if no name is available.
 
 * Returns `string`.
 
-* If argument does not have name or [out of range](limitations.md#nameof-enum), returns `default_value`.
+* If the value has no name, returns `default_value`.
 
   ```cpp
   auto color = Color::RED;
@@ -172,13 +174,13 @@
 
 ## `NAMEOF_ENUM_CONST`
 
-* Obtains name of static storage enum variable.
+* Obtains the name of an enum value known at compile time.
 
-* Returns reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
-* This version is much lighter on the compile times and is not restricted to the enum_range [limitation](limitations.md#nameof-enum).
+* This version has a lower compile-time cost and is not restricted by the [`enum_range`](limitations.md#nameof-enum).
 
-* If argument does not have name, occurs the compilation error `"Enum value does not have a name."`.
+* If the value has no name, returns an empty `nameof::cstring`.
 
 * Examples
 
@@ -194,11 +196,11 @@
 
 ## `NAMEOF_ENUM_FLAG`
 
-* Obtains name of enum flag variable.
+* Obtains the name of an enum flag value.
 
 * Returns `string`.
 
-* If argument does not have name or [out of range](limitations.md#nameof-enum), returns empty `string`, in debug occurs assert.
+* If the value is zero or contains an unnamed flag, returns an empty `string`.
 
 * Examples
 
