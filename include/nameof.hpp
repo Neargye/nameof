@@ -1188,10 +1188,11 @@ template <typename E>
 [[nodiscard]] auto nameof_enum_or(E value, string_view default_value) -> detail::enable_if_enum_t<E, string> {
   using D = std::decay_t<E>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_or unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(detail::count_v<D> > 0, "nameof::nameof_enum_or requires enum implementation and valid max and min.");
 
-  if (auto v = nameof_enum<D>(value); !v.empty()) {
-    return string{v.data(), v.size()};
+  if constexpr (detail::count_v<D> > 0) {
+    if (auto v = nameof_enum<D>(value); !v.empty()) {
+      return string{v.data(), v.size()};
+    }
   }
   return string{default_value.data(), default_value.size()};
 }

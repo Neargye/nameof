@@ -139,6 +139,11 @@ enum class OutOfRange {
   too_high = NAMEOF_ENUM_RANGE_MAX + 1
 };
 
+enum class EntirelyOutOfRange {
+  too_low = NAMEOF_ENUM_RANGE_MIN - 1,
+  too_high = NAMEOF_ENUM_RANGE_MAX + 1
+};
+
 enum class CustomEnum { default_name = 1, custom_name = 2 };
 
 namespace {
@@ -840,11 +845,14 @@ TEST_CASE("nameof_enum_or") {
   OutOfRange high = OutOfRange::too_high;
   auto low_name = nameof::nameof_enum_or(low, "-121");
   auto high_name = nameof::nameof_enum_or(high, "121");
+  auto entirely_out_of_range_name = nameof::nameof_enum_or(EntirelyOutOfRange::too_low, "fallback");
   constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
   REQUIRE(low_name == "-121");
   REQUIRE(high_name == "121");
+  REQUIRE(entirely_out_of_range_name == "fallback");
   require_string_contract(low_name, "-121");
   require_string_contract(high_name, "121");
+  require_string_contract(entirely_out_of_range_name, "fallback");
   REQUIRE(nameof::nameof_enum_or(oor[0], "121") == "121");
 
   constexpr auto fallback = ::nameof::cstring<8>{"fallback"};
