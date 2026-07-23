@@ -276,8 +276,8 @@ class [[nodiscard]] cstring {
  private:
   [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return assert(str.size() == N), str; }
 
-  template <std::uint16_t... I>
-  constexpr cstring(string_view str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{str[I]..., '\0'} {}
+  template <std::uint16_t... J>
+  constexpr cstring(string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
 
   char chars_[static_cast<std::size_t>(N) + 1];
 };
@@ -560,9 +560,9 @@ constexpr bool enum_name_valid(string_view name) noexcept {
 #if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
 #  define NAMEOF_ARRAY_CONSTEXPR 1
 #else
-template <typename T, std::size_t N, std::size_t... I>
-constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<I...>) noexcept {
-  return {{a[I]...}};
+template <typename T, std::size_t N, std::size_t... J>
+constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<J...>) noexcept {
+  return {{a[J]...}};
 }
 #endif
 
@@ -586,15 +586,15 @@ constexpr bool cmp_less(L lhs, R rhs) noexcept {
   }
 }
 
-template <typename I>
-constexpr I log2(I value) noexcept {
-  static_assert(std::is_integral_v<I>, "nameof::detail::log2 requires integral type.");
+template <typename J>
+constexpr J log2(J value) noexcept {
+  static_assert(std::is_integral_v<J>, "nameof::detail::log2 requires integral type.");
 
-  if constexpr (std::is_same_v<I, bool>) { // bool special case
+  if constexpr (std::is_same_v<J, bool>) { // bool special case
     return assert(false), value;
   } else {
-    auto ret = I{0};
-    for (; value > I{1}; value >>= I{1}, ++ret) {}
+    auto ret = J{0};
+    for (; value > J{1}; value >>= J{1}, ++ret) {}
 
     return ret;
   }
@@ -760,19 +760,19 @@ struct valid_count_t {
   }
 };
 
-template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t I>
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J>
 constexpr void valid_count(valid_count_t<Size>& vc) noexcept {
 #define NAMEOF_ENUM_V(O)                                          \
-  if constexpr ((I + O) < Size) {                                 \
-    if constexpr (is_valid<E, ualue<E, Min, IsFlags>(I + O)>()) { \
-      vc.set(I + O);                                              \
+  if constexpr ((J + O) < Size) {                                 \
+    if constexpr (is_valid<E, ualue<E, Min, IsFlags>(J + O)>()) { \
+      vc.set(J + O);                                              \
     }                                                             \
   }
 
   NAMEOF_FOR_EACH_256(NAMEOF_ENUM_V)
 
-  if constexpr ((I + 256) < Size) {
-    valid_count<E, IsFlags, Size, Min, I + 256>(vc);
+  if constexpr ((J + 256) < Size) {
+    valid_count<E, IsFlags, Size, Min, J + 256>(vc);
   }
 #undef NAMEOF_ENUM_V
 }
@@ -836,9 +836,9 @@ inline constexpr auto min_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_
 template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
 inline constexpr auto max_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_v<E, IsFlags>.back()) : U{0};
 
-template <typename E, bool IsFlags, std::size_t... I>
-constexpr auto names(std::index_sequence<I...>) noexcept {
-  constexpr auto names = std::array<string_view, sizeof...(I)>{{enum_name_v<E, values_v<E, IsFlags>[I]>...}};
+template <typename E, bool IsFlags, std::size_t... J>
+constexpr auto names(std::index_sequence<J...>) noexcept {
+  constexpr auto names = std::array<string_view, sizeof...(J)>{{enum_name_v<E, values_v<E, IsFlags>[J]>...}};
   return names;
 }
 
