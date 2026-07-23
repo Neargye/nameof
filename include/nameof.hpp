@@ -1258,7 +1258,7 @@ template <typename T, detail::enable_if_has_short_name_t<T, int> = 0>
 [[nodiscard]] constexpr const auto& nameof_short_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
   static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type unsupported compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(!std::is_array_v<T> && !std::is_pointer_v<T>, "nameof::nameof_member requires non array and non pointer type.");
+  static_assert(!std::is_array_v<T> && !std::is_pointer_v<T>, "nameof::nameof_short_type requires non array and non pointer type.");
   return detail::short_type_name_v<U>;
 }
 
