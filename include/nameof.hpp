@@ -215,9 +215,7 @@ class [[nodiscard]] cstring {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  constexpr explicit cstring(string_view str) noexcept : cstring{str, std::make_integer_sequence<std::uint16_t, N>{}} {
-    assert(str.size() == N);
-  }
+  constexpr explicit cstring(string_view str) noexcept : cstring{check_size(str), std::make_integer_sequence<std::uint16_t, N>{}} {}
 
   constexpr cstring() = delete;
 
@@ -276,6 +274,8 @@ class [[nodiscard]] cstring {
   [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
  private:
+  [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return assert(str.size() == N), str; }
+
   template <std::uint16_t... I>
   constexpr cstring(string_view str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{str[I]..., '\0'} {}
 
