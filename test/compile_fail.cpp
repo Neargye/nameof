@@ -10,27 +10,11 @@
 
 #if NAMEOF_COMPILE_FAIL_CASE == 1
 
-enum class NoReflectedValues { value = 1000 };
-
-constexpr auto no_reflected_value_name = nameof::nameof_enum(NoReflectedValues::value);
-
-int main() {}
-
-#elif NAMEOF_COMPILE_FAIL_CASE == 2
-
-enum class NoSingleBitFlags : unsigned { composite = 3 };
-
-int main() {
-  (void)nameof::nameof_enum_flag(NoSingleBitFlags::composite);
-}
-
-#elif NAMEOF_COMPILE_FAIL_CASE == 3
-
 constexpr auto invalid_name = NAMEOF(42);
 
 int main() {}
 
-#elif NAMEOF_COMPILE_FAIL_CASE == 4
+#elif NAMEOF_COMPILE_FAIL_CASE == 2
 
 enum class InvertedRange { value = 0 };
 
@@ -44,7 +28,7 @@ constexpr auto inverted_range_name = nameof::nameof_enum(InvertedRange::value);
 
 int main() {}
 
-#elif NAMEOF_COMPILE_FAIL_CASE == 5
+#elif NAMEOF_COMPILE_FAIL_CASE == 3
 
 enum class OversizedRange { value = 0 };
 

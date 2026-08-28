@@ -40,6 +40,8 @@
 
 * To customize a name, specialize the corresponding function in `namespace nameof::customize`: `enum_name`, `type_name`, `member_name`, or `pointer_name`. See the [enum and type example](../example/example_custom_name.cpp).
 
+* C++26 standard reflection is selected automatically for enum APIs when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to retain range-based reflection. See [limitations](limitations.md#c26-standard-reflection).
+
 * To change the string types, use these macros:
 
   ```cpp
@@ -131,9 +133,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string_view`. Marked `constexpr` and `noexcept`.
 
-* If enum type has no reflected values in configured [range](limitations.md#nameof-enum), compilation fails.
-
-* If value has no name or is [out of range](limitations.md#nameof-enum), returns empty `string_view`.
+* If value has no name, returns empty `string_view`. With compiler-specific reflection, out-of-range values also return empty.
 
 * Examples
 
@@ -149,7 +149,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string`.
 
-* If value has no name or is [out of range](limitations.md#nameof-enum), returns `default_value`.
+* If value has no name, returns `default_value`. With compiler-specific reflection, this includes out-of-range values.
 
 * Examples
 
@@ -184,7 +184,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string`.
 
-* At least one named single-bit enumerator is required; otherwise, compilation fails. Composite enumerator names are not used.
+* Composite enumerator names are not used; the value is decomposed into named single-bit values.
 
 * If value is zero or contains unnamed bit, returns empty `string`.
 

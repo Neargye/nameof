@@ -4,6 +4,7 @@
 
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
@@ -31,6 +32,8 @@ struct MyStringView {
   constexpr MyStringView() noexcept : str{} {} // required
   constexpr MyStringView(const char* s) noexcept : str{s} {} // required
   constexpr MyStringView(const char* s, std::size_t size) noexcept : str{s, size} {} // required
+  constexpr MyStringView(const MyStringView&) noexcept = default;
+  constexpr MyStringView& operator=(const MyStringView&) = delete;
   constexpr bool empty() const noexcept { return str.empty(); } // required
   constexpr std::size_t size() const noexcept { return str.size(); } // required
   constexpr const char* data() const noexcept { return str.data(); } // required
@@ -54,6 +57,9 @@ struct MyStringView {
 
 enum class Color { RED = 1, GREEN = 2, BLUE = 4 };
 
+static_assert(std::is_copy_constructible_v<MyStringView>);
+static_assert(!std::is_copy_assignable_v<MyStringView>);
+static_assert(!std::is_move_assignable_v<MyStringView>);
 static_assert(noexcept(nameof::nameof_enum(Color::RED)));
 static_assert(!noexcept(nameof::nameof_enum_flag(Color::RED)));
 

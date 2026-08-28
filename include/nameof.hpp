@@ -47,6 +47,17 @@
 #include <typeinfo>
 #include <utility>
 
+#if !defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION) && defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L && defined(__cpp_expansion_statements) && __cpp_expansion_statements >= 202506L
+#  if defined(__has_include)
+#    if __has_include(<meta>)
+#      include <meta>
+#    endif
+#  endif
+#  if defined(__cpp_lib_reflection) && __cpp_lib_reflection >= 202506L && defined(__cpp_lib_define_static) && __cpp_lib_define_static >= 202506L
+#    define NAMEOF_DETAIL_USE_STD_REFLECTION 1
+#  endif
+#endif
+
 #if !defined(NAMEOF_USING_ALIAS_STRING)
 #  include <string>
 #endif
@@ -108,13 +119,13 @@
 #endif
 
 // Checks nameof_enum compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
 #  undef  NAMEOF_ENUM_SUPPORTED
 #  define NAMEOF_ENUM_SUPPORTED 1
 #endif
 
 // Checks nameof_enum compiler aliases compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  undef  NAMEOF_ENUM_SUPPORTED_ALIASES
 #  define NAMEOF_ENUM_SUPPORTED_ALIASES 1
 #endif
@@ -149,21 +160,13 @@ using std::string;
 
 namespace customize {
 
-// Enum value must be in range [NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]. By default, NAMEOF_ENUM_RANGE_MIN = -128, NAMEOF_ENUM_RANGE_MAX = 127.
-// If you need another range for all enum types by default, redefine the macro NAMEOF_ENUM_RANGE_MIN and NAMEOF_ENUM_RANGE_MAX.
-// If you need another range for a specific enum type, specialize enum_range for that type.
+// Compiler-specific enum reflection scans [min, max]. Redefine NAMEOF_ENUM_RANGE_MIN/MAX globally or specialize enum_range for a specific enum.
 template <typename E>
 struct enum_range {
   static_assert(std::is_enum_v<E>, "nameof::customize::enum_range requires an enum type.");
   inline static constexpr int min = NAMEOF_ENUM_RANGE_MIN;
   inline static constexpr int max = NAMEOF_ENUM_RANGE_MAX;
 };
-
-static_assert(NAMEOF_ENUM_RANGE_MIN <= 0, "NAMEOF_ENUM_RANGE_MIN must be less than or equal to 0.");
-static_assert(NAMEOF_ENUM_RANGE_MIN > (std::numeric_limits<std::int16_t>::min)(), "NAMEOF_ENUM_RANGE_MIN must be greater than INT16_MIN.");
-
-static_assert(NAMEOF_ENUM_RANGE_MAX > 0, "NAMEOF_ENUM_RANGE_MAX must be greater than 0.");
-static_assert(NAMEOF_ENUM_RANGE_MAX < (std::numeric_limits<std::int16_t>::max)(), "NAMEOF_ENUM_RANGE_MAX must be less than INT16_MAX.");
 
 // If you need custom enum names, specialize enum_name for that enum type.
 template <typename E>
@@ -591,6 +594,7 @@ constexpr string_view pretty_member_name(string_view signature) noexcept {
 }
 #endif
 
+#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 constexpr bool enum_name_valid(string_view name) noexcept {
 #if defined(__clang__)
   constexpr auto anonymous_namespace_size = sizeof("(anonymous namespace)::") - 1;
@@ -637,15 +641,21 @@ constexpr bool enum_name_valid(string_view name) noexcept {
 
   return !name.empty() && is_name_start(name[0]);
 }
+#endif
 
-#if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
-#  define NAMEOF_ARRAY_CONSTEXPR 1
-#else
+template <typename T>
+using make_unsigned_t = std::make_unsigned_t<std::conditional_t<std::is_same_v<T, bool>, unsigned char, T>>;
+
+#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+
+#  if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
+#    define NAMEOF_ARRAY_CONSTEXPR 1
+#  else
 template <typename T, std::size_t N, std::size_t... J>
 constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<J...>) noexcept {
   return {{a[J]...}};
 }
-#endif
+#  endif
 
 template <typename L, typename R>
 constexpr bool cmp_less(L lhs, R rhs) noexcept {
@@ -668,15 +678,7 @@ constexpr bool cmp_less(L lhs, R rhs) noexcept {
   }
 }
 
-template <typename J>
-constexpr J log2(J value) noexcept {
-  static_assert(std::is_integral_v<J> && !std::is_same_v<J, bool>, "nameof::detail::log2 requires a non-bool integral type.");
-
-  auto ret = J{0};
-  for (; value > J{1}; value >>= J{1}, ++ret) {}
-
-  return ret;
-}
+#endif
 
 template <typename T>
 struct nameof_enum_supported
@@ -695,12 +697,70 @@ using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
 template <typename T>
 inline constexpr bool is_enum_v = std::is_enum_v<T> && std::is_same_v<T, remove_cvref_t<T>>;
 
+template <typename E>
+constexpr bool enum_value_equal(E lhs, E rhs) noexcept {
+  using U = std::underlying_type_t<E>;
+  return static_cast<U>(lhs) == static_cast<U>(rhs);
+}
+
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+
+namespace reflection {
+
+template <typename...>
+inline constexpr bool always_false_v = false;
+
+template <typename E>
+consteval auto enumerators() noexcept {
+  if constexpr (std::meta::is_enumerable_type(^^E)) {
+    return std::define_static_array(std::meta::enumerators_of(^^E));
+  } else {
+    static_assert(always_false_v<E>, "nameof requires a complete enum definition.");
+    return std::array<std::meta::info, 0>{};
+  }
+}
+
+template <typename E>
+inline constexpr auto enumerators_v = enumerators<E>();
+
+template <auto V, typename E = remove_cvref_t<decltype(V)>>
+consteval auto enum_name() noexcept {
+  static_assert(std::is_enum_v<E>, "nameof::detail::reflection::enum_name requires an enum value.");
+
+  template for (constexpr auto enumerator : enumerators_v<E>) {
+    if constexpr (enum_value_equal([:enumerator:], V)) {
+      constexpr auto identifier = std::meta::identifier_of(enumerator);
+      return string_view{identifier.data(), identifier.size()};
+    }
+  }
+  return string_view{};
+}
+
+template <typename E>
+constexpr auto enum_name([[maybe_unused]] E value) noexcept {
+  template for (constexpr auto enumerator : enumerators_v<E>) {
+    constexpr E candidate = [:enumerator:];
+    if (enum_value_equal(candidate, value)) {
+      constexpr auto identifier = std::meta::identifier_of(enumerator);
+      constexpr auto persistent_name = std::define_static_string(identifier);
+      return string_view{persistent_name, identifier.size()};
+    }
+  }
+  return string_view{""};
+}
+
+} // namespace reflection
+
+#endif
+
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires an enum type.");
 
   if constexpr (nameof_enum_supported<E>::value) {
-#if defined(__clang__) || defined(__GNUC__)
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+    constexpr auto name = reflection::enum_name<V>();
+#elif defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
     constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
@@ -713,6 +773,7 @@ constexpr auto n() noexcept {
   }
 }
 
+#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 template <auto V>
 constexpr bool nv() noexcept {
   using E = decltype(V);
@@ -739,22 +800,27 @@ constexpr bool nv() noexcept {
     return false;
   }
 }
+#endif
 
 template <typename E, E V>
 constexpr auto enum_name() noexcept {
-  [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(V);
-
-  if constexpr (custom_name.empty()) {
-    constexpr auto name = n<E, V>();
-    return cstring<name.size()>{name};
-  } else {
-    return cstring<custom_name.size()>{custom_name};
-  }
+  constexpr auto name = n<E, V>();
+  return cstring<name.size()>{name};
 }
 
 template <typename E, E V>
 inline constexpr auto enum_name_v = enum_name<E, V>();
 
+template <typename E, E V>
+constexpr auto custom_enum_name() noexcept {
+  constexpr auto name = customize::enum_name<E>(V);
+  return cstring<name.size()>{name};
+}
+
+template <typename E, E V>
+inline constexpr auto custom_enum_name_v = custom_enum_name<E, V>();
+
+#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
 #if defined(__clang__) && __clang_major__ >= 16
@@ -763,19 +829,13 @@ constexpr bool is_valid() noexcept {
 #else
   constexpr E v = static_cast<E>(V);
 #endif
-  [[maybe_unused]] constexpr auto custom_name = customize::enum_name<E>(v);
-  if constexpr (custom_name.empty()) {
-    return nv<v>();
-  } else {
-    return custom_name.size() != 0;
-  }
+  return nv<v>();
 }
 
 template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr U ualue(std::size_t i) noexcept {
+constexpr U ualue([[maybe_unused]] std::size_t i) noexcept {
   if constexpr (IsFlags) {
     if constexpr (std::is_same_v<U, bool>) {
-      static_cast<void>(i);
       return true;
     } else {
       return static_cast<U>(U{1} << static_cast<U>(static_cast<int>(i) + O));
@@ -895,7 +955,7 @@ constexpr auto values() noexcept {
   }
 }
 
-template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
+template <typename E, bool IsFlags>
 constexpr auto values() noexcept {
   constexpr auto min = reflected_min<E, IsFlags>();
   constexpr auto max = reflected_max<E, IsFlags>();
@@ -935,35 +995,84 @@ constexpr auto names(std::index_sequence<J...>) noexcept {
 template <typename E, bool IsFlags = false>
 inline constexpr auto names_v = names<E, IsFlags>(std::make_index_sequence<count_v<E, IsFlags>>{});
 
-template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
+template <typename E, typename U = std::underlying_type_t<E>>
 constexpr bool is_sparse() noexcept {
-  if constexpr (count_v<E, IsFlags> == 0) {
+  if constexpr (count_v<E> == 0) {
     return false;
   } else if constexpr (std::is_same_v<U, bool>) { // bool special case
     return false;
   } else {
-    constexpr auto max = IsFlags ? log2(max_v<E, IsFlags>) : max_v<E, IsFlags>;
-    constexpr auto min = IsFlags ? log2(min_v<E, IsFlags>) : min_v<E, IsFlags>;
-    constexpr auto range_size = max - min + 1;
-
-    return range_size != count_v<E, IsFlags>;
+    constexpr auto range_size = max_v<E> - min_v<E> + U{1};
+    return range_size != count_v<E>;
   }
 }
 
-template <typename E, bool IsFlags = false>
-inline constexpr bool is_sparse_v = is_sparse<E, IsFlags>();
+template <typename E>
+inline constexpr bool is_sparse_v = is_sparse<E>();
 
-template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
-constexpr E enum_value(std::size_t i) noexcept {
-  if constexpr (std::is_same_v<U, bool>) {
-    return values_v<E, IsFlags>[i];
-  } else if constexpr (is_sparse_v<E, IsFlags>) {
-    return values_v<E, IsFlags>[i];
-  } else {
-    constexpr auto min = IsFlags ? log2(min_v<E, IsFlags>) : min_v<E, IsFlags>;
-
-    return value<E, min, IsFlags>(i);
+template <typename E, typename U = make_unsigned_t<std::underlying_type_t<E>>>
+constexpr U flags_mask() noexcept {
+  U mask = 0;
+  for (const auto value : values_v<E, true>) {
+    mask |= static_cast<U>(value);
   }
+  return mask;
+}
+
+template <typename E>
+inline constexpr auto flags_mask_v = flags_mask<E>();
+
+#endif
+
+template <typename E>
+constexpr string_view enum_name(E value) noexcept {
+  if (auto custom_name = customize::enum_name<E>(value); !custom_name.empty()) {
+    return custom_name;
+  }
+
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+  return reflection::enum_name(value);
+#else
+  using U = std::underlying_type_t<E>;
+  if constexpr (count_v<E> > 0) {
+    if constexpr (is_sparse_v<E>) {
+      for (std::size_t i = 0; i < count_v<E>; ++i) {
+        if (enum_value_equal(values_v<E>[i], value)) {
+          return names_v<E>[i];
+        }
+      }
+    } else {
+      const auto v = static_cast<U>(value);
+      if (v >= min_v<E> && v <= max_v<E>) {
+        return names_v<E>[static_cast<std::size_t>(v - min_v<E>)];
+      }
+    }
+  }
+  return string_view{""};
+#endif
+}
+
+template <typename E>
+constexpr string_view enum_flag_name(E value) noexcept {
+  if (auto custom_name = customize::enum_name<E>(value); !custom_name.empty()) {
+    return custom_name;
+  }
+
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+  return reflection::enum_name(value);
+#else
+  using U = make_unsigned_t<std::underlying_type_t<E>>;
+  const auto flag = static_cast<U>(value);
+  if ((flags_mask_v<E> & flag) == U{0}) {
+    return {};
+  }
+  for (std::size_t i = 0; i < count_v<E, true>; ++i) {
+    if (static_cast<U>(values_v<E, true>[i]) == flag) {
+      return names_v<E, true>[i];
+    }
+  }
+  return {};
+#endif
 }
 
 template <typename... T>
@@ -1261,25 +1370,8 @@ inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<v
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, string_view> {
   using D = detail::remove_cvref_t<E>;
-  using U = std::underlying_type_t<D>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(detail::count_v<D> > 0, "nameof::nameof_enum requires at least one reflected enum value in the configured range.");
-
-  if constexpr (detail::count_v<D> > 0) {
-    if constexpr (detail::is_sparse_v<D>) {
-      for (std::size_t i = 0; i < detail::count_v<D>; ++i) {
-        if (detail::enum_value<D>(i) == value) {
-          return detail::names_v<D>[i];
-        }
-      }
-    } else {
-      const auto v = static_cast<U>(value);
-      if (v >= detail::min_v<D> && v <= detail::max_v<D>) {
-        return detail::names_v<D>[static_cast<std::size_t>(v - detail::min_v<D>)];
-      }
-    }
-  }
-  return string_view{""};
+  return detail::enum_name(static_cast<D>(value));
 }
 
 // Obtains name of enum value or default value if no name is available.
@@ -1288,12 +1380,8 @@ template <typename E>
   using D = detail::remove_cvref_t<E>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_or is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
-  if constexpr (detail::count_v<D> > 0) {
-    if (auto v = nameof_enum<D>(value); !v.empty()) {
-      return string{v.data(), v.size()};
-    }
-  } else {
-    static_cast<void>(value);
+  if (auto v = nameof_enum<D>(value); !v.empty()) {
+    return string{v.data(), v.size()};
   }
   return string{default_value.data(), default_value.size()};
 }
@@ -1302,30 +1390,30 @@ template <typename E>
 template <typename E>
 [[nodiscard]] auto nameof_enum_flag(E value, char sep = '|') -> detail::enable_if_enum_t<E, string> {
   using D = detail::remove_cvref_t<E>;
-  using U = std::underlying_type_t<D>;
+  using U = detail::make_unsigned_t<std::underlying_type_t<D>>;
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  static_assert(detail::count_v<D, true> > 0, "nameof::nameof_enum_flag requires at least one reflected single-bit enumerator.");
+
+  const auto flag_value = static_cast<U>(value);
+  if (flag_value == U{0}) {
+    return {}; // Invalid value.
+  }
 
   string name;
-  auto check_value = U{0};
-  for (std::size_t i = 0; i < detail::count_v<D, true>; ++i) {
-    if (const auto v = static_cast<U>(detail::enum_value<D, true>(i)); (static_cast<U>(value) & v) != 0) {
-      if (const auto n = detail::names_v<D, true>[i]; !n.empty()) {
-        check_value |= v;
-        if (!name.empty()) {
-          name.append(1, sep);
-        }
-        name.append(n.data(), n.size());
-      } else {
-        return {}; // Unnamed flag.
-      }
+  auto remaining = flag_value;
+  while (remaining != U{0}) {
+    const auto flag = static_cast<U>(remaining & static_cast<U>(U{0} - remaining));
+    const auto flag_name = detail::enum_flag_name(static_cast<D>(flag));
+    if (flag_name.empty()) {
+      return {}; // Unnamed flag.
     }
+    if (!name.empty()) {
+      name.append(1, sep);
+    }
+    name.append(flag_name.data(), flag_name.size());
+    remaining = static_cast<U>(remaining ^ flag);
   }
 
-  if (check_value != 0 && check_value == static_cast<U>(value)) {
-    return name;
-  }
-  return {}; // Invalid value.
+  return name;
 }
 
 // Obtains name of enum value known at compile time.
@@ -1334,7 +1422,12 @@ template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
 [[nodiscard]] constexpr const auto& nameof_enum() noexcept {
   using D = decltype(V);
   static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  return detail::enum_name_v<D, V>;
+  constexpr auto custom_name = customize::enum_name<D>(V);
+  if constexpr (custom_name.empty()) {
+    return detail::enum_name_v<D, V>;
+  } else {
+    return detail::custom_enum_name_v<D, V>;
+  }
 }
 
 // Obtains type name; reference and cv-qualifiers are ignored.
@@ -1478,6 +1571,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 
 #undef NAMEOF_ARRAY_CONSTEXPR
 #undef NAMEOF_FOR_EACH_256
+#undef NAMEOF_DETAIL_USE_STD_REFLECTION
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop

@@ -196,6 +196,7 @@ constexpr nameof::string_view nameof::customize::enum_name<CustomEnum>(CustomEnu
   }
 }
 
+#if !defined(NAMEOF_TEST_STD_REFLECTION)
 static_assert(!nameof::detail::cmp_less(false, false));
 static_assert(nameof::detail::cmp_less(false, true));
 static_assert(!nameof::detail::cmp_less(true, false));
@@ -207,6 +208,8 @@ static_assert(nameof::detail::cmp_less(-1, 0u));
 static_assert(!nameof::detail::cmp_less(0u, -1));
 static_assert(nameof::detail::cmp_less(-1, static_cast<char>(0)));
 static_assert(!nameof::detail::cmp_less(static_cast<char>(0), -1));
+#endif
+
 constexpr ::nameof::cstring<3> cstring_abc{::nameof::string_view{"abc"}};
 constexpr ::nameof::cstring<3> cstring_abd{::nameof::string_view{"abd"}};
 static_assert(std::is_nothrow_default_constructible_v<::nameof::cstring<0>>);
@@ -234,6 +237,7 @@ static_assert(nameof::nameof_type<long>() > nameof::nameof_type<int>());
 static_assert(nameof::nameof_type<long>() >= nameof::nameof_type<long>());
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
+#  if !defined(NAMEOF_TEST_STD_REFLECTION)
 static_assert(nameof::detail::is_valid<Color, -12>(), "nameof::detail::is_valid requires valid enum values.");
 static_assert(!nameof::detail::is_valid<Color, 0>(), "nameof::detail::is_valid requires invalid enum values.");
 static_assert(nameof::detail::is_valid<Numbers, 127>(), "nameof::detail::is_valid requires valid enum values.");
@@ -244,10 +248,11 @@ static_assert(nameof::detail::is_valid<CustomEnum, 2>(), "nameof::detail::is_val
 static_assert(!nameof::detail::is_valid<CustomEnum, 0>(), "nameof::detail::is_valid requires invalid custom enum values.");
 static_assert(nameof::detail::is_valid<HiddenEnum, 1>(), "nameof::detail::is_valid requires anonymous namespace enum values.");
 static_assert(!nameof::detail::is_valid<HiddenEnum, 0>(), "nameof::detail::is_valid requires invalid anonymous namespace enum values.");
-static_assert(nameof::nameof_enum(HiddenEnum::A) == "A", "nameof::nameof_enum requires anonymous namespace enum values.");
-static_assert(NAMEOF_ENUM_CONST(HiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires anonymous namespace enum values.");
 static_assert(nameof::detail::is_valid<NestedHiddenEnum, 1>(), "nameof::detail::is_valid requires nested anonymous namespace enum values.");
 static_assert(!nameof::detail::is_valid<NestedHiddenEnum, 0>(), "nameof::detail::is_valid requires invalid nested anonymous namespace enum values.");
+#  endif
+static_assert(nameof::nameof_enum(HiddenEnum::A) == "A", "nameof::nameof_enum requires anonymous namespace enum values.");
+static_assert(NAMEOF_ENUM_CONST(HiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires anonymous namespace enum values.");
 static_assert(nameof::nameof_enum(NestedHiddenEnum::A) == "A", "nameof::nameof_enum requires nested anonymous namespace enum values.");
 static_assert(NAMEOF_ENUM_CONST(NestedHiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires nested anonymous namespace enum values.");
 #endif
@@ -735,7 +740,11 @@ TEST_CASE("nameof_enum") {
     REQUIRE(no_name == "one");
     REQUIRE(nameof::nameof_enum(Numbers::two) == "two");
     REQUIRE(nameof::nameof_enum(Numbers::three) == "three");
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+    REQUIRE(nameof::nameof_enum(Numbers::many) == "many");
+#else
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(Numbers::many).empty());
+#endif
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Numbers>(0)).empty());
 
     constexpr Directions dr = Directions::Right;
@@ -751,7 +760,11 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum(number::one) == "one");
     REQUIRE(nameof::nameof_enum(number::two) == "two");
     REQUIRE(nt_name == "three");
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+    REQUIRE(nameof::nameof_enum(number::four) == "four");
+#else
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(number::four).empty());
+#endif
     NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
 
     REQUIRE(nameof::nameof_enum(BoolEnum::Off) == "Off");
@@ -859,7 +872,11 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(no_name == "one");
   REQUIRE(NAMEOF_ENUM(Numbers::two) == "two");
   REQUIRE(NAMEOF_ENUM(Numbers::three) == "three");
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+  REQUIRE(NAMEOF_ENUM(Numbers::many) == "many");
+#else
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(Numbers::many).empty());
+#endif
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
 
   constexpr Directions dr = Directions::Right;
@@ -875,7 +892,11 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(NAMEOF_ENUM(number::one) == "one");
   REQUIRE(NAMEOF_ENUM(number::two) == "two");
   REQUIRE(nt_name == "three");
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+  REQUIRE(NAMEOF_ENUM(number::four) == "four");
+#else
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(number::four).empty());
+#endif
   NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
 
   REQUIRE(NAMEOF_ENUM(BoolEnum::Off) == "Off");
@@ -961,6 +982,15 @@ TEST_CASE("nameof_enum_or") {
   auto high_name = nameof::nameof_enum_or(high, "121");
   auto entirely_out_of_range_name = nameof::nameof_enum_or(EntirelyOutOfRange::too_low, "fallback");
   constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+  REQUIRE(low_name == "too_low");
+  REQUIRE(high_name == "too_high");
+  REQUIRE(entirely_out_of_range_name == "too_low");
+  require_string_contract(low_name, "too_low");
+  require_string_contract(high_name, "too_high");
+  require_string_contract(entirely_out_of_range_name, "too_low");
+  REQUIRE(nameof::nameof_enum_or(oor[0], "121") == "too_high");
+#else
   REQUIRE(low_name == "-121");
   REQUIRE(high_name == "121");
   REQUIRE(entirely_out_of_range_name == "fallback");
@@ -968,15 +998,23 @@ TEST_CASE("nameof_enum_or") {
   require_string_contract(high_name, "121");
   require_string_contract(entirely_out_of_range_name, "fallback");
   REQUIRE(nameof::nameof_enum_or(oor[0], "121") == "121");
+#endif
 
   constexpr auto fallback = ::nameof::cstring<8>{"fallback"};
   constexpr auto empty_fallback = ::nameof::cstring<0>{};
   const auto fallback_name = nameof::nameof_enum_or(OutOfRange::too_low, fallback);
   const auto empty_fallback_name = nameof::nameof_enum_or(OutOfRange::too_high, empty_fallback);
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+  REQUIRE(fallback_name == "too_low");
+  REQUIRE(empty_fallback_name == "too_high");
+  require_string_contract(fallback_name, "too_low");
+  require_string_contract(empty_fallback_name, "too_high");
+#else
   REQUIRE(fallback_name == "fallback");
   REQUIRE(empty_fallback_name.empty());
   require_string_contract(fallback_name, "fallback");
   require_string_contract(empty_fallback_name, "");
+#endif
 }
 
 TEST_CASE("NAMEOF_ENUM_OR") {
@@ -985,11 +1023,19 @@ TEST_CASE("NAMEOF_ENUM_OR") {
   auto low_name = NAMEOF_ENUM_OR(low, "-121");
   auto high_name = NAMEOF_ENUM_OR(high, "121");
   constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
+#if defined(NAMEOF_TEST_STD_REFLECTION)
+  REQUIRE(low_name == "too_low");
+  REQUIRE(high_name == "too_high");
+  REQUIRE(NAMEOF_ENUM_OR(oor[0], "121") == "too_high");
+  require_string_contract(low_name, "too_low");
+  require_string_contract(high_name, "too_high");
+#else
   REQUIRE(low_name == "-121");
   REQUIRE(high_name == "121");
   REQUIRE(NAMEOF_ENUM_OR(oor[0], "121") == "121");
   require_string_contract(low_name, "-121");
   require_string_contract(high_name, "121");
+#endif
 }
 
 #endif

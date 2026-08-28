@@ -1,6 +1,18 @@
 # Limitations
 
-Type, enum, member, and pointer reflection use compiler-specific function signature strings (`__PRETTY_FUNCTION__` / `__FUNCSIG__`). See the [compiler compatibility](reference.md#compiler-compatibility) matrix.
+Type, member, and pointer reflection use compiler-specific function signature strings (`__PRETTY_FUNCTION__` / `__FUNCSIG__`). Enum reflection uses the C++26 standard facility when available and otherwise uses the same compiler-specific technique. See the [compiler compatibility](reference.md#compiler-compatibility) matrix.
+
+## C++26 Standard Reflection
+
+Standard reflection is selected automatically for enum APIs when available.
+
+* Runtime enum lookup covers declared enumerators and ignores `NAMEOF_ENUM_RANGE_MIN`, `NAMEOF_ENUM_RANGE_MAX`, and `customize::enum_range<E>`.
+
+* For aliased values, the first matching enumerator encountered in the reflected sequence supplies the name.
+
+* `customize::enum_name(E)` is checked before reflection and can provide a name for declared or synthetic values.
+
+Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to preserve range-based behavior. Keep this setting consistent across translation units.
 
 ## Nameof
 
@@ -18,15 +30,11 @@ Type, enum, member, and pointer reflection use compiler-specific function signat
 
 ## Nameof Enum
 
-* Runtime reflection of ordinary enum values is limited to `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`. `NAMEOF_ENUM_CONST`, `nameof::nameof_enum<V>()`, `NAMEOF_ENUM_FLAG`, and `nameof::nameof_enum_flag()` are not restricted by this range.
+* With compiler-specific reflection, runtime reflection of ordinary enum values is limited to `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`. Standard reflection ignores the range. `NAMEOF_ENUM_CONST`, `nameof::nameof_enum<V>()`, `NAMEOF_ENUM_FLAG`, and `nameof::nameof_enum_flag()` are not restricted by it.
 
   * By default, `NAMEOF_ENUM_RANGE_MIN = -128`, `NAMEOF_ENUM_RANGE_MAX = 127`.
 
   * The effective range is also clamped to the limits of the enum's underlying type.
-
-  * `NAMEOF_ENUM_RANGE_MIN` must be less than or equal to `0` and must be greater than `INT16_MIN`.
-
-  * `NAMEOF_ENUM_RANGE_MAX` must be greater than `0` and must be less than `INT16_MAX`.
 
   * If another range is needed for all enum types by default, redefine the macro `NAMEOF_ENUM_RANGE_MIN` and `NAMEOF_ENUM_RANGE_MAX`.
 
@@ -52,7 +60,9 @@ Type, enum, member, and pointer reflection use compiler-specific function signat
 
   * Enum ranges are limited to fewer than `UINT16_MAX` values.
 
-* Names of aliased enum values are compiler-dependent.
+* Names of aliased enum values are compiler-dependent with compiler-specific reflection. Standard reflection uses the first matching enumerator encountered in the reflected sequence.
+
+* `customize::enum_name(E)` is checked before either backend. It can name values outside the compiler-specific range or the standard-reflection enumerator sequence. For flags, customization is checked independently for every set bit before backend lookup.
 
 * Forward-declared enums are not supported.
 
