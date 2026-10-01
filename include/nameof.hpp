@@ -43,6 +43,7 @@
 #include <iosfwd>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
@@ -68,7 +69,6 @@
 #if __has_include(<cxxabi.h>)
 #  include <cxxabi.h>
 #  include <cstdlib>
-#  include <memory>
 #endif
 
 #if defined(__clang__)
@@ -460,13 +460,13 @@ constexpr bool is_name_char(char c) noexcept {
   return (c >= '0' && c <= '9') ||
          (c >= 'a' && c <= 'z') ||
          (c >= 'A' && c <= 'Z') ||
-         (c == '_');
+         (c == '_') || static_cast<unsigned char>(c) >= 0x80;
 }
 
 constexpr bool is_name_start(char c) noexcept {
   return (c >= 'a' && c <= 'z') ||
          (c >= 'A' && c <= 'Z') ||
-         (c == '_');
+         (c == '_') || static_cast<unsigned char>(c) >= 0x80;
 }
 
 constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
@@ -509,6 +509,10 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
     }
   }
 
+  while (!name.empty() && name[name.size() - 1] == ' ') {
+    name.remove_suffix(1);
+  }
+
   std::size_t s = 0;
   for (std::size_t i = name.size(), h = 0; i > 0; --i) {
     if (name[i - 1] == '>') {
@@ -532,6 +536,10 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
     }
   }
 
+  while (s < name.size() && name[name.size() - s - 1] == ' ') {
+    ++s;
+  }
+
   for (std::size_t i = name.size() - s; i > 0; --i) {
     if (!is_name_char(name[i - 1])) {
       name.remove_prefix(i);
@@ -550,7 +558,7 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
 }
 
 #if defined(_MSC_VER) && !defined(__clang__)
-constexpr string_view pretty_member_name(string_view signature) noexcept {
+constexpr string_view pretty_function_name(string_view signature) noexcept {
   std::size_t template_begin = 0;
   for (; template_begin < signature.size() && signature[template_begin] != '<'; ++template_begin) {}
   if (template_begin == signature.size()) {
@@ -558,14 +566,21 @@ constexpr string_view pretty_member_name(string_view signature) noexcept {
   }
 
   for (std::size_t i = template_begin + 1; i + 2 < signature.size(); ++i) {
-    if (signature[i] != ':' || signature[i + 1] != ':' || !is_name_start(signature[i + 2])) {
+    if (signature[i] != ' ' && (signature[i] != ':' || signature[i + 1] != ':')) {
       continue;
     }
 
-    const auto name_begin = i + 2;
+    const auto name_begin = i + (signature[i] == ' ' ? 1 : 2);
+    if (!is_name_start(signature[name_begin])) {
+      continue;
+    }
     auto name_end = name_begin + 1;
     while (name_end < signature.size() && is_name_char(signature[name_end])) {
       ++name_end;
+    }
+    const auto name = string_view{signature.data() + name_begin, name_end - name_begin};
+    if (name.compare("operator") == 0) {
+      return {};
     }
 
     auto parameter_begin = name_end;
@@ -586,8 +601,10 @@ constexpr string_view pretty_member_name(string_view signature) noexcept {
     }
 
     if (parameter_begin < signature.size() && signature[parameter_begin] == '(') {
-      return string_view{signature.data() + name_begin, name_end - name_begin};
+      return name;
     }
+    // Do not inspect function types or values inside these template arguments.
+    i = parameter_begin - 1;
   }
 
   return {};
@@ -1265,7 +1282,7 @@ constexpr auto n() noexcept {
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
     constexpr auto name = std::is_member_function_pointer_v<decltype(U)>
-                            ? pretty_member_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 1})
+                            ? pretty_function_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 1})
                             : pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 18});
 #else
     constexpr auto name = string_view{""};
@@ -1296,13 +1313,13 @@ Store(T) -> Store<T>;
 
 template <auto V>
 consteval auto get_member_name() noexcept {
-  if constexpr (std::is_member_function_pointer_v<decltype(V)>) {
+  if constexpr (V == nullptr || std::is_member_function_pointer_v<decltype(V)>) {
     return n<V>();
   } else {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
     static_assert(is_defined, "nameof::nameof_member can only be used if the struct is fully defined. Use the NAMEOF macro, or separate the definition and declaration.");
     if constexpr (is_defined) {
-      return n<V, Store{&(nonexist_object<decltype(get_base_type(V))>.*V)}>();
+      return n<V, Store{std::addressof(nonexist_object<decltype(get_base_type(V))>.*V)}>();
     } else {
       return "";
     }
@@ -1336,7 +1353,9 @@ constexpr auto p() noexcept {
     constexpr bool has_parenthesis = __PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 3] == ')';
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2 - has_parenthesis});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-    constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+    constexpr auto name = std::is_function_v<std::remove_pointer_t<decltype(V)>>
+                            ? pretty_function_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 1})
+                            : pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
 #else
     constexpr auto name = string_view{""};
 #endif

@@ -229,6 +229,11 @@ static_assert(!(cstring_abc > cstring_abd));
 static_assert(!(cstring_abc >= cstring_abd));
 static_assert(nameof::detail::pretty_name("(").empty());
 static_assert(nameof::detail::pretty_name("<").empty());
+static_assert(NAMEOF(SomeMethod3 ()) == "SomeMethod3");
+static_assert(NAMEOF(SomeMethod4<int, float> (1)) == "SomeMethod4");
+static_assert(NAMEOF_FULL(SomeMethod4<int, float> (1)) == "SomeMethod4<int, float>");
+static_assert(NAMEOF(SomeMethod4 <int, float> (1)) == "SomeMethod4");
+static_assert(NAMEOF_FULL(SomeMethod4 <int, float> (1)) == "SomeMethod4 <int, float>");
 static_assert(nameof::nameof_type<int>() == nameof::nameof_type<const int&>());
 static_assert(nameof::nameof_type<int>() != nameof::nameof_type<long>());
 static_assert(nameof::nameof_type<int>() < nameof::nameof_type<long>());
@@ -399,6 +404,56 @@ TEST_CASE("support constants") {
   static_assert(nameof::is_nameof_pointer_supported);
 #else
   static_assert(!nameof::is_nameof_pointer_supported);
+#endif
+}
+
+namespace unicode_names {
+
+enum class UnicodeIdentifiers { \u65E5\u672C\u8A9E = 1, ascii_\u65E5\u672C = 2 };
+enum class \u5217\u6319 { \u5024 = 1 };
+struct \u65E5\u672C {
+  int \u5B57;
+  void \u95A2\u6570() const;
+};
+int \u5909\u6570 = 0;
+void \u95A2\u6570() {}
+
+} // namespace unicode_names
+
+TEST_CASE("Unicode identifiers") {
+  using namespace unicode_names;
+  static_assert(NAMEOF(\u5909\u6570) == "\u5909\u6570");
+  static_assert(NAMEOF_FULL(\u5909\u6570) == "\u5909\u6570");
+  static_assert(NAMEOF(\u95A2\u6570()) == "\u95A2\u6570");
+  static_assert(NAMEOF(&\u65E5\u672C::\u5B57) == "\u5B57");
+
+#if defined(NAMEOF_ENUM_SUPPORTED)
+  static_assert(nameof::nameof_enum(UnicodeIdentifiers::\u65E5\u672C\u8A9E) == "\u65E5\u672C\u8A9E");
+  static_assert(nameof::nameof_enum(UnicodeIdentifiers::ascii_\u65E5\u672C) == "ascii_\u65E5\u672C");
+  static_assert(nameof::nameof_enum<UnicodeIdentifiers::\u65E5\u672C\u8A9E>() == "\u65E5\u672C\u8A9E");
+  static_assert(nameof::nameof_enum(\u5217\u6319::\u5024) == "\u5024");
+  static_assert(nameof::nameof_enum(static_cast<\u5217\u6319>(0)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(UnicodeIdentifiers::\u65E5\u672C\u8A9E) == "\u65E5\u672C\u8A9E");
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<UnicodeIdentifiers>(3)) == "\u65E5\u672C\u8A9E|ascii_\u65E5\u672C");
+#endif
+
+#if defined(NAMEOF_TYPE_SUPPORTED)
+  static_assert(NAMEOF_SHORT_TYPE(\u65E5\u672C) == "\u65E5\u672C");
+#endif
+
+#if defined(NAMEOF_MEMBER_SUPPORTED)
+  static_assert(NAMEOF_MEMBER(&\u65E5\u672C::\u5B57) == "\u5B57");
+  static_assert(NAMEOF_MEMBER(&\u65E5\u672C::\u95A2\u6570) == "\u95A2\u6570");
+#endif
+
+#if defined(NAMEOF_POINTER_SUPPORTED)
+  static_assert(NAMEOF_POINTER(&\u5909\u6570) == "\u5909\u6570");
+  static_assert(NAMEOF_POINTER(&\u95A2\u6570) == "\u95A2\u6570");
+#endif
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  \u65E5\u672C object{};
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(object) == "\u65E5\u672C");
 #endif
 }
 
@@ -1634,7 +1689,13 @@ struct StructWithNonConstexprDestructor {
   int somefield;
 };
 
+struct StructWithOverloadedAddressMember {
+  struct Value { Value* operator&() = delete; };
+  Value field;
+};
+
 TEST_CASE("NAMEOF_MEMBER") {
+  static_assert(NAMEOF_MEMBER(&StructWithOverloadedAddressMember::field) == "field");
   REQUIRE(NAMEOF_MEMBER(&SomeStruct::somefield) == "somefield");
   REQUIRE(NAMEOF_MEMBER(&SomeStruct::SomeMethod1) == "SomeMethod1");
   REQUIRE(NAMEOF_MEMBER(&QualifiedMembers::const_member) == "const_member");
@@ -1660,6 +1721,8 @@ TEST_CASE("nameof_member") {
   REQUIRE(nameof::nameof_member<&QualifiedMembers::combined_member>() == "combined_member");
   REQUIRE(nameof::nameof_member<&QualifiedMembers::template_member<int>>() == "template_member");
 #if defined(_MSC_VER) && !defined(__clang__)
+  static_assert(nameof::nameof_member<static_cast<int SomeStruct::*>(nullptr)>().empty());
+  static_assert(nameof::nameof_member<static_cast<void (SomeStruct::*)(int)>(nullptr)>().empty());
   REQUIRE(nameof::nameof_member<&OperatorMembers::operator+>().empty());
   REQUIRE(nameof::nameof_member<&OperatorMembers::operator int>().empty());
 #endif
@@ -1683,6 +1746,40 @@ TEST_CASE("string_view_regression") {
 #if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED
 
 void somefunction() {}
+
+auto function_returning_function_pointer() -> void(*)() { return nullptr; }
+void nothrow_function() noexcept {}
+
+namespace pointer_functions {
+template <typename T>
+struct TypeTag {};
+template <auto V>
+struct ValueTag {};
+
+auto function_returning_function_pointer() -> void(*)() { return nullptr; }
+auto function_returning_array_pointer() -> int(*)[2] { return nullptr; }
+auto function_returning_member_pointer() -> void (QualifiedMembers::*)() const { return nullptr; }
+template <typename T>
+auto template_function() -> T(*)() { return nullptr; }
+auto function_returning_function_type_tag() -> TypeTag<void()> { return {}; }
+auto function_returning_function_value_tag() -> ValueTag<&somefunction> { return {}; }
+struct TaggedMembers {
+  auto method() -> TypeTag<void()> { return {}; }
+};
+} // namespace pointer_functions
+
+TEST_CASE("nameof_pointer function signatures") {
+  static_assert(NAMEOF_POINTER(&nothrow_function) == "nothrow_function");
+  static_assert(NAMEOF_POINTER(static_cast<void(*)() noexcept>(nullptr)) == "nullptr");
+  static_assert(NAMEOF_POINTER(&function_returning_function_pointer) == "function_returning_function_pointer");
+  static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_pointer) == "function_returning_function_pointer");
+  static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_array_pointer) == "function_returning_array_pointer");
+  static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_member_pointer) == "function_returning_member_pointer");
+  static_assert(NAMEOF_POINTER(&pointer_functions::template_function<int>) == "template_function");
+  static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_type_tag) == "function_returning_function_type_tag");
+  static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_value_tag) == "function_returning_function_value_tag");
+  static_assert(NAMEOF_MEMBER(&pointer_functions::TaggedMembers::method) == "method");
+}
 
 TEST_CASE("NAMEOF_POINTER") {
   REQUIRE(NAMEOF_POINTER(&SomeStruct::somestaticfield) == "somestaticfield");
