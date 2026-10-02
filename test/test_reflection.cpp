@@ -21,6 +21,10 @@ enum class SyntheticOnlyFlags : unsigned { Composite = 3 };
 enum class CompositeOnlyFlags : unsigned { Composite = 3 };
 enum class WideFlags : std::uint64_t { None = 0, A = 1, B = 2, AB = 3, High = std::uint64_t{1} << 63 };
 enum class BoolFlags : bool { Disabled = false, Enabled = true };
+template <typename T>
+struct SignedFlags {
+  enum class Type : T { Low = 1, High = (std::numeric_limits<T>::min)() };
+};
 enum class Extreme : long long {
   Min = (std::numeric_limits<long long>::min)(),
   Max = (std::numeric_limits<long long>::max)(),
@@ -154,4 +158,12 @@ TEST_CASE("flag backend") {
   CHECK(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).empty());
   CHECK(nameof::nameof_enum_flag(BoolFlags::Enabled) == "Enabled");
   CHECK(nameof::nameof_enum_flag(BoolFlags::Disabled).empty());
+}
+
+TEST_CASE_TEMPLATE("signed flag sign bit", T, std::int8_t, std::int16_t, std::int32_t, std::int64_t) {
+  using E = typename SignedFlags<T>::Type;
+  using U = std::make_unsigned_t<T>;
+  CHECK(nameof::nameof_enum_flag(E::High) == "High");
+  CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<U>(E::High) | U{1})) == "Low|High");
+  CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<U>(E::High) | U{2})).empty());
 }

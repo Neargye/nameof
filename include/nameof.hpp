@@ -855,7 +855,7 @@ constexpr U ualue([[maybe_unused]] std::size_t i) noexcept {
     if constexpr (std::is_same_v<U, bool>) {
       return true;
     } else {
-      return static_cast<U>(U{1} << static_cast<U>(static_cast<int>(i) + O));
+      return static_cast<U>(make_unsigned_t<U>{1} << (static_cast<int>(i) + O));
     }
   } else {
     return static_cast<U>(static_cast<int>(i) + O);
@@ -886,7 +886,7 @@ constexpr int reflected_min() noexcept {
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr int reflected_max() noexcept {
   if constexpr (IsFlags) {
-    return std::numeric_limits<U>::digits - 1;
+    return std::is_same_v<U, bool> ? 0 : std::numeric_limits<make_unsigned_t<U>>::digits - 1;
   } else {
     constexpr auto lhs = customize::enum_range<E>::max;
     constexpr auto rhs = (std::numeric_limits<U>::max)();
