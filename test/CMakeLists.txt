@@ -6,6 +6,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang
     set(OPTIONS /W4 /WX)
     set(NAMEOF_TEST_FLAG_PREFIX /std:)
     set(NAMEOF_CPP26_STANDARD_FLAG c++latest)
+    set(NAMEOF_NO_RTTI_OPTION /GR-)
     check_cxx_compiler_flag(/permissive- HAS_PERMISSIVE_FLAG)
     if(HAS_PERMISSIVE_FLAG)
         set(OPTIONS ${OPTIONS} /permissive-)
@@ -14,6 +15,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(OPTIONS -Wall -Wextra -pedantic-errors -Werror)
     set(NAMEOF_TEST_FLAG_PREFIX -std=)
     set(NAMEOF_CPP26_STANDARD_FLAG c++26)
+    set(NAMEOF_NO_RTTI_OPTION -fno-rtti)
 endif()
 
 set(NAMEOF_STD_REFLECTION_COMPILE_OPTIONS)
@@ -87,6 +89,8 @@ function(make_test src target std)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
     if(std)
         target_compile_features(${target} PRIVATE cxx_std_${std})
+        # These tests expect compiler-specific range semantics, even in newer language modes.
+        target_compile_definitions(${target} PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
     endif()
     add_test(NAME ${target} COMMAND ${target})
 endfunction()
@@ -97,7 +101,10 @@ function(make_compile_fail_test case_name case_id expected_text)
 
     add_executable(${target} EXCLUDE_FROM_ALL compile_fail.cpp)
     target_compile_options(${target} PRIVATE ${OPTIONS})
-    target_compile_definitions(${target} PRIVATE NAMEOF_COMPILE_FAIL_CASE=${case_id})
+    target_compile_definitions(${target} PRIVATE
+        NAMEOF_COMPILE_FAIL_CASE=${case_id}
+        NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1
+    )
     target_link_libraries(${target} PRIVATE ${PROJECT_NAME})
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
 
@@ -143,8 +150,13 @@ make_test(test_aliases.cpp test_aliases-cpp17 17)
 make_test(test_range.cpp test-range-cpp17 17)
 make_test(test_range_negative.cpp test-range-negative-cpp17 17)
 make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp17 17)
-target_compile_definitions(test-reflection-force-compiler-specific-cpp17 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
 make_test(test_standalone.cpp test-standalone-cpp17 17)
+
+if(NAMEOF_NO_RTTI_OPTION)
+    make_test(test_standalone.cpp test-standalone-no-rtti-cpp17 17)
+    target_compile_options(test-standalone-no-rtti-cpp17 PRIVATE ${NAMEOF_NO_RTTI_OPTION})
+    target_compile_definitions(test-standalone-no-rtti-cpp17 PRIVATE NAMEOF_TEST_NO_RTTI=1)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     foreach(convention IN ITEMS Gv Gr Gz)

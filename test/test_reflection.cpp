@@ -21,6 +21,8 @@ enum class SyntheticOnlyFlags : unsigned { Composite = 3 };
 enum class CompositeOnlyFlags : unsigned { Composite = 3 };
 enum class WideFlags : std::uint64_t { None = 0, A = 1, B = 2, AB = 3, High = std::uint64_t{1} << 63 };
 enum class BoolFlags : bool { Disabled = false, Enabled = true };
+enum class ByteFlags : std::uint8_t { Low = 1, High = 128 };
+enum class SignedByteFlags : std::int8_t { Low = 1, High = -128 };
 template <typename T>
 struct SignedFlags {
   enum class Type : T { Low = 1, High = (std::numeric_limits<T>::min)() };
@@ -158,6 +160,48 @@ TEST_CASE("flag backend") {
   CHECK(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).empty());
   CHECK(nameof::nameof_enum_flag(BoolFlags::Enabled) == "Enabled");
   CHECK(nameof::nameof_enum_flag(BoolFlags::Disabled).empty());
+}
+
+TEST_CASE("enum lookup across named values and gaps") {
+  for (int raw = -128; raw <= 127; ++raw) {
+    CAPTURE(raw);
+    nameof::string_view expected;
+    switch (raw) {
+      case -2: expected = "A"; break;
+      case -1: expected = "B"; break;
+      case 0: expected = "C"; break;
+      case 1: expected = "D"; break;
+      case 2: expected = "E"; break;
+      default: break;
+    }
+    CHECK(nameof::nameof_enum(static_cast<Dense>(raw)) == expected);
+    CHECK(nameof::nameof_enum_or(static_cast<Dense>(raw), "fallback") == (expected.empty() ? "fallback" : expected));
+
+    nameof::string_view sparse_expected;
+    switch (raw) {
+      case 10: sparse_expected = "A"; break;
+      case 20: sparse_expected = "B"; break;
+      case 30: sparse_expected = "C"; break;
+      default: break;
+    }
+    CHECK(nameof::nameof_enum(static_cast<Unordered>(raw)) == sparse_expected);
+  }
+}
+
+TEST_CASE("all byte flag combinations") {
+  for (int raw = 0; raw < 256; ++raw) {
+    CAPTURE(raw);
+    nameof::string_view expected;
+    switch (raw) {
+      case 1: expected = "Low"; break;
+      case 128: expected = "High"; break;
+      case 129: expected = "Low|High"; break;
+      default: break;
+    }
+    CHECK(nameof::nameof_enum_flag(static_cast<ByteFlags>(raw)) == expected);
+    const int signed_raw = raw < 128 ? raw : raw - 256;
+    CHECK(nameof::nameof_enum_flag(static_cast<SignedByteFlags>(signed_raw)) == expected);
+  }
 }
 
 TEST_CASE_TEMPLATE("signed flag sign bit", T, std::int8_t, std::int16_t, std::int32_t, std::int64_t) {

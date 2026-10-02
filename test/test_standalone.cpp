@@ -8,6 +8,10 @@
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 
+#if defined(NAMEOF_TEST_NO_RTTI)
+static_assert(!nameof::is_nameof_type_rtti_supported);
+#endif
+
 enum class DefaultRangeBoundary {
   lower = -128,
   upper = 127,

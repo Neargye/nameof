@@ -655,6 +655,17 @@ TEST_CASE("CSTRING_0") {
     }
 }
 
+TEST_CASE("CSTRING stream output") {
+  constexpr ::nameof::cstring<3> embedded_null{::nameof::string_view{"a\0b", 3}};
+  std::ostringstream embedded;
+  embedded << embedded_null;
+  REQUIRE(embedded.str() == std::string{"a\0b", 3});
+
+  std::wostringstream wide;
+  wide << ::nameof::cstring<0>{} << ::nameof::cstring<3>{"abc"} << embedded_null;
+  REQUIRE(wide.str() == std::wstring{L"abca\0b", 6});
+}
+
 TEST_CASE("CSTRING_FORMAT") {
 #if defined(NAMEOF_TEST_HAS_STD_FORMAT)
   SUBCASE("std::format") {
@@ -1597,8 +1608,15 @@ TEST_CASE("NAMEOF_SHORT_TYPE") {
 TEST_CASE_TEMPLATE("short arithmetic type names", T, bool, char, signed char, unsigned char, short,
                    unsigned short, int, unsigned int, long, unsigned long, long long,
                    unsigned long long, float, double, long double) {
-  static_assert(NAMEOF_SHORT_TYPE(T) == NAMEOF_TYPE(T));
+  constexpr ::nameof::string_view name = NAMEOF_SHORT_TYPE(T);
+  static_assert(name == NAMEOF_TYPE(T));
+  static_assert(name.data() == NAMEOF_SHORT_TYPE(T).data());
+  static_assert(NAMEOF_SHORT_TYPE(const T) == name);
+  static_assert(NAMEOF_SHORT_TYPE(volatile T) == name);
+  static_assert(NAMEOF_SHORT_TYPE(T&) == name);
+  static_assert(NAMEOF_SHORT_TYPE(T&&) == name);
   static_assert(NAMEOF_SHORT_TYPE(const volatile T&) == NAMEOF_TYPE(T));
+  static_assert(NAMEOF_SHORT_TYPE(const volatile T&&) == name);
   T value{};
   require_static_cstring_api_contract(NAMEOF_SHORT_TYPE_EXPR(value), NAMEOF_TYPE(T));
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
@@ -1695,12 +1713,24 @@ TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
 
 TEST_CASE("NAMEOF_FULL_TYPE_RTTI pointer qualifiers") {
   int* const constant_pointer = nullptr;
+  const int* pointer_to_const = nullptr;
   int* volatile volatile_pointer = nullptr;
   const int* const volatile qualified_pointer = nullptr;
   int* const& pointer_reference = constant_pointer;
   int SomeStruct::* const member_pointer = &SomeStruct::somefield;
-  require_string_contract(NAMEOF_FULL_TYPE_RTTI(constant_pointer), NAMEOF_FULL_TYPE_EXPR(constant_pointer));
-  require_string_contract(NAMEOF_FULL_TYPE_RTTI(volatile_pointer), NAMEOF_FULL_TYPE_EXPR(volatile_pointer));
+#if defined(_MSC_VER) && !defined(__clang__)
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(constant_pointer), "int * const");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(pointer_to_const), "int const *");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(volatile_pointer), "int * volatile");
+#elif defined(__clang__)
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(constant_pointer), "int *const");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(pointer_to_const), "const int *");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(volatile_pointer), "int *volatile");
+#else
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(constant_pointer), "int* const");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(pointer_to_const), "const int*");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(volatile_pointer), "int* volatile");
+#endif
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(qualified_pointer), NAMEOF_FULL_TYPE_EXPR(qualified_pointer));
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(pointer_reference), NAMEOF_FULL_TYPE_EXPR(pointer_reference));
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(member_pointer), NAMEOF_FULL_TYPE_EXPR(member_pointer));
@@ -1714,11 +1744,19 @@ TEST_CASE("NAMEOF_FULL_TYPE_RTTI function pointers") {
 
 #if defined(_MSC_VER) && !defined(__clang__)
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback), "void (__cdecl*const)(void)");
+#  if defined(_M_IX86)
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (__thiscall SomeStruct::*const)(void)const");
+#  else
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (__cdecl SomeStruct::*const)(void)const");
+#  endif
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(customized), "int (__cdecl*const)(double)");
 #elif defined(__clang__)
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback), "void (*const)()");
+#  if defined(_MSC_VER) && defined(_M_IX86)
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (SomeStruct::*const)() __attribute__((thiscall)) const");
+#  else
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (SomeStruct::*const)() const");
+#  endif
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(customized), "int (*const)(double)");
 #else
   require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback), "void (* const)()");
@@ -1768,6 +1806,15 @@ TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {
   require_string_contract(NAMEOF_SHORT_TYPE_RTTI(const_ref), "Derived");
   require_string_contract(NAMEOF_SHORT_TYPE_RTTI(volatile_ref), "Derived");
   require_string_contract(NAMEOF_SHORT_TYPE_RTTI(cv_ref), "Derived");
+
+  unsigned int unsigned_value = 0;
+  signed char signed_character = 0;
+  unsigned char unsigned_character = 0;
+  long double extended_value = 0;
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(unsigned_value), "unsigned int");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(signed_character), "signed char");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(unsigned_character), "unsigned char");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(extended_value), "long double");
 }
 
 #if __has_include(<cxxabi.h>)

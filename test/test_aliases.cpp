@@ -4,6 +4,7 @@
 
 #include <string>
 #include <string_view>
+#include <sstream>
 #include <type_traits>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -119,7 +120,25 @@ TEST_CASE("string enum_or") {
   REQUIRE(empty_fallback.empty());
 }
 
+TEST_CASE("short type names") {
+#if defined(NAMEOF_TYPE_SUPPORTED)
+  constexpr nameof::string_view arithmetic_name = NAMEOF_SHORT_TYPE(const volatile unsigned int&);
+  constexpr nameof::string_view null_name = NAMEOF_SHORT_TYPE(std::nullptr_t);
+  static_assert(arithmetic_name.compare("unsigned int") == 0);
+  static_assert(null_name.compare("nullptr_t") == 0);
+#endif
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  const unsigned int value = 0;
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(value).compare("unsigned int") == 0);
+  REQUIRE(NAMEOF_SHORT_TYPE_RTTI(nullptr).compare("nullptr_t") == 0);
+#endif
+}
+
 TEST_CASE("static cstring api") {
+  std::ostringstream stream;
+  stream << nameof::cstring<3>{"abc"};
+  REQUIRE(stream.str() == "abc");
+
 #if defined(NAMEOF_ENUM_SUPPORTED)
   constexpr auto enum_name = NAMEOF_ENUM_CONST(Color::RED);
   REQUIRE(enum_name.compare("RED") == 0);
