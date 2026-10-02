@@ -4,7 +4,7 @@
 
 #include <nameof.hpp>
 
-#if defined(NAMEOF_ARRAY_CONSTEXPR) || defined(NAMEOF_FOR_EACH_256)
+#if defined(NAMEOF_ARRAY_CONSTEXPR) || defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL)
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 
@@ -20,13 +20,23 @@ static_assert(nameof::nameof_enum(DefaultRangeBoundary::upper) == "upper");
 static_assert(nameof::nameof_enum(DefaultRangeBoundary::outside).empty());
 #endif
 
+#if defined(NAMEOF_TYPE_SUPPORTED)
+static_assert(NAMEOF_TYPE(int) == "int");
+static_assert(NAMEOF_FULL_TYPE(int) == "int");
+static_assert(NAMEOF_SHORT_TYPE(int) == "int");
+#endif
+
 struct StandaloneRttiBase {
   virtual ~StandaloneRttiBase() = default;
 };
 
 struct StandaloneRttiDerived : StandaloneRttiBase {};
 
+#if defined(_MSC_VER)
+int __cdecl main() {
+#else
 int main() {
+#endif
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   StandaloneRttiDerived derived;
   StandaloneRttiBase& base = derived;

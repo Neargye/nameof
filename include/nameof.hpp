@@ -36,6 +36,13 @@
 #define NAMEOF_VERSION_MINOR 10
 #define NAMEOF_VERSION_PATCH 6
 
+// Keep the calling convention stable for fixed-offset __FUNCSIG__ parsing.
+#if defined(_MSC_VER) && !defined(__clang__)
+#  define NAMEOF_DETAIL_CDECL __cdecl
+#else
+#  define NAMEOF_DETAIL_CDECL
+#endif
+
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -792,7 +799,7 @@ constexpr auto n() noexcept {
 
 #if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 template <auto V>
-constexpr bool nv() noexcept {
+constexpr bool NAMEOF_DETAIL_CDECL nv() noexcept {
   using E = decltype(V);
   static_assert(is_enum_v<E>, "nameof::detail::nv requires an enum type.");
 
@@ -1138,7 +1145,7 @@ template <typename T, typename R>
 using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<remove_cvref_t<T>> && !std::is_pointer_v<remove_cvref_t<T>>, R>;
 
 template <typename... T>
-constexpr auto n() noexcept {
+constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
   if constexpr (nameof_type_supported<T...>::value) {
 #if defined(__clang__)
     constexpr string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
@@ -1612,6 +1619,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 
 #undef NAMEOF_ARRAY_CONSTEXPR
 #undef NAMEOF_FOR_EACH_256
+#undef NAMEOF_DETAIL_CDECL
 #undef NAMEOF_DETAIL_USE_STD_REFLECTION
 
 #if defined(__clang__)
