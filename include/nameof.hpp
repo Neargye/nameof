@@ -1139,13 +1139,7 @@ using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<remove_cvre
 
 template <typename... T>
 constexpr auto n() noexcept {
-#if defined(_MSC_VER) && !defined(__clang__)
-  [[maybe_unused]] constexpr auto custom_name = customize::type_name<typename T::type...>();
-#else
-  [[maybe_unused]] constexpr auto custom_name = customize::type_name<T...>();
-#endif
-
-  if constexpr (custom_name.empty() && nameof_type_supported<T...>::value) {
+  if constexpr (nameof_type_supported<T...>::value) {
 #if defined(__clang__)
     constexpr string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
 #elif defined(__GNUC__)
@@ -1157,16 +1151,48 @@ constexpr auto n() noexcept {
 #endif
     return cstring<name.size()>{name};
   } else {
+    return cstring<0>{};
+  }
+}
+
+template <typename... T>
+constexpr auto type_name() noexcept {
+#if defined(_MSC_VER) && !defined(__clang__)
+  constexpr auto custom_name = customize::type_name<typename T::type...>();
+#else
+  constexpr auto custom_name = customize::type_name<T...>();
+#endif
+  if constexpr (custom_name.empty()) {
+    return n<T...>();
+  } else {
     return cstring<custom_name.size()>{custom_name};
   }
 }
 
 template <typename... T>
-inline constexpr auto type_name_v = n<T...>();
+inline constexpr auto type_name_v = type_name<T...>();
+
+template <typename T>
+constexpr string_view pretty_type_name(string_view name) noexcept {
+  using U = remove_cvref_t<T>;
+  if constexpr (std::is_arithmetic_v<U>) {
+    return name;
+  } else if constexpr (std::is_null_pointer_v<U>) {
+    return "nullptr_t";
+  } else {
+    return pretty_name(name);
+  }
+}
 
 template <typename T>
 constexpr auto short_type_name() noexcept {
-  constexpr auto name = pretty_name(type_name_v<T>);
+#if defined(_MSC_VER) && !defined(__clang__)
+  using U = typename T::type;
+#else
+  using U = T;
+#endif
+  constexpr auto custom_name = customize::type_name<U>();
+  constexpr auto name = custom_name.empty() ? pretty_type_name<U>(type_name_v<T>) : pretty_name(custom_name);
   static_assert(!name.empty(), "Type does not have a short name.");
   return cstring<name.size()>{name};
 }
@@ -1231,19 +1257,11 @@ string nameof_type_rtti(const char* tn) {
   return name.str();
 }
 
-template <typename T>
-string nameof_full_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = demangle(tn);
-  assert(!name.empty() && "Type does not have a name.");
-  return full_type_name<T>(name.str());
-}
-
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto full_name = demangle(tn);
-  const auto name = pretty_name(full_name.view());
+  const auto name = pretty_type_name<T>(full_name.view());
   assert(!name.empty() && "Type does not have a short name.");
   return {name.data(), name.size()};
 }
@@ -1256,22 +1274,26 @@ string nameof_type_rtti(const char* tn) {
   return {name.data(), name.size()};
 }
 
-template <typename T>
-string nameof_full_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = string_view{tn != nullptr ? tn : ""};
-  assert(!name.empty() && "Type does not have a name.");
-  return full_type_name<T>({name.data(), name.size()});
-}
-
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = pretty_name(tn != nullptr ? tn : "");
+  const auto name = pretty_type_name<T>(tn != nullptr ? tn : "");
   assert(!name.empty() && "Type does not have a short name.");
   return {name.data(), name.size()};
 }
 #endif
+
+template <typename T>
+string nameof_full_type_rtti(const char* tn) {
+  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  using U = std::remove_reference_t<T>;
+  if constexpr ((std::is_pointer_v<U> || std::is_member_pointer_v<U> || std::is_array_v<U> || std::is_function_v<U>) && nameof_type_supported<T>::value) {
+    constexpr auto name = n<identity<T>>();
+    return name.str();
+  } else {
+    return full_type_name<T>(nameof_type_rtti<T>(tn));
+  }
+}
 
 template <auto V, auto U = V>
 constexpr auto n() noexcept {

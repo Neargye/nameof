@@ -268,6 +268,18 @@ constexpr nameof::string_view nameof::customize::type_name<CustomNameTarget>() n
 }
 
 template <>
+constexpr nameof::string_view nameof::customize::type_name<char16_t>() noexcept {
+  return "text::CodeUnit";
+}
+
+using RttiCustomizedPointer = int (* const)(double);
+
+template <>
+constexpr nameof::string_view nameof::customize::type_name<RttiCustomizedPointer>() noexcept {
+  return "CustomCallback";
+}
+
+template <>
 constexpr nameof::string_view nameof::customize::member_name<&CustomNameTarget::member>() noexcept {
   return "custom_member";
 }
@@ -1552,6 +1564,14 @@ TEST_CASE("NAMEOF_FULL_TYPE_EXPR") {
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE") {
+  static_assert(NAMEOF_SHORT_TYPE(unsigned int) == "unsigned int");
+  static_assert(NAMEOF_SHORT_TYPE(unsigned char) == "unsigned char");
+  static_assert(NAMEOF_SHORT_TYPE(signed char) == "signed char");
+  static_assert(NAMEOF_SHORT_TYPE(long double) == "long double");
+  static_assert(NAMEOF_SHORT_TYPE(void) == "void");
+  static_assert(NAMEOF_TYPE(char16_t) == "text::CodeUnit");
+  static_assert(NAMEOF_SHORT_TYPE(const char16_t&) == "CodeUnit");
+
   constexpr auto type_name = NAMEOF_SHORT_TYPE(decltype(struct_var));
   REQUIRE(type_name == "SomeStruct");
   REQUIRE(NAMEOF_SHORT_TYPE(decltype(ref_s)) == "SomeStruct");
@@ -1572,6 +1592,31 @@ TEST_CASE("NAMEOF_SHORT_TYPE") {
   auto short_type_view = std::string_view{};
   short_type_view = NAMEOF_SHORT_TYPE(SomeStruct);
   require_string_view_uses_cstring_storage(short_type_view, nameof::detail::short_type_name_v<SomeStructName>, "SomeStruct");
+}
+
+TEST_CASE_TEMPLATE("short arithmetic type names", T, bool, char, signed char, unsigned char, short,
+                   unsigned short, int, unsigned int, long, unsigned long, long long,
+                   unsigned long long, float, double, long double) {
+  static_assert(NAMEOF_SHORT_TYPE(T) == NAMEOF_TYPE(T));
+  static_assert(NAMEOF_SHORT_TYPE(const volatile T&) == NAMEOF_TYPE(T));
+  T value{};
+  require_static_cstring_api_contract(NAMEOF_SHORT_TYPE_EXPR(value), NAMEOF_TYPE(T));
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  const volatile T& ref = value;
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(ref), NAMEOF_TYPE_RTTI(ref));
+#endif
+}
+
+TEST_CASE("short null pointer type names") {
+  static_assert(NAMEOF_SHORT_TYPE(std::nullptr_t) == "nullptr_t");
+  static_assert(NAMEOF_SHORT_TYPE(const volatile std::nullptr_t&) == "nullptr_t");
+  std::nullptr_t value = nullptr;
+  require_static_cstring_api_contract(NAMEOF_SHORT_TYPE_EXPR(value), "nullptr_t");
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  const volatile std::nullptr_t& ref = value;
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(nullptr), "nullptr_t");
+  require_string_contract(NAMEOF_SHORT_TYPE_RTTI(ref), "nullptr_t");
+#endif
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
@@ -1646,6 +1691,70 @@ TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
   require_string_contract(volatile_ref_name, "volatile TestRtti::Derived&");
   require_string_contract(cv_ref_name, "volatile const TestRtti::Derived&");
 #endif
+}
+
+TEST_CASE("NAMEOF_FULL_TYPE_RTTI pointer qualifiers") {
+  int* const constant_pointer = nullptr;
+  int* volatile volatile_pointer = nullptr;
+  const int* const volatile qualified_pointer = nullptr;
+  int* const& pointer_reference = constant_pointer;
+  int SomeStruct::* const member_pointer = &SomeStruct::somefield;
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(constant_pointer), NAMEOF_FULL_TYPE_EXPR(constant_pointer));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(volatile_pointer), NAMEOF_FULL_TYPE_EXPR(volatile_pointer));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(qualified_pointer), NAMEOF_FULL_TYPE_EXPR(qualified_pointer));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(pointer_reference), NAMEOF_FULL_TYPE_EXPR(pointer_reference));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(member_pointer), NAMEOF_FULL_TYPE_EXPR(member_pointer));
+}
+
+TEST_CASE("NAMEOF_FULL_TYPE_RTTI function pointers") {
+  void (* const callback)() = nullptr;
+  void (SomeStruct::* const method)() const = nullptr;
+  RttiCustomizedPointer customized = nullptr;
+  static_assert(NAMEOF_FULL_TYPE_EXPR(customized) == "CustomCallback");
+
+#if defined(_MSC_VER) && !defined(__clang__)
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback), "void (__cdecl*const)(void)");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (__cdecl SomeStruct::*const)(void)const");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(customized), "int (__cdecl*const)(double)");
+#elif defined(__clang__)
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback), "void (*const)()");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (SomeStruct::*const)() const");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(customized), "int (*const)(double)");
+#else
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback), "void (* const)()");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(method), "void (SomeStruct::* const)() const");
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(customized), "int (* const)(double)");
+#endif
+
+  const auto& callback_ref = callback;
+  auto&& callback_rref = std::move(callback);
+  void (* const* const nested)() = &callback;
+  int (* const array_pointer)[3] = nullptr;
+  void (SomeStruct::* const qualified_method)() const & noexcept = nullptr;
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback_ref), NAMEOF_FULL_TYPE_EXPR(callback_ref));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(callback_rref), NAMEOF_FULL_TYPE_EXPR(callback_rref));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(nested), NAMEOF_FULL_TYPE_EXPR(nested));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(array_pointer), NAMEOF_FULL_TYPE_EXPR(array_pointer));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(qualified_method), NAMEOF_FULL_TYPE_EXPR(qualified_method));
+}
+
+TEST_CASE("NAMEOF_FULL_TYPE_RTTI arrays and functions") {
+  int array[2]{};
+  int* const pointers[2]{};
+  const volatile int qualified_array[2][3]{};
+  const int (&array_ref)[2] = array;
+  auto&& array_rref = std::move(array);
+  auto& function_ref = SomeMethod3;
+  void (&&function_rref)() = SomeMethod3;
+
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(array), NAMEOF_FULL_TYPE_EXPR(array));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(pointers), NAMEOF_FULL_TYPE_EXPR(pointers));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(qualified_array), NAMEOF_FULL_TYPE_EXPR(qualified_array));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(array_ref), NAMEOF_FULL_TYPE_EXPR(array_ref));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(array_rref), NAMEOF_FULL_TYPE_EXPR(array_rref));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(SomeMethod3), NAMEOF_FULL_TYPE_EXPR(SomeMethod3));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(function_ref), NAMEOF_FULL_TYPE_EXPR(function_ref));
+  require_string_contract(NAMEOF_FULL_TYPE_RTTI(function_rref), NAMEOF_FULL_TYPE_EXPR(function_rref));
 }
 
 TEST_CASE("NAMEOF_SHORT_TYPE_RTTI") {

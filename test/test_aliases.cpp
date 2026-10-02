@@ -85,6 +85,11 @@ TEST_CASE("string") {
 
   auto qualified_name = nameof::detail::full_type_name<const volatile int&&>(nameof::string{"int"});
   REQUIRE(qualified_name.compare("volatile const int&&") == 0);
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
+  void (* const callback)() = nullptr;
+  const auto pointer_name = NAMEOF_FULL_TYPE_RTTI(callback);
+  REQUIRE(pointer_name.compare(NAMEOF_FULL_TYPE_EXPR(callback).c_str()) == 0);
+#endif
 }
 
 TEST_CASE("string_view") {
