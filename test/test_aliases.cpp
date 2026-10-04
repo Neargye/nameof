@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <sstream>
+#include <iomanip>
 #include <type_traits>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -91,6 +92,22 @@ TEST_CASE("string") {
   const auto pointer_name = NAMEOF_FULL_TYPE_RTTI(callback);
   REQUIRE(pointer_name.compare(NAMEOF_FULL_TYPE_EXPR(callback).c_str()) == 0);
 #endif
+}
+
+TEST_CASE("cstring stream formatting with aliases") {
+  std::ostringstream os;
+  os << std::setfill('.') << std::setw(6) << NAMEOF_TYPE(int);
+  REQUIRE(os.str() == "...int");
+  REQUIRE(os.width() == 0);
+  os << '|';
+  REQUIRE(os.str() == "...int|");
+
+  std::wostringstream wos;
+  wos << std::left << std::setfill(L'.') << std::setw(6) << NAMEOF_TYPE(int);
+  REQUIRE(wos.str() == L"int...");
+  REQUIRE(wos.width() == 0);
+  wos << L'|';
+  REQUIRE(wos.str() == L"int...|");
 }
 
 TEST_CASE("string_view") {
