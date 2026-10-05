@@ -9,7 +9,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang
     set(NAMEOF_NO_RTTI_OPTION /GR-)
     check_cxx_compiler_flag(/permissive- HAS_PERMISSIVE_FLAG)
     if(HAS_PERMISSIVE_FLAG)
-        set(OPTIONS ${OPTIONS} /permissive-)
+        list(APPEND OPTIONS /permissive-)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(OPTIONS -Wall -Wextra -pedantic-errors -Werror)
@@ -76,24 +76,26 @@ endif()
 
 add_library(nameof-test-main OBJECT test_main.cpp)
 target_compile_options(nameof-test-main PRIVATE ${OPTIONS})
-target_include_directories(nameof-test-main PRIVATE 3rdparty)
-target_compile_definitions(nameof-test-main PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS)
+target_include_directories(nameof-test-main PUBLIC 3rdparty)
+target_compile_definitions(nameof-test-main
+    PUBLIC DOCTEST_CONFIG_USE_STD_HEADERS
+    INTERFACE FMT_HEADER_ONLY
+)
 target_compile_features(nameof-test-main PRIVATE cxx_std_17)
 set_target_properties(nameof-test-main PROPERTIES CXX_EXTENSIONS OFF)
+if(NAMEOF_TEST_FLAG_PREFIX STREQUAL "/std:")
+    target_compile_options(nameof-test-main INTERFACE /utf-8)
+endif()
+if(NAMEOF_TEST_REQUIRE_FMT)
+    target_compile_definitions(nameof-test-main INTERFACE NAMEOF_TEST_REQUIRE_FMT)
+endif()
 
 function(make_test src target std)
+    cmake_parse_arguments(PARSE_ARGV 3 TEST "DOCTEST" "" "")
     add_executable(${target} ${src})
     target_compile_options(${target} PRIVATE ${OPTIONS})
-    if(src STREQUAL "test.cpp" AND NAMEOF_TEST_FLAG_PREFIX STREQUAL "/std:")
-        target_compile_options(${target} PRIVATE /utf-8)
-    endif()
-    target_include_directories(${target} PRIVATE 3rdparty)
-    target_compile_definitions(${target} PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS FMT_HEADER_ONLY)
-    if(NAMEOF_TEST_REQUIRE_FMT AND src STREQUAL "test.cpp")
-        target_compile_definitions(${target} PRIVATE NAMEOF_TEST_REQUIRE_FMT)
-    endif()
     target_link_libraries(${target} PRIVATE ${PROJECT_NAME})
-    if(src STREQUAL "test.cpp" OR src STREQUAL "test_aliases.cpp" OR src STREQUAL "test_reflection.cpp")
+    if(TEST_DOCTEST)
         target_link_libraries(${target} PRIVATE nameof-test-main)
     endif()
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
@@ -106,17 +108,30 @@ function(make_test src target std)
 endfunction()
 
 function(make_compile_fail_test case_name case_id expected_text)
-    set(target "compile-fail-${case_name}")
-    set(unexpected_text "${ARGV3}")
+    cmake_parse_arguments(PARSE_ARGV 3 TEST "REFLECTION" "UNEXPECTED_TEXT" "")
+    if(TEST_REFLECTION)
+        set(target "compile-fail-reflection-${case_name}")
+        set(src reflection_compile_fail.cpp)
+        set(case_definition NAMEOF_REFLECTION_COMPILE_FAIL_CASE=${case_id})
+    else()
+        set(target "compile-fail-${case_name}")
+        set(src compile_fail.cpp)
+        set(case_definition NAMEOF_COMPILE_FAIL_CASE=${case_id})
+    endif()
 
-    add_executable(${target} EXCLUDE_FROM_ALL compile_fail.cpp)
+    add_executable(${target} EXCLUDE_FROM_ALL ${src})
     target_compile_options(${target} PRIVATE ${OPTIONS})
-    target_compile_definitions(${target} PRIVATE
-        NAMEOF_COMPILE_FAIL_CASE=${case_id}
-        NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1
-    )
+    target_compile_definitions(${target} PRIVATE ${case_definition})
     target_link_libraries(${target} PRIVATE ${PROJECT_NAME})
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+    if(TEST_REFLECTION)
+        target_compile_options(${target} PRIVATE
+            "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
+            ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
+        )
+    else()
+        target_compile_definitions(${target} PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
+    endif()
 
     add_test(
         NAME ${target}
@@ -125,41 +140,17 @@ function(make_compile_fail_test case_name case_id expected_text)
             "-DTARGET_NAME=${target}"
             "-DCONFIG=$<CONFIG>"
             "-DEXPECTED_TEXT=${expected_text}"
-            "-DUNEXPECTED_TEXT=${unexpected_text}"
+            "-DUNEXPECTED_TEXT=${TEST_UNEXPECTED_TEXT}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/check_compile_fail.cmake"
     )
     set_tests_properties(${target} PROPERTIES RUN_SERIAL TRUE)
 endfunction()
 
-function(make_reflection_compile_fail_test case_name case_id expected_text)
-    set(target "compile-fail-reflection-${case_name}")
-    add_executable(${target} EXCLUDE_FROM_ALL reflection_compile_fail.cpp)
-    target_compile_options(${target} PRIVATE
-        ${OPTIONS}
-        "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
-        ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
-    )
-    target_compile_definitions(${target} PRIVATE NAMEOF_REFLECTION_COMPILE_FAIL_CASE=${case_id})
-    target_link_libraries(${target} PRIVATE ${PROJECT_NAME})
-    set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
-
-    add_test(
-        NAME ${target}
-        COMMAND ${CMAKE_COMMAND}
-            "-DBUILD_DIR=${CMAKE_BINARY_DIR}"
-            "-DTARGET_NAME=${target}"
-            "-DCONFIG=$<CONFIG>"
-            "-DEXPECTED_TEXT=${expected_text}"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_compile_fail.cmake"
-    )
-    set_tests_properties(${target} PROPERTIES RUN_SERIAL TRUE)
-endfunction()
-
-make_test(test.cpp test-cpp17 17)
-make_test(test_aliases.cpp test_aliases-cpp17 17)
+make_test(test.cpp test-cpp17 17 DOCTEST)
+make_test(test_aliases.cpp test_aliases-cpp17 17 DOCTEST)
 make_test(test_range.cpp test-range-cpp17 17)
 make_test(test_range_negative.cpp test-range-negative-cpp17 17)
-make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp17 17)
+make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp17 17 DOCTEST)
 make_test(test_standalone.cpp test-standalone-cpp17 17)
 
 if(NAMEOF_NO_RTTI_OPTION)
@@ -179,28 +170,20 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 make_compile_fail_test(expression-no-name 1 "Expression does not have a name")
-make_compile_fail_test(inverted-range 2 "nameof::customize::enum_range must contain at least one value" "names_v")
-make_compile_fail_test(range-too-large 3 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" "names_v")
+make_compile_fail_test(inverted-range 2 "nameof::customize::enum_range must contain at least one value" UNEXPECTED_TEXT "names_v")
+make_compile_fail_test(range-too-large 3 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "names_v")
 
-if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-    make_test(test.cpp test-cpp20 20)
-    make_test(test_aliases.cpp test_aliases-cpp20 20)
-endif()
-
-if("cxx_std_23" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-    make_test(test.cpp test-cpp23 23)
-    make_test(test_aliases.cpp test_aliases-cpp23 23)
-endif()
-
-if("cxx_std_26" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-    make_test(test.cpp test-cpp26 26)
-    make_test(test_aliases.cpp test_aliases-cpp26 26)
-endif()
+foreach(std IN ITEMS 20 23 26)
+    if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+        make_test(test.cpp test-cpp${std} ${std} DOCTEST)
+        make_test(test_aliases.cpp test_aliases-cpp${std} ${std} DOCTEST)
+    endif()
+endforeach()
 
 if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
-    make_test(test.cpp test-reflection-cpp26 "")
-    make_test(test_aliases.cpp test_aliases-reflection-cpp26 "")
-    make_test(test_reflection.cpp test-reflection-semantics-cpp26 "")
+    make_test(test.cpp test-reflection-cpp26 "" DOCTEST)
+    make_test(test_aliases.cpp test_aliases-reflection-cpp26 "" DOCTEST)
+    make_test(test_reflection.cpp test-reflection-semantics-cpp26 "" DOCTEST)
 
     foreach(target IN ITEMS test-reflection-cpp26 test_aliases-reflection-cpp26 test-reflection-semantics-cpp26)
         target_compile_options(${target} PRIVATE
@@ -210,16 +193,17 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
         target_compile_definitions(${target} PRIVATE NAMEOF_TEST_STD_REFLECTION=1)
     endforeach()
 
-    make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp26 "")
+    make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp26 "" DOCTEST)
     target_compile_options(test-reflection-force-compiler-specific-cpp26 PRIVATE
         "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
         ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
     )
     target_compile_definitions(test-reflection-force-compiler-specific-cpp26 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
 
-    make_reflection_compile_fail_test(
+    make_compile_fail_test(
         incomplete-enum
         1
         "nameof requires a complete enum definition"
+        REFLECTION
     )
 endif()
