@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2018 - 2026 Daniil Goncharov <neargye@gmail.com>.
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 #include <nameof.hpp>
@@ -67,6 +66,9 @@ constexpr nameof::string_view nameof::customize::enum_name<Customized>(Customize
 
 template <>
 constexpr nameof::string_view nameof::customize::enum_name<SyntheticOnly>(SyntheticOnly value) noexcept {
+  if (value == SyntheticOnly{900'000'000}) {
+    return "Far";
+  }
   return value == SyntheticOnly{42} ? nameof::string_view{"Only"} : nameof::string_view{};
 }
 
@@ -117,8 +119,11 @@ TEST_CASE("runtime enum backend") {
   static_assert(nameof::nameof_enum<Customized{2}>() == "Synthetic");
   static_assert(nameof::nameof_enum(SyntheticOnly{42}) == "Only");
   static_assert(nameof::nameof_enum<SyntheticOnly{42}>() == "Only");
+  static_assert(nameof::nameof_enum(SyntheticOnly{900'000'000}) == "Far");
+  static_assert(nameof::nameof_enum<SyntheticOnly{900'000'000}>() == "Far");
   static_assert(nameof::nameof_enum(SyntheticOnly{43}).empty());
   CHECK(nameof::nameof_enum_or(SyntheticOnly{42}, "fallback") == "Only");
+  CHECK(nameof::nameof_enum_or(SyntheticOnly{900'000'000}, "fallback") == "Far");
   CHECK(nameof::nameof_enum_or(SyntheticOnly{43}, "fallback") == "fallback");
 
 #if defined(NAMEOF_TEST_STD_REFLECTION)

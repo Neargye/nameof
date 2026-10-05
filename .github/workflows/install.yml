@@ -69,7 +69,7 @@ jobs:
             -DNAMEOF_SOURCE_DIR="${{ github.workspace }}" \
             -DGEN_PKG_CONFIG_TEST_CASE="${library_type}" \
             -DCMAKE_INSTALL_PREFIX=/usr
-          cmake --build "${build_dir}" --config Release
+          cmake --build "${build_dir}" --parallel "$(nproc)" --config Release
           cmake --install "${build_dir}" \
             --config Release \
             --prefix "${install_dir}"
@@ -94,8 +94,8 @@ jobs:
         cmake -S test/cmake-consumer -B build-consumer \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-        cmake --build build-consumer --parallel
-        ctest --test-dir build-consumer --output-on-failure
+        cmake --build build-consumer --parallel "$(nproc)"
+        ctest --test-dir build-consumer --parallel "$(nproc)" --output-on-failure
 
     - name: Test CPack archive
       run: |

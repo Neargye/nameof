@@ -60,19 +60,19 @@ jobs:
       run: cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
 
     - name: Build Release
-      run: cmake --build build-release --parallel --config Release
+      run: cmake --build build-release --parallel "$(nproc)" --config Release
 
     - name: Test Release
-      run: ctest --test-dir build-release --output-on-failure -C Release
+      run: ctest --test-dir build-release --parallel "$(nproc)" --output-on-failure -C Release
 
     - name: Configure Debug
       run: cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
 
     - name: Build Debug
-      run: cmake --build build-debug --parallel --config Debug
+      run: cmake --build build-debug --parallel "$(nproc)" --config Debug
 
     - name: Test Debug
-      run: ctest --test-dir build-debug --output-on-failure -C Debug
+      run: ctest --test-dir build-debug --parallel "$(nproc)" --output-on-failure -C Debug
 
   fmt:
     name: fmt
@@ -93,7 +93,7 @@ jobs:
           -DNAMEOF_TEST_REQUIRE_FMT=ON
 
     - name: Build
-      run: cmake --build build --parallel --target test-cpp17
+      run: cmake --build build --parallel "$(nproc)" --target test-cpp17
 
     - name: Test
-      run: ctest --test-dir build --output-on-failure -R "^test-cpp17$"
+      run: ctest --test-dir build --parallel "$(nproc)" --output-on-failure -R "^test-cpp17$"

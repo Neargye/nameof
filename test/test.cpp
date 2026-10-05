@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2018 - 2026 Daniil Goncharov <neargye@gmail.com>.
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 #include <string>
@@ -1113,6 +1112,8 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
 }
 
 TEST_CASE("nameof_enum_or") {
+  REQUIRE(nameof::nameof_enum_or(Color{0}, ::nameof::string_view{"a\0b", 3}) == std::string{"a\0b", 3});
+
   OutOfRange low = OutOfRange::too_low;
   OutOfRange high = OutOfRange::too_high;
   auto low_name = nameof::nameof_enum_or(low, "-121");

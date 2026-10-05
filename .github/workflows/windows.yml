@@ -25,10 +25,10 @@ jobs:
       run: cmake -S . -B build -A ${{ matrix.platform }}
 
     - name: Build
-      run: cmake --build build --parallel --config ${{ matrix.build_type }}
+      run: cmake --build build --parallel $env:NUMBER_OF_PROCESSORS --config ${{ matrix.build_type }}
 
     - name: Test
-      run: ctest --test-dir build --output-on-failure -C ${{ matrix.build_type }}
+      run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure -C ${{ matrix.build_type }}
 
   clang-cl:
     name: "Clang-cl / x64 / Release"
@@ -41,7 +41,7 @@ jobs:
       run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -T ClangCL
 
     - name: Build
-      run: cmake --build build --parallel --config Release
+      run: cmake --build build --parallel $env:NUMBER_OF_PROCESSORS --config Release
 
     - name: Test
-      run: ctest --test-dir build --output-on-failure -C Release
+      run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure -C Release

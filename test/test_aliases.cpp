@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <type_traits>
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
 struct MyString {
@@ -152,6 +151,13 @@ TEST_CASE("short type names") {
 }
 
 TEST_CASE("static cstring api") {
+  constexpr nameof::cstring<1> prefix{"a"};
+  constexpr nameof::cstring<3> embedded_null{nameof::string_view{"a\0b", 3}};
+  static_assert(prefix < embedded_null);
+  static_assert(embedded_null > prefix);
+  static_assert(prefix != embedded_null);
+  static_assert(embedded_null != nameof::cstring<3>{nameof::string_view{"a\0c", 3}});
+
   std::ostringstream stream;
   stream << nameof::cstring<3>{"abc"};
   REQUIRE(stream.str() == "abc");
