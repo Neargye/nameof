@@ -176,3 +176,19 @@ TEST_CASE("static cstring api") {
   REQUIRE(pointer_name.compare("static_member") == 0);
 #endif
 }
+
+TEST_CASE("static bool enum names with aliases") {
+#if defined(NAMEOF_ENUM_SUPPORTED)
+  enum class EmptyBool : bool {};
+  enum class FalseBool : bool { Off = false };
+  enum class TrueBool : bool { On = true };
+  static_assert(nameof::nameof_enum<static_cast<EmptyBool>(false)>().empty());
+  static_assert(nameof::nameof_enum<static_cast<EmptyBool>(true)>().empty());
+  static_assert(nameof::nameof_enum<static_cast<FalseBool>(true)>().empty());
+  static_assert(nameof::nameof_enum<static_cast<TrueBool>(false)>().empty());
+  static_assert(NAMEOF_ENUM_CONST(static_cast<FalseBool>(true)).empty());
+  static_assert(NAMEOF_ENUM_CONST(static_cast<TrueBool>(false)).empty());
+  static_assert(nameof::nameof_enum<FalseBool::Off>().compare("Off") == 0);
+  static_assert(nameof::nameof_enum<TrueBool::On>().compare("On") == 0);
+#endif
+}
