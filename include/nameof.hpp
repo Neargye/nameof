@@ -51,6 +51,8 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
@@ -64,13 +66,6 @@
 #  if defined(__cpp_lib_reflection) && __cpp_lib_reflection >= 202506L && defined(__cpp_lib_define_static) && __cpp_lib_define_static >= 202506L
 #    define NAMEOF_DETAIL_USE_STD_REFLECTION 1
 #  endif
-#endif
-
-#if !defined(NAMEOF_USING_ALIAS_STRING)
-#  include <string>
-#endif
-#if !defined(NAMEOF_USING_ALIAS_STRING_VIEW)
-#  include <string_view>
 #endif
 
 #if __has_include(<cxxabi.h>)
@@ -455,10 +450,11 @@ template <std::uint16_t N>
 
 template <typename Char, typename Traits, std::uint16_t N>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& str) {
-  for (const auto c : str) {
-    os.put(c);
+  if constexpr (std::is_same_v<Char, char>) {
+    return os << std::basic_string_view<Char, Traits>{str.data(), str.size()};
+  } else {
+    return os << std::basic_string<Char, Traits>{str.begin(), str.end()};
   }
-  return os;
 }
 
 namespace detail {

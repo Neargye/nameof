@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <sstream>
+#include <iomanip>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -588,6 +589,50 @@ TEST_CASE("CSTRING") {
         os << cstring_N;
         REQUIRE(os.str() == content);
     }
+}
+
+TEST_CASE_TEMPLATE("CSTRING stream formatting", Char, char, wchar_t) {
+  const auto check = [](const auto& name, const std::basic_string<Char>& text) {
+    for (const auto alignment : {std::ios_base::left, std::ios_base::right, std::ios_base::internal}) {
+      for (const auto width : {0, 2, 3, 6}) {
+        std::basic_ostringstream<Char> actual;
+        std::basic_ostringstream<Char> expected;
+        actual.setf(alignment, std::ios_base::adjustfield);
+        expected.setf(alignment, std::ios_base::adjustfield);
+        actual << std::setfill(static_cast<Char>('.')) << std::setw(width) << name;
+        expected << std::setfill(static_cast<Char>('.')) << std::setw(width) << text;
+        REQUIRE(actual.str() == expected.str());
+        REQUIRE(actual.width() == 0);
+        actual << static_cast<Char>('|');
+        expected << static_cast<Char>('|');
+        REQUIRE(actual.str() == expected.str());
+      }
+    }
+  };
+
+  check(::nameof::cstring<3>{"abc"}, {static_cast<Char>('a'), static_cast<Char>('b'), static_cast<Char>('c')});
+  check(::nameof::cstring<0>{}, {});
+  check(::nameof::cstring<3>{::nameof::string_view{"a\0b", 3}}, {static_cast<Char>('a'), Char{}, static_cast<Char>('b')});
+}
+
+TEST_CASE("NAMEOF_TYPE stream formatting") {
+  std::ostringstream os;
+  os << std::setfill('.') << std::setw(6) << NAMEOF_TYPE(int);
+  REQUIRE(os.str() == "...int");
+  REQUIRE(os.width() == 0);
+  os << '|';
+  REQUIRE(os.str() == "...int|");
+}
+
+TEST_CASE_TEMPLATE("CSTRING stream formatting with custom traits", Char, char, wchar_t) {
+  struct CustomTraits : std::char_traits<Char> {};
+  std::basic_ostringstream<Char, CustomTraits> os;
+  os << std::setfill(static_cast<Char>('.')) << std::setw(6) << ::nameof::cstring<3>{"abc"};
+  REQUIRE(os.width() == 0);
+  os << static_cast<Char>('|');
+  const auto result = os.str();
+  REQUIRE(std::basic_string<Char>(result.data(), result.size()) ==
+          std::basic_string<Char>{'.', '.', '.', 'a', 'b', 'c', '|'});
 }
 
 TEST_CASE("CSTRING_0") {
