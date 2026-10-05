@@ -788,6 +788,10 @@ constexpr auto n() noexcept {
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
     constexpr auto name = pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+    if constexpr (std::is_same_v<std::underlying_type_t<E>, bool> && (name == "false" || name == "true")) {
+      // MSVC spells unnamed bool enum values as casts ending in "false" or "true".
+      return string_view{""};
+    }
 #else
     constexpr auto name = string_view{""};
 #endif

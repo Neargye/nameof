@@ -851,6 +851,20 @@ TEST_CASE("nameof_enum") {
   }
 
   SUBCASE("static storage") {
+    enum class EmptyBool : bool {};
+    enum class FalseBool : bool { Off = false };
+    enum class TrueBool : bool { On = true };
+    static_assert(nameof::nameof_enum<static_cast<EmptyBool>(false)>().empty());
+    static_assert(nameof::nameof_enum<static_cast<EmptyBool>(true)>().empty());
+    static_assert(nameof::nameof_enum<static_cast<FalseBool>(true)>().empty());
+    static_assert(nameof::nameof_enum<static_cast<TrueBool>(false)>().empty());
+    static_assert(NAMEOF_ENUM_CONST(static_cast<FalseBool>(true)).empty());
+    static_assert(NAMEOF_ENUM_CONST(static_cast<TrueBool>(false)).empty());
+    static_assert(nameof::nameof_enum<FalseBool::Off>() == "Off");
+    static_assert(nameof::nameof_enum<TrueBool::On>() == "On");
+    static_assert(nameof::nameof_enum<BoolEnum::Off>() == "Off");
+    static_assert(nameof::nameof_enum<BoolEnum::On>() == "On");
+
     constexpr Color cr = Color::RED;
     constexpr auto cr_name = nameof::nameof_enum<cr>();
     constexpr Color cm[3] = {Color::RED, Color::GREEN, Color::BLUE};
