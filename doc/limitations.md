@@ -44,6 +44,8 @@ Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp`
     #include <nameof.hpp>
     ```
 
+    Use the same macro values in every translation unit to avoid ODR violations.
+
   * If another range is needed for a specific enum type, specialize `enum_range` for that type in `namespace nameof::customize`.
 
     ```cpp

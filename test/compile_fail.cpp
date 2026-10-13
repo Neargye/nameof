@@ -4,6 +4,8 @@
 
 #include <nameof.hpp>
 
+#include <limits>
+
 #ifndef NAMEOF_COMPILE_FAIL_CASE
 #  error NAMEOF_COMPILE_FAIL_CASE must select a compile-fail scenario.
 #endif
@@ -39,6 +41,42 @@ struct nameof::customize::enum_range<OversizedRange> {
 };
 
 constexpr auto oversized_range_name = nameof::nameof_enum(OversizedRange::value);
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE >= 4 && NAMEOF_COMPILE_FAIL_CASE <= 6
+
+enum class WideRange : long long { value = 0 };
+
+template <>
+struct nameof::customize::enum_range<WideRange> {
+#if NAMEOF_COMPILE_FAIL_CASE == 5
+  static constexpr long long min = (std::numeric_limits<int>::min)() - 1LL;
+  static constexpr long long max = 0;
+#elif NAMEOF_COMPILE_FAIL_CASE == 6
+  static constexpr unsigned long long min = 0;
+  static constexpr unsigned long long max = (std::numeric_limits<unsigned long long>::max)();
+#else
+  static constexpr long long min = 0;
+  static constexpr long long max = (std::numeric_limits<int>::max)() + 1LL;
+#endif
+};
+
+constexpr auto wide_range_name = nameof::nameof_enum(WideRange::value);
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 7
+
+enum class FullIntRange { value = 0 };
+
+template <>
+struct nameof::customize::enum_range<FullIntRange> {
+  static constexpr int min = (std::numeric_limits<int>::min)();
+  static constexpr int max = (std::numeric_limits<int>::max)();
+};
+
+constexpr auto full_int_range_name = nameof::nameof_enum(FullIntRange::value);
 
 int main() {}
 

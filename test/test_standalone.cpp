@@ -24,6 +24,13 @@ static_assert(nameof::nameof_enum(DefaultRangeBoundary::upper) == "upper");
 static_assert(nameof::nameof_enum(DefaultRangeBoundary::outside).empty());
 #endif
 
+enum UnfixedEnum { unfixed_first = 1, unfixed_second = 2 };
+
+#if defined(NAMEOF_ENUM_SUPPORTED)
+static_assert(nameof::nameof_enum(unfixed_second) == "unfixed_second");
+static_assert(nameof::nameof_enum(static_cast<UnfixedEnum>(3)).empty());
+#endif
+
 #if defined(NAMEOF_TYPE_SUPPORTED)
 static_assert(NAMEOF_TYPE(int) == "int");
 static_assert(NAMEOF_FULL_TYPE(int) == "int");

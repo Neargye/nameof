@@ -16,13 +16,28 @@ enum class IntMinRange { First = (std::numeric_limits<int>::min)(), Middle, Last
 
 template <>
 struct nameof::customize::enum_range<IntMinRange> {
-  static constexpr int min = (std::numeric_limits<int>::min)();
-  static constexpr int max = (std::numeric_limits<int>::min)() + 2;
+  static constexpr long long min = (std::numeric_limits<int>::min)();
+  static constexpr long long max = (std::numeric_limits<int>::min)() + 2;
 };
 
 static_assert(nameof::nameof_enum(IntMinRange::First) == "First");
 static_assert(nameof::nameof_enum(IntMinRange::Middle) == "Middle");
 static_assert(nameof::nameof_enum(IntMinRange::Last) == "Last");
 static_assert(nameof::nameof_enum(static_cast<IntMinRange>((std::numeric_limits<int>::min)() + 3)).empty());
+
+enum class ClampedSignedRange : signed char {
+  First = (std::numeric_limits<signed char>::min)(),
+  Last = (std::numeric_limits<signed char>::max)()
+};
+
+template <>
+struct nameof::customize::enum_range<ClampedSignedRange> {
+  static constexpr long long min = (std::numeric_limits<long long>::min)();
+  static constexpr unsigned long long max = (std::numeric_limits<unsigned long long>::max)();
+};
+
+static_assert(nameof::nameof_enum(ClampedSignedRange::First) == "First");
+static_assert(nameof::nameof_enum(ClampedSignedRange::Last) == "Last");
+static_assert(nameof::nameof_enum(static_cast<ClampedSignedRange>(0)).empty());
 
 int main() {}

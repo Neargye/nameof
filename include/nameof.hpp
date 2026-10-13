@@ -616,50 +616,13 @@ constexpr string_view pretty_function_name(string_view signature) noexcept {
 
 #if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 constexpr bool enum_name_valid(string_view name) noexcept {
-#if defined(__clang__)
-  constexpr auto anonymous_namespace_size = sizeof("(anonymous namespace)::") - 1;
-  while (name.size() > anonymous_namespace_size &&
-         name[0] == '(' &&
-         name[1] == 'a' &&
-         name[10] == ' ' &&
-         name[20] == ')' &&
-         name[21] == ':' &&
-         name[22] == ':') {
-    name.remove_prefix(anonymous_namespace_size);
+  // Check the final identifier, independently of compiler-specific scope names.
+  auto i = name.size();
+  while (i > 0 && is_name_char(name[i - 1])) {
+    --i;
   }
-#elif defined(__GNUC__)
-  constexpr auto gcc_anonymous_namespace_size = sizeof("{anonymous}::") - 1;
-  while (name.size() > gcc_anonymous_namespace_size &&
-         name[0] == '{' &&
-         name[1] == 'a' &&
-         name[10] == '}' &&
-         name[11] == ':' &&
-         name[12] == ':') {
-    name.remove_prefix(gcc_anonymous_namespace_size);
-  }
-  constexpr auto unnamed_namespace_size = sizeof("<unnamed>::") - 1;
-  while (name.size() > unnamed_namespace_size &&
-         name[0] == '<' &&
-         name[1] == 'u' &&
-         name[8] == '>' &&
-         name[9] == ':' &&
-         name[10] == ':') {
-    name.remove_prefix(unnamed_namespace_size);
-  }
-#elif defined(_MSC_VER)
-  constexpr auto msvc_anonymous_namespace_size = sizeof("`anonymous-namespace'::") - 1;
-  while (name.size() > msvc_anonymous_namespace_size &&
-         name[0] == '`' &&
-         name[1] == 'a' &&
-         name[10] == '-' &&
-         name[20] == '\'' &&
-         name[21] == ':' &&
-         name[22] == ':') {
-    name.remove_prefix(msvc_anonymous_namespace_size);
-  }
-#endif
 
-  return !name.empty() && is_name_start(name[0]);
+  return i < name.size() && is_name_start(name[i]) && (i == 0 || (i >= 2 && name[i - 2] == ':' && name[i - 1] == ':'));
 }
 #endif
 
@@ -681,20 +644,14 @@ template <typename L, typename R>
 constexpr bool cmp_less(L lhs, R rhs) noexcept {
   static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral types.");
 
-  if constexpr (std::is_same_v<L, bool> && std::is_same_v<R, bool>) {
-    return static_cast<unsigned char>(lhs) < static_cast<unsigned char>(rhs);
-  } else if constexpr (std::is_same_v<L, bool>) {
-    return static_cast<R>(lhs) < rhs;
-  } else if constexpr (std::is_same_v<R, bool>) {
-    return lhs < static_cast<L>(rhs);
+  if constexpr (std::is_same_v<L, bool> || std::is_same_v<R, bool>) {
+    return cmp_less(+lhs, +rhs);
   } else if constexpr (std::is_signed_v<L> == std::is_signed_v<R>) {
     return lhs < rhs;
-  } else if constexpr (std::is_signed_v<R>) {
-    using C = std::common_type_t<std::make_unsigned_t<L>, std::make_unsigned_t<R>>;
-    return rhs > 0 && static_cast<C>(lhs) < static_cast<C>(rhs);
+  } else if constexpr (std::is_signed_v<L>) {
+    return lhs < 0 || static_cast<std::make_unsigned_t<L>>(lhs) < rhs;
   } else {
-    using C = std::common_type_t<std::make_unsigned_t<L>, std::make_unsigned_t<R>>;
-    return lhs < 0 || static_cast<C>(lhs) < static_cast<C>(rhs);
+    return rhs > 0 && lhs < static_cast<std::make_unsigned_t<R>>(rhs);
   }
 }
 
@@ -847,8 +804,9 @@ inline constexpr auto custom_enum_name_v = custom_enum_name<E, V>();
 #if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
-#if defined(__clang__) && __clang_major__ >= 16
+#if defined(__clang__) && __clang_major__ >= 16 || !defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 11
   // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
+  // Avoid out-of-range enum conversions during range scanning (GCC -Wconversion).
   constexpr E v = __builtin_bit_cast(E, V);
 #else
   constexpr E v = static_cast<E>(V);
@@ -879,13 +837,13 @@ constexpr int reflected_min() noexcept {
   if constexpr (IsFlags) {
     return 0;
   } else {
-    constexpr auto lhs = customize::enum_range<E>::min;
-    constexpr auto rhs = (std::numeric_limits<U>::min)();
+    constexpr auto lhs{customize::enum_range<E>::min};
+    constexpr auto rhs{(std::numeric_limits<U>::min)()};
 
     if constexpr (cmp_less(rhs, lhs)) {
-      return lhs;
+      return int{lhs};
     } else {
-      return rhs;
+      return int{rhs};
     }
   }
 }
@@ -895,13 +853,13 @@ constexpr int reflected_max() noexcept {
   if constexpr (IsFlags) {
     return std::is_same_v<U, bool> ? 0 : std::numeric_limits<make_unsigned_t<U>>::digits - 1;
   } else {
-    constexpr auto lhs = customize::enum_range<E>::max;
-    constexpr auto rhs = (std::numeric_limits<U>::max)();
+    constexpr auto lhs{customize::enum_range<E>::max};
+    constexpr auto rhs{(std::numeric_limits<U>::max)()};
 
     if constexpr (cmp_less(lhs, rhs)) {
-      return lhs;
+      return int{lhs};
     } else {
-      return rhs;
+      return int{rhs};
     }
   }
 }
@@ -981,17 +939,18 @@ constexpr auto values() noexcept {
 
 template <typename E, bool IsFlags>
 constexpr auto values() noexcept {
-  constexpr auto min = reflected_min<E, IsFlags>();
-  constexpr auto max = reflected_max<E, IsFlags>();
-  constexpr bool valid_range = min <= max;
-  constexpr auto range_span = static_cast<std::uintmax_t>(max) - static_cast<std::uintmax_t>(min);
-  constexpr auto max_range_size = static_cast<std::uintmax_t>((std::numeric_limits<std::uint16_t>::max)());
-  constexpr bool valid_size = range_span < max_range_size - 1;
+  constexpr auto min{reflected_min<E, IsFlags>()};
+  constexpr auto max{reflected_max<E, IsFlags>()};
+  constexpr bool valid_range{min <= max};
+  // Subtract unsigned bounds to avoid signed overflow before validating the span.
+  constexpr auto range_span{static_cast<unsigned int>(max) - static_cast<unsigned int>(min)};
+  constexpr auto max_range_size{(std::numeric_limits<std::uint16_t>::max)()};
+  constexpr bool valid_size{range_span < max_range_size - 1};
   static_assert(valid_range, "nameof::customize::enum_range must contain at least one value.");
   static_assert(!valid_range || valid_size, "nameof::customize::enum_range must contain fewer than UINT16_MAX values.");
 
   if constexpr (valid_range && valid_size) {
-    constexpr auto range_size = static_cast<std::size_t>(range_span + 1);
+    constexpr std::size_t range_size{range_span + 1};
     return values<E, IsFlags, range_size, min>();
   } else {
     return std::array<E, 0>{};

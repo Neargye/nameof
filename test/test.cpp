@@ -8,6 +8,7 @@
 #include <string_view>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -178,7 +179,24 @@ enum class HiddenEnum { A = 1 };
 namespace {
 enum class NestedHiddenEnum { A = 1 };
 }
+
+inline constexpr auto hidden_lambda_enum_name = [] {
+  enum class LambdaEnum { A = 1 };
+  return nameof::nameof_enum(LambdaEnum::A);
+};
 }
+
+inline constexpr auto lambda_enum_name = [](int value) {
+  enum class LambdaEnum { A = 1, B = 2 };
+  return nameof::nameof_enum(static_cast<LambdaEnum>(value));
+};
+
+struct {
+  enum class Enum { A = 1, B = 2 };
+  Enum value = Enum::B;
+} unnamed_class_enum_holder;
+
+using UnnamedClassEnum = decltype(unnamed_class_enum_holder)::Enum;
 
 struct CustomNameTarget {
   int member = 0;
@@ -208,6 +226,38 @@ static_assert(nameof::detail::cmp_less(-1, 0u));
 static_assert(!nameof::detail::cmp_less(0u, -1));
 static_assert(nameof::detail::cmp_less(-1, static_cast<char>(0)));
 static_assert(!nameof::detail::cmp_less(static_cast<char>(0), -1));
+
+TEST_CASE_TEMPLATE("mixed integer comparisons at boundaries", T, bool, char, signed char, unsigned char,
+                   short, unsigned short, int, unsigned int, long, unsigned long, long long, unsigned long long) {
+  using nameof::detail::cmp_less;
+  constexpr auto min{(std::numeric_limits<T>::min)()};
+  constexpr auto max{(std::numeric_limits<T>::max)()};
+  constexpr auto unsigned_max{(std::numeric_limits<unsigned long long>::max)()};
+  static_assert(cmp_less(min, max));
+  static_assert(!cmp_less(min, min));
+  static_assert(!cmp_less(max, max));
+  static_assert(cmp_less(false, T{1}));
+  static_assert(cmp_less(T{0}, true));
+  static_assert(!cmp_less(true, T{0}));
+  static_assert(!cmp_less(T{1}, false));
+  static_assert(cmp_less(0, max));
+  static_assert(!cmp_less(max, 0));
+  static_assert(cmp_less(min, unsigned_max));
+  static_assert(!cmp_less(unsigned_max, min));
+  if constexpr (std::is_signed_v<T>) {
+    static_assert(cmp_less(min, 0u));
+    static_assert(!cmp_less(0u, min));
+    static_assert(cmp_less(min, false));
+    static_assert(!cmp_less(false, min));
+    static_assert(cmp_less(max, unsigned_max));
+    static_assert(!cmp_less(unsigned_max, max));
+  } else {
+    static_assert(cmp_less(-1, min));
+    static_assert(!cmp_less(min, -1));
+    static_assert(cmp_less((std::numeric_limits<long long>::min)(), max));
+    static_assert(!cmp_less(max, (std::numeric_limits<long long>::min)()));
+  }
+}
 #endif
 
 constexpr ::nameof::cstring<3> cstring_abc{::nameof::string_view{"abc"}};
@@ -260,6 +310,13 @@ static_assert(nameof::nameof_enum(HiddenEnum::A) == "A", "nameof::nameof_enum re
 static_assert(NAMEOF_ENUM_CONST(HiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires anonymous namespace enum values.");
 static_assert(nameof::nameof_enum(NestedHiddenEnum::A) == "A", "nameof::nameof_enum requires nested anonymous namespace enum values.");
 static_assert(NAMEOF_ENUM_CONST(NestedHiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires nested anonymous namespace enum values.");
+static_assert(hidden_lambda_enum_name() == "A", "nameof::nameof_enum requires enum values declared in a lambda.");
+static_assert(lambda_enum_name(2) == "B", "nameof::nameof_enum requires enum values declared in a lambda.");
+static_assert(lambda_enum_name(3).empty(), "nameof::nameof_enum requires invalid enum values declared in a lambda.");
+static_assert(lambda_enum_name(-1).empty(), "nameof::nameof_enum requires invalid enum values declared in a lambda.");
+static_assert(nameof::nameof_enum(UnnamedClassEnum::B) == "B", "nameof::nameof_enum requires unnamed class enum values.");
+static_assert(nameof::nameof_enum(static_cast<UnnamedClassEnum>(0)).empty(), "nameof::nameof_enum requires invalid unnamed class enum values.");
+static_assert(NAMEOF_ENUM_CONST(UnnamedClassEnum::B) == "B", "NAMEOF_ENUM_CONST requires unnamed class enum values.");
 #endif
 
 template <>
@@ -892,6 +949,11 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum(BoolEnum::Off) == "Off");
     REQUIRE(nameof::nameof_enum(BoolEnum::On) == "On");
     REQUIRE(nameof::nameof_enum(BoolRange::On) == "On");
+    REQUIRE(nameof::nameof_enum(unnamed_class_enum_holder.value) == "B");
+    REQUIRE(nameof::nameof_enum_flag(unnamed_class_enum_holder.value) == "B");
+    REQUIRE(nameof::nameof_enum_or(unnamed_class_enum_holder.value, "?") == "B");
+    REQUIRE(nameof::nameof_enum_flag(static_cast<UnnamedClassEnum>(4)).empty());
+    REQUIRE(nameof::nameof_enum_or(static_cast<UnnamedClassEnum>(4), "?") == "?");
   }
 
   SUBCASE("static storage") {
