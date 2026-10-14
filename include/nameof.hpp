@@ -78,6 +78,9 @@
 #  if __has_warning("-Wenum-constexpr-conversion")
 #    pragma clang diagnostic ignored "-Wenum-constexpr-conversion"
 #  endif
+#elif defined(__GNUC__) && __GNUC__ < 11
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wconversion" // Enum range scanning casts out-of-range values; GCC 11+ uses __builtin_bit_cast instead.
 #elif defined(_MSC_VER)
 #  pragma warning(push)
 #  pragma warning(disable : 28020) // Code analysis false positive for bounds-checked enum value arrays.
@@ -947,9 +950,7 @@ inline constexpr auto names_v = names<E, IsFlags>(std::make_index_sequence<count
 
 template <typename E, typename U = std::underlying_type_t<E>>
 constexpr bool is_sparse() noexcept {
-  if constexpr (count_v<E> == 0) {
-    return false;
-  } else if constexpr (std::is_same_v<U, bool>) { // bool special case
+  if constexpr (count_v<E> == 0 || std::is_same_v<U, bool>) { // bool special case
     return false;
   } else {
     constexpr auto range_size = max_v<E> - min_v<E> + U{1};
@@ -1197,7 +1198,7 @@ string nameof_short_type_rtti(const char* tn) {
 }
 
 template <typename T>
-string nameof_full_type_rtti(const char* tn) {
+string nameof_full_type_rtti([[maybe_unused]] const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = std::remove_reference_t<T>;
   if constexpr ((std::is_pointer_v<U> || std::is_member_pointer_v<U> || std::is_array_v<U> || std::is_function_v<U>) && nameof_type_supported<T>::value) {
@@ -1300,8 +1301,7 @@ constexpr auto p() noexcept {
   if constexpr (!custom_name.empty()) {
     return cstring<custom_name.size()>{custom_name};
   } else if constexpr (is_nullptr_v<V>) {
-    constexpr string_view name{"nullptr"};
-    return cstring<name.size()>{name};
+    return cstring<sizeof("nullptr") - 1>{"nullptr"};
   } else if constexpr (nameof_pointer_supported<decltype(V)>::value) {
 #if defined(__clang__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
@@ -1551,6 +1551,8 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop
+#elif defined(__GNUC__) && __GNUC__ < 11
+#  pragma GCC diagnostic pop
 #elif defined(_MSC_VER)
 #  pragma warning(pop)
 #endif

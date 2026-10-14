@@ -2121,7 +2121,9 @@ TEST_CASE("nameof_pointer function signatures") {
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_pointer) == "function_returning_function_pointer");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_array_pointer) == "function_returning_array_pointer");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_member_pointer) == "function_returning_member_pointer");
+#if !defined(_MSC_VER) || defined(__clang__) || _MSC_VER >= 1930 // MSVC 2019 does not deduce decltype(&f<T>) as a pointer.
   static_assert(NAMEOF_POINTER(&pointer_functions::template_function<int>) == "template_function");
+#endif
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_type_tag) == "function_returning_function_type_tag");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_value_tag) == "function_returning_function_value_tag");
   static_assert(NAMEOF_MEMBER(&pointer_functions::TaggedMembers::method) == "method");
