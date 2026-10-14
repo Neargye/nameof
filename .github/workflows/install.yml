@@ -1,12 +1,23 @@
 name: install
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md', 'doc/**']
+  pull_request:
+    paths-ignore: ['**.md', 'doc/**']
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
+    timeout-minutes: 30
     name: CMake package
     runs-on: ubuntu-24.04
 
@@ -95,7 +106,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
         cmake --build build-consumer --parallel "$(nproc)"
-        ctest --test-dir build-consumer --parallel "$(nproc)" --output-on-failure
+        ctest --test-dir build-consumer --parallel "$(nproc)" --output-on-failure --no-tests=error
 
     - name: Test CPack archive
       run: |

@@ -1,47 +1,68 @@
 name: windows
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md', 'doc/**']
+  pull_request:
+    paths-ignore: ['**.md', 'doc/**']
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
+    timeout-minutes: 30
     runs-on: ${{ matrix.config.os }}
+    defaults:
+      run:
+        shell: pwsh
     strategy:
       fail-fast: false
       matrix:
         config:
-        - { os: windows-2022, vs: "Visual Studio 2022" } # https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md#visual-studio-enterprise-2022
-        - { os: windows-2025, vs: "Visual Studio 2026" } # https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-VS2026-Readme.md#visual-studio-enterprise-2026
-        platform: [x64, Win32]
-        build_type: [Release, Debug]
+        - { os: windows-2022, vs: "Visual Studio 2022", toolset: "", platforms: [x64, Win32], build_types: [Release, Debug] }
+        - { os: windows-2025, vs: "Visual Studio 2026", toolset: "", platforms: [x64, Win32], build_types: [Release, Debug] }
+        - { os: windows-2022, vs: "MSVC v142", toolset: v142, platforms: [x64, Win32], build_types: [Release] }
+        - { os: windows-2025, vs: "Clang-cl", toolset: ClangCL, platforms: [x64], build_types: [Release] }
 
-    name: "${{ matrix.config.vs }} / ${{ matrix.platform }} / ${{ matrix.build_type }}"
+    name: "${{ matrix.config.vs }}"
     steps:
     - uses: actions/checkout@v7
 
-    - name: Configure
-      run: cmake -S . -B build -A ${{ matrix.platform }}
+    - name: Build and test
+      run: |
+        # Run every configuration and report all failures at the end.
+        $failed = @()
+        foreach ($platform in -split "${{ join(matrix.config.platforms, ' ') }}") {
+          Write-Output "::group::Configure $platform"
+          cmake -S . -B "build-$platform" -A $platform -T "${{ matrix.config.toolset }}"
+          $configured = $LASTEXITCODE -eq 0
+          Write-Output "::endgroup::"
+          if (-not $configured) {
+            $failed += "$platform / configure"
+            continue
+          }
 
-    - name: Build
-      run: cmake --build build --parallel $env:NUMBER_OF_PROCESSORS --config ${{ matrix.build_type }}
+          foreach ($buildType in -split "${{ join(matrix.config.build_types, ' ') }}") {
+            Write-Output "::group::$platform / $buildType"
+            cmake --build "build-$platform" --parallel $env:NUMBER_OF_PROCESSORS --config $buildType
+            if ($LASTEXITCODE -eq 0) {
+              ctest --test-dir "build-$platform" --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --no-tests=error -C $buildType
+            }
+            if ($LASTEXITCODE -ne 0) {
+              $failed += "$platform / $buildType"
+            }
+            Write-Output "::endgroup::"
+          }
+        }
 
-    - name: Test
-      run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure -C ${{ matrix.build_type }}
-
-  clang-cl:
-    name: "Clang-cl / x64 / Release"
-    runs-on: windows-2025
-
-    steps:
-    - uses: actions/checkout@v7
-
-    - name: Configure
-      run: cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -T ClangCL
-
-    - name: Build
-      run: cmake --build build --parallel $env:NUMBER_OF_PROCESSORS --config Release
-
-    - name: Test
-      run: ctest --test-dir build --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure -C Release
+        if ($failed) {
+          Write-Output "::error::Failed: $($failed -join ', ')"
+          exit 1
+        }
