@@ -588,48 +588,8 @@ constexpr string_view pretty_function_name(string_view signature) noexcept {
 }
 #endif
 
-#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
-constexpr bool enum_name_valid(string_view name) noexcept {
-  // Check the final identifier, independently of compiler-specific scope names.
-  auto i = name.size();
-  while (i > 0 && is_name_char(name[i - 1])) {
-    --i;
-  }
-
-  return i < name.size() && is_name_start(name[i]) && (i == 0 || (i >= 2 && name[i - 2] == ':' && name[i - 1] == ':'));
-}
-#endif
-
 template <typename T>
 using make_unsigned_t = std::make_unsigned_t<std::conditional_t<std::is_same_v<T, bool>, unsigned char, T>>;
-
-#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
-
-#  if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
-#    define NAMEOF_ARRAY_CONSTEXPR 1
-#  else
-template <typename T, std::size_t N, std::size_t... J>
-constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<J...>) noexcept {
-  return {{a[J]...}};
-}
-#  endif
-
-template <typename L, typename R>
-constexpr bool cmp_less(L lhs, R rhs) noexcept {
-  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral types.");
-
-  if constexpr (std::is_same_v<L, bool> || std::is_same_v<R, bool>) {
-    return cmp_less(+lhs, +rhs);
-  } else if constexpr (std::is_signed_v<L> == std::is_signed_v<R>) {
-    return lhs < rhs;
-  } else if constexpr (std::is_signed_v<L>) {
-    return lhs < 0 || static_cast<std::make_unsigned_t<L>>(lhs) < rhs;
-  } else {
-    return rhs > 0 && lhs < static_cast<std::make_unsigned_t<R>>(rhs);
-  }
-}
-
-#endif
 
 template <typename T>
 struct nameof_enum_supported
@@ -728,7 +688,36 @@ constexpr auto n() noexcept {
   }
 }
 
+template <typename E, E V>
+constexpr auto enum_name() noexcept {
+  constexpr auto name = n<E, V>();
+  return cstring<name.size()>{name};
+}
+
+template <typename E, E V>
+inline constexpr auto enum_name_v = enum_name<E, V>();
+
+template <typename E, E V>
+constexpr auto custom_enum_name() noexcept {
+  constexpr auto name = customize::enum_name<E>(V);
+  return cstring<name.size()>{name};
+}
+
+template <typename E, E V>
+inline constexpr auto custom_enum_name_v = custom_enum_name<E, V>();
+
 #if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+
+constexpr bool enum_name_valid(string_view name) noexcept {
+  // Check the final identifier, independently of compiler-specific scope names.
+  auto i = name.size();
+  while (i > 0 && is_name_char(name[i - 1])) {
+    --i;
+  }
+
+  return i < name.size() && is_name_start(name[i]) && (i == 0 || (i >= 2 && name[i - 2] == ':' && name[i - 1] == ':'));
+}
+
 template <auto V>
 constexpr bool NAMEOF_DETAIL_CDECL nv() noexcept {
   using E = decltype(V);
@@ -755,27 +744,7 @@ constexpr bool NAMEOF_DETAIL_CDECL nv() noexcept {
     return false;
   }
 }
-#endif
 
-template <typename E, E V>
-constexpr auto enum_name() noexcept {
-  constexpr auto name = n<E, V>();
-  return cstring<name.size()>{name};
-}
-
-template <typename E, E V>
-inline constexpr auto enum_name_v = enum_name<E, V>();
-
-template <typename E, E V>
-constexpr auto custom_enum_name() noexcept {
-  constexpr auto name = customize::enum_name<E>(V);
-  return cstring<name.size()>{name};
-}
-
-template <typename E, E V>
-inline constexpr auto custom_enum_name_v = custom_enum_name<E, V>();
-
-#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
 #if defined(__clang__) && __clang_major__ >= 16 || !defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 11
@@ -804,6 +773,21 @@ constexpr U ualue([[maybe_unused]] std::size_t i) noexcept {
 template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr E value(std::size_t i) noexcept {
   return static_cast<E>(ualue<E, O, IsFlags>(i));
+}
+
+template <typename L, typename R>
+constexpr bool cmp_less(L lhs, R rhs) noexcept {
+  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral types.");
+
+  if constexpr (std::is_same_v<L, bool> || std::is_same_v<R, bool>) {
+    return cmp_less(+lhs, +rhs);
+  } else if constexpr (std::is_signed_v<L> == std::is_signed_v<R>) {
+    return lhs < rhs;
+  } else if constexpr (std::is_signed_v<L>) {
+    return lhs < 0 || static_cast<std::make_unsigned_t<L>>(lhs) < rhs;
+  } else {
+    return rhs > 0 && lhs < static_cast<std::make_unsigned_t<R>>(rhs);
+  }
 }
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
@@ -881,6 +865,15 @@ constexpr auto valid_count() noexcept {
   valid_count<E, IsFlags, Size, Min, 0>(vc);
   return vc;
 }
+
+#if defined(__cpp_lib_array_constexpr) && __cpp_lib_array_constexpr >= 201603L
+#  define NAMEOF_ARRAY_CONSTEXPR 1
+#else
+template <typename T, std::size_t N, std::size_t... J>
+constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N], std::index_sequence<J...>) noexcept {
+  return {{a[J]...}};
+}
+#endif
 
 template <typename E, bool IsFlags, std::size_t Size, int Min>
 constexpr auto values() noexcept {
@@ -1040,30 +1033,6 @@ struct nameof_type_supported
     : std::false_type {};
 #endif
 
-template <typename... T>
-struct nameof_type_rtti_supported
-#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
-template <typename... T>
-struct nameof_member_supported
-#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
-template <typename... T>
-struct nameof_pointer_supported
-#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
 #if defined(_MSC_VER) && !defined(__clang__)
 template <typename T>
 struct identity {
@@ -1139,6 +1108,14 @@ constexpr auto short_type_name() noexcept {
 
 template <typename T>
 inline constexpr auto short_type_name_v = short_type_name<T>();
+
+template <typename... T>
+struct nameof_type_rtti_supported
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
 
 template <typename T>
 string full_type_name(string name) {
@@ -1231,6 +1208,14 @@ string nameof_full_type_rtti(const char* tn) {
   }
 }
 
+template <typename... T>
+struct nameof_member_supported
+#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
+#endif
+
 template <auto V, auto U = V>
 constexpr auto n() noexcept {
   [[maybe_unused]] constexpr auto custom_name = customize::member_name<V>();
@@ -1289,6 +1274,14 @@ inline constexpr auto member_name_v = get_member_name<V>();
 #else
 template <auto V>
 inline constexpr auto member_name_v = cstring<0>{};
+#endif
+
+template <typename... T>
+struct nameof_pointer_supported
+#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+    : std::true_type {};
+#else
+    : std::false_type {};
 #endif
 
 template <auto U, auto V>
