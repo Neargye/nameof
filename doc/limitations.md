@@ -22,7 +22,7 @@ Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp`
 
 * Type-name results are compiler-specific unless customized.
 
-* `nameof::nameof_short_type<T>()`, `NAMEOF_SHORT_TYPE`, `NAMEOF_SHORT_TYPE_EXPR`, and `NAMEOF_SHORT_TYPE_RTTI` do not accept array or pointer types.
+* `nameof::nameof_short_type<T>()`, `NAMEOF_SHORT_TYPE`, `NAMEOF_SHORT_TYPE_EXPR`, and `NAMEOF_SHORT_TYPE_RTTI` do not accept array, pointer, member pointer, or function types.
 
 * RTTI-based APIs follow `typeid` rules: the dynamic type is reported only for polymorphic glvalues.
 

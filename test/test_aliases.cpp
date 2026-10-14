@@ -71,6 +71,11 @@ struct AliasStruct {
 
 int AliasStruct::static_member = 0;
 
+template <>
+constexpr nameof::string_view nameof::customize::pointer_name<static_cast<AliasStruct*>(nullptr)>() noexcept {
+  return "custom_null";
+}
+
 TEST_CASE("string") {
   auto cr = nameof::nameof_enum_flag(Color::RED);
   REQUIRE_FALSE(cr.empty());
@@ -197,6 +202,8 @@ TEST_CASE("static cstring api") {
 #if defined(NAMEOF_POINTER_SUPPORTED)
   constexpr auto pointer_name = NAMEOF_POINTER(&AliasStruct::static_member);
   REQUIRE(pointer_name.compare("static_member") == 0);
+  static_assert(NAMEOF_POINTER(static_cast<AliasStruct*>(nullptr)).compare("custom_null") == 0);
+  static_assert(NAMEOF_POINTER(static_cast<void*>(nullptr)).compare("nullptr") == 0);
 #endif
 }
 

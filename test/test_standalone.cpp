@@ -24,6 +24,12 @@ static_assert(nameof::nameof_enum(DefaultRangeBoundary::upper) == "upper");
 static_assert(nameof::nameof_enum(DefaultRangeBoundary::outside).empty());
 #endif
 
+#if defined(__GNUC__) && !defined(_MSC_VER)
+extern void weak_function() __attribute__((weak));
+static_assert(!nameof::detail::is_nullptr_v<&weak_function>);
+static_assert(NAMEOF_POINTER(&weak_function) == "weak_function");
+#endif
+
 enum UnfixedEnum { unfixed_first = 1, unfixed_second = 2 };
 
 #if defined(NAMEOF_ENUM_SUPPORTED)

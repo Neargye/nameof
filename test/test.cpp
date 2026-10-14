@@ -8,6 +8,7 @@
 #include <string_view>
 #include <sstream>
 #include <iomanip>
+#include <initializer_list>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -279,6 +280,28 @@ static_assert(!(cstring_abc > cstring_abd));
 static_assert(!(cstring_abc >= cstring_abd));
 static_assert(nameof::detail::pretty_name("(").empty());
 static_assert(nameof::detail::pretty_name("<").empty());
+
+TEST_CASE("expression name parsing") {
+  using nameof::detail::pretty_name;
+  static_assert(pretty_name("ns::outer<inner<int>, tag<void()>> (call(1, (2)))") == "outer");
+  static_assert(pretty_name("ns::outer<inner<int>, tag<void()>> (call(1, (2)))", false) == "outer<inner<int>, tag<void()>>");
+  static_assert(pretty_name("ns::outer <inner<int>> ()()") == "outer");
+  static_assert(pretty_name("ns::outer <inner<int>> ()()", false) == "outer <inner<int>>");
+  static_assert(pretty_name("object.field_2   ") == "field_2");
+  static_assert(pretty_name("object.field_2   ", false) == "field_2");
+  static_assert(pretty_name("ns::R") == "R");
+  static_assert(pretty_name("ns::u8name") == "u8name");
+  static_assert(pretty_name("name>").empty());
+
+  for (const auto expression : {"", "   ", "()", "<>", "name(", "name)", "name<", "ns::",
+                                "42", "3.14", "\"text\"", "'x'", "R\"(text)\"", "L\"text\"", "L'x'",
+                                "U\"text\"", "U'x'", "u\"text\"", "u'x'", "u8\"text\"", "u8'x'",
+                                "LR\"(text)\"", "UR\"(text)\"", "uR\"(text)\"", "u8R\"(text)\""}) {
+    CAPTURE(std::string{expression});
+    REQUIRE(pretty_name(expression).empty());
+    REQUIRE(pretty_name(expression, false).empty());
+  }
+}
 static_assert(NAMEOF(SomeMethod3 ()) == "SomeMethod3");
 static_assert(NAMEOF(SomeMethod4<int, float> (1)) == "SomeMethod4");
 static_assert(NAMEOF_FULL(SomeMethod4<int, float> (1)) == "SomeMethod4<int, float>");
@@ -346,6 +369,11 @@ constexpr nameof::string_view nameof::customize::pointer_name<&custom_pointer_va
   return "custom_pointer";
 }
 
+template <>
+constexpr nameof::string_view nameof::customize::pointer_name<static_cast<CustomNameTarget*>(nullptr)>() noexcept {
+  return "custom_null";
+}
+
 #if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
 static_assert(noexcept(nameof::nameof_enum(Color::RED)));
 static_assert(noexcept(nameof::nameof_enum<Color::RED>()));
@@ -395,6 +423,35 @@ static_assert(!has_nameof_short_type<SomeStruct* const>::value);
 static_assert(!has_nameof_short_type<SomeStruct*&>::value);
 static_assert(!has_nameof_short_type<SomeStruct[2]>::value);
 static_assert(!has_nameof_short_type<SomeStruct(&)[2]>::value);
+static_assert(!has_nameof_short_type<void(int)>::value);
+static_assert(!has_nameof_short_type<void(&)(int)>::value);
+static_assert(!has_nameof_short_type<int SomeStruct::*>::value);
+static_assert(!has_nameof_short_type<void (SomeStruct::*)(int)>::value);
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
+template <typename T, typename = void>
+struct has_nameof_short_type_rtti : std::false_type {};
+
+template <typename T>
+struct has_nameof_short_type_rtti<T, std::void_t<decltype(NAMEOF_SHORT_TYPE_RTTI(std::declval<T>()))>> : std::true_type {};
+
+static_assert(has_nameof_short_type_rtti<SomeStruct>::value);
+static_assert(has_nameof_short_type_rtti<const volatile SomeStruct&>::value);
+static_assert(has_nameof_short_type_rtti<int>::value);
+static_assert(has_nameof_short_type_rtti<std::nullptr_t>::value);
+static_assert(!has_nameof_short_type_rtti<SomeStruct*>::value);
+static_assert(!has_nameof_short_type_rtti<SomeStruct* const>::value);
+static_assert(!has_nameof_short_type_rtti<SomeStruct*&>::value);
+static_assert(!has_nameof_short_type_rtti<SomeStruct[2]>::value);
+static_assert(!has_nameof_short_type_rtti<SomeStruct(&)[2]>::value);
+static_assert(!has_nameof_short_type_rtti<void(int)>::value);
+static_assert(!has_nameof_short_type_rtti<void(&)(int)>::value);
+static_assert(!has_nameof_short_type_rtti<void(&)() noexcept>::value);
+static_assert(!has_nameof_short_type_rtti<int SomeStruct::*>::value);
+static_assert(!has_nameof_short_type_rtti<int SomeStruct::* const&>::value);
+static_assert(!has_nameof_short_type_rtti<void (SomeStruct::*)(int)>::value);
+static_assert(!has_nameof_short_type_rtti<void (SomeStruct::*)() const & noexcept>::value);
+#endif
 
 template <typename Name>
 void require_cstring_contract(const Name& name, ::nameof::string_view expected) {
@@ -1264,6 +1321,8 @@ TEST_CASE("customize") {
 #if defined(NAMEOF_POINTER_SUPPORTED)
   require_cstring_contract(nameof::nameof_pointer<&custom_pointer_value>(), "custom_pointer");
   require_cstring_contract(NAMEOF_POINTER(&custom_pointer_value), "custom_pointer");
+  static_assert(NAMEOF_POINTER(static_cast<CustomNameTarget*>(nullptr)) == "custom_null");
+  require_static_cstring_api_contract(NAMEOF_POINTER(static_cast<CustomNameTarget*>(nullptr)), "custom_null");
 #endif
 }
 
@@ -1946,13 +2005,22 @@ TEST_CASE("NAMEOF_TYPE_RTTI demangle success") {
   require_string_contract(nameof::detail::nameof_full_type_rtti<const TestRtti::Derived&>(name), "const TestRtti::Derived&");
   require_string_contract(nameof::detail::nameof_short_type_rtti<TestRtti::Derived>(name), "Derived");
 }
+#endif
 
-TEST_CASE("NAMEOF_TYPE_RTTI demangle fallback") {
+TEST_CASE("NAMEOF_TYPE_RTTI plain name fallback") {
   require_string_contract(nameof::detail::nameof_type_rtti<void>("not_a_mangled_type"), "not_a_mangled_type");
   require_string_contract(nameof::detail::nameof_full_type_rtti<const int&>("not_a_mangled_type"), "const not_a_mangled_type&");
   require_string_contract(nameof::detail::nameof_short_type_rtti<void>("some_namespace::not_a_mangled_type"), "not_a_mangled_type");
 }
-#endif
+
+TEST_CASE("NAMEOF_TYPE_RTTI result owns its characters") {
+  std::string input{"some_namespace::type_with_a_name_longer_than_a_small_string_buffer"};
+  const auto full_name = nameof::detail::nameof_type_rtti<void>(input.c_str());
+  const auto short_name = nameof::detail::nameof_short_type_rtti<void>(input.c_str());
+  input.assign(input.size(), 'x');
+  require_string_contract(full_name, "some_namespace::type_with_a_name_longer_than_a_small_string_buffer");
+  require_string_contract(short_name, "type_with_a_name_longer_than_a_small_string_buffer");
+}
 
 #endif
 

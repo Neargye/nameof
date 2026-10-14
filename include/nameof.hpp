@@ -459,56 +459,38 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 
 namespace detail {
 
-constexpr bool is_name_char(char c) noexcept {
-  return (c >= '0' && c <= '9') ||
-         (c >= 'a' && c <= 'z') ||
-         (c >= 'A' && c <= 'Z') ||
-         (c == '_') || static_cast<unsigned char>(c) >= 0x80;
-}
-
 constexpr bool is_name_start(char c) noexcept {
   return (c >= 'a' && c <= 'z') ||
          (c >= 'A' && c <= 'Z') ||
          (c == '_') || static_cast<unsigned char>(c) >= 0x80;
 }
 
+constexpr bool is_name_char(char c) noexcept {
+  return is_name_start(c) || (c >= '0' && c <= '9');
+}
+
 constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
   if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
     return {}; // Narrow multibyte string literal.
-  } else if (name.size() >= 2 && name[0] == 'R' && (name[1] == '"' || name[1] == '\'')) {
-    return {}; // Raw string literal.
-  } else if (name.size() >= 2 && name[0] == 'L' && (name[1] == '"' || name[1] == '\'')) {
-    return {}; // Wide string literal.
-  } else if (name.size() >= 2 && name[0] == 'U' && (name[1] == '"' || name[1] == '\'')) {
-    return {}; // UTF-32 encoded string literal.
-  } else if (name.size() >= 2 && name[0] == 'u' && (name[1] == '"' || name[1] == '\'')) {
-    return {}; // UTF-16 encoded string literal.
+  } else if (name.size() >= 2 && (name[0] == 'R' || name[0] == 'L' || name[0] == 'U' || name[0] == 'u') && (name[1] == '"' || name[1] == '\'')) {
+    return {}; // Raw, wide or Unicode literal.
   } else if (name.size() >= 3 && name[0] == 'u' && name[1] == '8' && (name[2] == '"' || name[2] == '\'')) {
     return {}; // UTF-8 encoded string literal.
   } else if (name.size() >= 1 && (name[0] >= '0' && name[0] <= '9')) {
     return {}; // Invalid name.
   }
 
-  for (std::size_t i = name.size(), h = 0, s = 0; i > 0; --i) {
+  for (std::size_t i{name.size()}, depth{0}; i > 0; --i) {
     if (name[i - 1] == ')') {
-      ++h;
-      ++s;
-      continue;
+      ++depth;
     } else if (name[i - 1] == '(') {
-      if (h == 0) {
+      if (depth == 0) {
         return {};
       }
-      --h;
-      ++s;
-      continue;
-    }
-
-    if (h == 0) {
-      name.remove_suffix(s);
+      --depth;
+    } else if (depth == 0) {
+      name.remove_suffix(name.size() - i);
       break;
-    } else {
-      ++s;
-      continue;
     }
   }
 
@@ -516,41 +498,33 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
     name.remove_suffix(1);
   }
 
-  std::size_t s = 0;
-  for (std::size_t i = name.size(), h = 0; i > 0; --i) {
-    if (name[i - 1] == '>') {
-      ++h;
-      ++s;
-      continue;
-    } else if (name[i - 1] == '<') {
-      if (h == 0) {
+  auto suffix_begin{name.size()};
+  for (std::size_t depth{0}; suffix_begin > 0; --suffix_begin) {
+    if (name[suffix_begin - 1] == '>') {
+      ++depth;
+    } else if (name[suffix_begin - 1] == '<') {
+      if (depth == 0) {
         return {};
       }
-      --h;
-      ++s;
-      continue;
-    }
-
-    if (h == 0) {
+      --depth;
+    } else if (depth == 0) {
       break;
-    } else {
-      ++s;
-      continue;
     }
   }
 
-  while (s < name.size() && name[name.size() - s - 1] == ' ') {
-    ++s;
+  while (suffix_begin > 0 && name[suffix_begin - 1] == ' ') {
+    --suffix_begin;
   }
 
-  for (std::size_t i = name.size() - s; i > 0; --i) {
+  const auto suffix_size{name.size() - suffix_begin};
+  for (std::size_t i{suffix_begin}; i > 0; --i) {
     if (!is_name_char(name[i - 1])) {
       name.remove_prefix(i);
       break;
     }
   }
   if (remove_suffix) {
-    name.remove_suffix(s);
+    name.remove_suffix(suffix_size);
   }
 
   if (!name.empty() && is_name_start(name[0])) {
@@ -1100,8 +1074,8 @@ template <typename T>
 using identity = T;
 #endif
 
-template <typename T, typename R>
-using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<remove_cvref_t<T>> && !std::is_pointer_v<remove_cvref_t<T>>, R>;
+template <typename T, typename R, typename U = remove_cvref_t<T>>
+using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<U> && !std::is_pointer_v<U> && !std::is_member_pointer_v<U> && !std::is_function_v<U>, R>;
 
 template <typename... T>
 constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
@@ -1190,64 +1164,60 @@ string full_type_name(string name) {
 }
 
 #if __has_include(<cxxabi.h>)
-using demangle_ptr = std::unique_ptr<char, decltype(&std::free)>;
+// std::free is not guaranteed to be addressable.
+struct free_deleter {
+  void operator()(char* p) const noexcept { std::free(p); }
+};
+
+using demangle_ptr = std::unique_ptr<char, free_deleter>;
 
 struct demangled_name {
   demangle_ptr p;
   string_view v;
 
   [[nodiscard]] string_view view() const noexcept { return v; }
-  [[nodiscard]] bool empty() const noexcept { return v.empty(); }
-  [[nodiscard]] string str() const { return {v.data(), v.size()}; }
 };
 
 inline demangled_name demangle(const char* tn) {
   assert(tn != nullptr);
   if (tn == nullptr) {
-    return {demangle_ptr{nullptr, &std::free}, string_view{""}};
+    return {demangle_ptr{}, string_view{""}};
   }
-  int status = 0;
-  demangle_ptr p{abi::__cxa_demangle(tn, nullptr, nullptr, &status), &std::free};
+  int status{0};
+  demangle_ptr p{abi::__cxa_demangle(tn, nullptr, nullptr, &status)};
   if (status != 0) {
     p.reset();
   }
   const auto v = p ? string_view{p.get()} : string_view{tn};
   return {std::move(p), v};
 }
+#endif
 
 template <typename T>
 string nameof_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = demangle(tn);
+#if __has_include(<cxxabi.h>)
+  const auto full_name = demangle(tn);
+  const auto name = full_name.view();
+#else
+  const auto name = string_view{tn != nullptr ? tn : ""};
+#endif
   assert(!name.empty() && "Type does not have a name.");
-  return name.str();
+  return {name.data(), name.size()};
 }
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
   static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+#if __has_include(<cxxabi.h>)
   const auto full_name = demangle(tn);
   const auto name = pretty_type_name<T>(full_name.view());
-  assert(!name.empty() && "Type does not have a short name.");
-  return {name.data(), name.size()};
-}
 #else
-template <typename T>
-string nameof_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto name = string_view{tn != nullptr ? tn : ""};
-  assert(!name.empty() && "Type does not have a name.");
-  return {name.data(), name.size()};
-}
-
-template <typename T, enable_if_has_short_name_t<T, int> = 0>
-string nameof_short_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const auto name = pretty_type_name<T>(tn != nullptr ? tn : "");
+#endif
   assert(!name.empty() && "Type does not have a short name.");
   return {name.data(), name.size()};
 }
-#endif
 
 template <typename T>
 string nameof_full_type_rtti(const char* tn) {
@@ -1309,7 +1279,7 @@ consteval auto get_member_name() noexcept {
     if constexpr (is_defined) {
       return n<V, Store{std::addressof(nonexist_object<decltype(get_base_type(V))>.*V)}>();
     } else {
-      return "";
+      return cstring<0>{};
     }
   }
 }
@@ -1328,13 +1298,18 @@ template <auto U>
 struct is_same<U, U> : std::true_type {};
 
 template <auto P>
-constexpr bool is_nullptr_v = is_same<P, static_cast<std::remove_reference_t<decltype(P)>>(nullptr)>::value;
+inline constexpr bool is_nullptr_v = is_same<P, static_cast<std::remove_reference_t<decltype(P)>>(nullptr)>::value;
 
 template <auto V>
 constexpr auto p() noexcept {
-  [[maybe_unused]] constexpr auto custom_name = customize::pointer_name<V>().empty() && is_nullptr_v<V> ? "nullptr" : customize::pointer_name<V>();
+  constexpr auto custom_name = customize::pointer_name<V>();
 
-  if constexpr (custom_name.empty() && nameof_pointer_supported<decltype(V)>::value) {
+  if constexpr (!custom_name.empty()) {
+    return cstring<custom_name.size()>{custom_name};
+  } else if constexpr (is_nullptr_v<V>) {
+    constexpr string_view name{"nullptr"};
+    return cstring<name.size()>{name};
+  } else if constexpr (nameof_pointer_supported<decltype(V)>::value) {
 #if defined(__clang__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(__GNUC__)
@@ -1349,7 +1324,7 @@ constexpr auto p() noexcept {
 #endif
     return cstring<name.size()>{name};
   } else {
-    return cstring<custom_name.size()>{custom_name};
+    return cstring<0>{};
   }
 }
 
