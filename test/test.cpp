@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <initializer_list>
+#include <iterator>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -264,6 +265,38 @@ TEST_CASE_TEMPLATE("mixed integer comparisons at boundaries", T, bool, char, sig
 constexpr ::nameof::cstring<3> cstring_abc{::nameof::string_view{"abc"}};
 constexpr ::nameof::cstring<3> cstring_abd{::nameof::string_view{"abd"}};
 static_assert(std::is_nothrow_default_constructible_v<::nameof::cstring<0>>);
+static_assert(std::is_same_v<::nameof::cstring<0>::value_type, char>);
+static_assert(std::is_same_v<::nameof::cstring<3>::value_type, char>);
+static_assert(std::is_same_v<std::iterator_traits<::nameof::cstring<3>::iterator>::value_type, ::nameof::cstring<3>::value_type>);
+static_assert(std::is_same_v<::nameof::cstring<3>::value_type, ::nameof::string_view::value_type>);
+static_assert(std::is_same_v<::nameof::cstring<0>::size_type, ::nameof::string_view::size_type>);
+static_assert(std::is_same_v<::nameof::cstring<3>::size_type, ::nameof::string_view::size_type>);
+static_assert(std::is_same_v<decltype(std::declval<const ::nameof::cstring<0>&>()[0]), const char&>);
+static_assert(std::is_same_v<decltype(std::declval<const ::nameof::cstring<0>&>().front()), const char&>);
+static_assert(std::is_same_v<decltype(std::declval<const ::nameof::cstring<0>&>().back()), const char&>);
+
+// Generic string code must work with empty names and compile cleanly with -Wconversion.
+template <typename S>
+constexpr std::size_t count_char(const S& s, char c) noexcept {
+  std::size_t count = 0;
+  for (std::size_t i = 0; i < s.size(); ++i) {
+    if (s[i] == c) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+template <typename S>
+constexpr bool has_matching_ends(const S& s) noexcept {
+  return s.empty() || (s.front() == s[0] && s.back() == s[s.size() - 1]);
+}
+
+static_assert(count_char(cstring_abc, 'b') == 1);
+static_assert(count_char(::nameof::cstring<0>{}, 'b') == 0);
+static_assert(has_matching_ends(cstring_abc));
+static_assert(has_matching_ends(::nameof::cstring<0>{}));
+
 static_assert(std::is_nothrow_copy_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_move_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_copy_assignable_v<::nameof::cstring<3>>);

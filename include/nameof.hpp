@@ -203,8 +203,8 @@ constexpr string_view pointer_name() noexcept {
 template <std::uint16_t N>
 class [[nodiscard]] cstring {
  public:
-  using value_type      = const char;
-  using size_type       = std::uint16_t;
+  using value_type      = char;
+  using size_type       = std::size_t;
   using difference_type = std::ptrdiff_t;
   using pointer         = const char*;
   using const_pointer   = const char*;
@@ -287,8 +287,8 @@ class [[nodiscard]] cstring {
 template <>
 class [[nodiscard]] cstring<0> {
  public:
-  using value_type      = const char;
-  using size_type       = std::uint16_t;
+  using value_type      = char;
+  using size_type       = std::size_t;
   using difference_type = std::ptrdiff_t;
   using pointer         = const char*;
   using const_pointer   = const char*;
@@ -334,6 +334,12 @@ class [[nodiscard]] cstring<0> {
   [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+
+  [[nodiscard]] constexpr const_reference operator[]([[maybe_unused]] size_type i) const noexcept { assert(i < size()); return chars_[0]; }
+
+  [[nodiscard]] constexpr const_reference front() const noexcept { assert(!empty()); return chars_[0]; }
+
+  [[nodiscard]] constexpr const_reference back() const noexcept { assert(!empty()); return chars_[0]; }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
 
@@ -461,6 +467,12 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 }
 
 namespace detail {
+
+template <std::size_t N>
+constexpr auto to_cstring(string_view str) noexcept {
+  static_assert(N <= (std::numeric_limits<std::uint16_t>::max)(), "nameof::cstring supports names of at most UINT16_MAX characters.");
+  return cstring<static_cast<std::uint16_t>(N)>{str};
+}
 
 constexpr bool is_name_start(char c) noexcept {
   return (c >= 'a' && c <= 'z') ||
@@ -694,7 +706,7 @@ constexpr auto n() noexcept {
 template <typename E, E V>
 constexpr auto enum_name() noexcept {
   constexpr auto name = n<E, V>();
-  return cstring<name.size()>{name};
+  return to_cstring<name.size()>(name);
 }
 
 template <typename E, E V>
@@ -703,7 +715,7 @@ inline constexpr auto enum_name_v = enum_name<E, V>();
 template <typename E, E V>
 constexpr auto custom_enum_name() noexcept {
   constexpr auto name = customize::enum_name<E>(V);
-  return cstring<name.size()>{name};
+  return to_cstring<name.size()>(name);
 }
 
 template <typename E, E V>
@@ -1059,7 +1071,7 @@ constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
 #else
     constexpr auto name = string_view{""};
 #endif
-    return cstring<name.size()>{name};
+    return to_cstring<name.size()>(name);
   } else {
     return cstring<0>{};
   }
@@ -1075,7 +1087,7 @@ constexpr auto type_name() noexcept {
   if constexpr (custom_name.empty()) {
     return n<T...>();
   } else {
-    return cstring<custom_name.size()>{custom_name};
+    return to_cstring<custom_name.size()>(custom_name);
   }
 }
 
@@ -1104,7 +1116,7 @@ constexpr auto short_type_name() noexcept {
   constexpr auto custom_name = customize::type_name<U>();
   constexpr auto name = custom_name.empty() ? pretty_type_name<U>(type_name_v<T>) : pretty_name(custom_name);
   static_assert(!name.empty(), "Type does not have a short name.");
-  return cstring<name.size()>{name};
+  return to_cstring<name.size()>(name);
 }
 
 template <typename T>
@@ -1231,9 +1243,9 @@ constexpr auto n() noexcept {
 #else
     constexpr auto name = string_view{""};
 #endif
-    return cstring<name.size()>{name};
+    return to_cstring<name.size()>(name);
   } else {
-    return cstring<custom_name.size()>{custom_name};
+    return to_cstring<custom_name.size()>(custom_name);
   }
 }
 
@@ -1299,7 +1311,7 @@ constexpr auto p() noexcept {
   constexpr auto custom_name = customize::pointer_name<V>();
 
   if constexpr (!custom_name.empty()) {
-    return cstring<custom_name.size()>{custom_name};
+    return to_cstring<custom_name.size()>(custom_name);
   } else if constexpr (is_nullptr_v<V>) {
     return cstring<sizeof("nullptr") - 1>{"nullptr"};
   } else if constexpr (nameof_pointer_supported<decltype(V)>::value) {
@@ -1315,7 +1327,7 @@ constexpr auto p() noexcept {
 #else
     constexpr auto name = string_view{""};
 #endif
-    return cstring<name.size()>{name};
+    return to_cstring<name.size()>(name);
   } else {
     return cstring<0>{};
   }
@@ -1476,27 +1488,21 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
   ::std::void_t<decltype(__VA_ARGS__)>();                             \
   constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__); \
   static_assert(!_name.empty(), "Expression does not have a name.");  \
-  constexpr auto _size = _name.size();                                \
-  constexpr auto _nameof = ::nameof::cstring<_size>{_name};           \
-  return _nameof; }()
+  return ::nameof::detail::to_cstring<_name.size()>(_name); }()
 
 // Obtains full name of variable, function, macro.
 #define NAMEOF_FULL(...) []() constexpr noexcept {                           \
   ::std::void_t<decltype(__VA_ARGS__)>();                                    \
   constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
   static_assert(!_name.empty(), "Expression does not have a name.");         \
-  constexpr auto _size = _name.size();                                       \
-  constexpr auto _nameof_full = ::nameof::cstring<_size>{_name};             \
-  return _nameof_full; }()
+  return ::nameof::detail::to_cstring<_name.size()>(_name); }()
 
 // Obtains raw expression text.
 #define NAMEOF_RAW(...) []() constexpr noexcept {                    \
   ::std::void_t<decltype(__VA_ARGS__)>();                            \
   constexpr auto _name = ::nameof::string_view{#__VA_ARGS__};        \
   static_assert(!_name.empty(), "Expression does not have a name."); \
-  constexpr auto _size = _name.size();                               \
-  constexpr auto _nameof_raw = ::nameof::cstring<_size>{_name};      \
-  return _nameof_raw; }()
+  return ::nameof::detail::to_cstring<_name.size()>(_name); }()
 
 // Obtains name of enum value.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum(__VA_ARGS__)

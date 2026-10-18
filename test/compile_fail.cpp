@@ -80,6 +80,21 @@ constexpr auto full_int_range_name = nameof::nameof_enum(FullIntRange::value);
 
 int main() {}
 
+#elif NAMEOF_COMPILE_FAIL_CASE == 8
+
+struct TooLongName {};
+
+inline constexpr char too_long_name[70000] = {'n'};
+
+template <>
+constexpr nameof::string_view nameof::customize::type_name<TooLongName>() noexcept {
+  return {too_long_name, sizeof(too_long_name)};
+}
+
+constexpr auto& too_long_type_name = nameof::nameof_type<TooLongName>();
+
+int main() {}
+
 #else
 
 #  error Unknown NAMEOF_COMPILE_FAIL_CASE.

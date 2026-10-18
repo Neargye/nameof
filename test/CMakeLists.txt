@@ -182,6 +182,7 @@ make_compile_fail_test(range-not-int 4 "narrow")
 make_compile_fail_test(range-min-not-int 5 "narrow")
 make_compile_fail_test(range-unsigned-not-int 6 "narrow")
 make_compile_fail_test(range-full-int 7 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "names_v")
+make_compile_fail_test(name-too-long 8 "nameof::cstring supports names of at most UINT16_MAX characters")
 
 foreach(std IN ITEMS 20 23 26)
     if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
