@@ -335,11 +335,11 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[]([[maybe_unused]] size_type i) const noexcept { return assert(i < size()), chars_[0]; }
+  [[nodiscard]] constexpr const_reference operator[](size_type) const noexcept { return chars_[0]; }
 
-  [[nodiscard]] constexpr const_reference front() const noexcept { return assert(!empty()), chars_[0]; }
+  [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
 
-  [[nodiscard]] constexpr const_reference back() const noexcept { return assert(!empty()), chars_[0]; }
+  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[0]; }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
 
