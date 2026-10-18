@@ -335,11 +335,11 @@ class [[nodiscard]] cstring<0> {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[]([[maybe_unused]] size_type i) const noexcept { assert(i < size()); return chars_[0]; }
+  [[nodiscard]] constexpr const_reference operator[]([[maybe_unused]] size_type i) const noexcept { return assert(i < size()), chars_[0]; }
 
-  [[nodiscard]] constexpr const_reference front() const noexcept { assert(!empty()); return chars_[0]; }
+  [[nodiscard]] constexpr const_reference front() const noexcept { return assert(!empty()), chars_[0]; }
 
-  [[nodiscard]] constexpr const_reference back() const noexcept { assert(!empty()); return chars_[0]; }
+  [[nodiscard]] constexpr const_reference back() const noexcept { return assert(!empty()), chars_[0]; }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
 
@@ -1154,9 +1154,9 @@ string full_type_name(string name) {
 }
 
 #if __has_include(<cxxabi.h>)
-// std::free is not guaranteed to be addressable.
+// std::free is not guaranteed to be addressable. The parentheses keep function-like free macros from expanding.
 struct free_deleter {
-  void operator()(char* p) const noexcept { std::free(p); }
+  void operator()(char* p) const noexcept { (std::free)(p); }
 };
 
 using demangle_ptr = std::unique_ptr<char, free_deleter>;
@@ -1484,25 +1484,25 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #endif
 
 // Obtains name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept {                         \
-  ::std::void_t<decltype(__VA_ARGS__)>();                             \
-  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__); \
-  static_assert(!_name.empty(), "Expression does not have a name.");  \
-  return ::nameof::detail::to_cstring<_name.size()>(_name); }()
+#define NAMEOF(...) []() constexpr noexcept {                                             \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
+  constexpr auto nameof_detail_name = ::nameof::detail::pretty_name(#__VA_ARGS__);        \
+  static_assert(!nameof_detail_name.empty(), "Expression does not have a name.");         \
+  return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains full name of variable, function, macro.
-#define NAMEOF_FULL(...) []() constexpr noexcept {                           \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                    \
-  constexpr auto _name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(!_name.empty(), "Expression does not have a name.");         \
-  return ::nameof::detail::to_cstring<_name.size()>(_name); }()
+#define NAMEOF_FULL(...) []() constexpr noexcept {                                        \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
+  constexpr auto nameof_detail_name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
+  static_assert(!nameof_detail_name.empty(), "Expression does not have a name.");         \
+  return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains raw expression text.
-#define NAMEOF_RAW(...) []() constexpr noexcept {                    \
-  ::std::void_t<decltype(__VA_ARGS__)>();                            \
-  constexpr auto _name = ::nameof::string_view{#__VA_ARGS__};        \
-  static_assert(!_name.empty(), "Expression does not have a name."); \
-  return ::nameof::detail::to_cstring<_name.size()>(_name); }()
+#define NAMEOF_RAW(...) []() constexpr noexcept {                                         \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
+  constexpr auto nameof_detail_name = ::nameof::string_view{#__VA_ARGS__};                \
+  static_assert(!nameof_detail_name.empty(), "Expression does not have a name.");         \
+  return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains name of enum value.
 #define NAMEOF_ENUM(...) ::nameof::nameof_enum(__VA_ARGS__)
