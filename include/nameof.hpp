@@ -36,13 +36,6 @@
 #define NAMEOF_VERSION_MINOR 10
 #define NAMEOF_VERSION_PATCH 6
 
-// Keep the calling convention stable for fixed-offset __FUNCSIG__ parsing.
-#if defined(_MSC_VER) && !defined(__clang__)
-#  define NAMEOF_DETAIL_CDECL __cdecl
-#else
-#  define NAMEOF_DETAIL_CDECL
-#endif
-
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -58,10 +51,8 @@
 #include <utility>
 
 #if !defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION) && defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L && defined(__cpp_expansion_statements) && __cpp_expansion_statements >= 202506L
-#  if defined(__has_include)
-#    if __has_include(<meta>)
-#      include <meta>
-#    endif
+#  if __has_include(<meta>)
+#    include <meta>
 #  endif
 #  if defined(__cpp_lib_reflection) && __cpp_lib_reflection >= 202506L && defined(__cpp_lib_define_static) && __cpp_lib_define_static >= 202506L
 #    define NAMEOF_DETAIL_USE_STD_REFLECTION 1
@@ -83,12 +74,12 @@
 #  pragma GCC diagnostic ignored "-Wconversion" // Enum range scanning casts out-of-range values; GCC 11+ uses __builtin_bit_cast instead.
 #elif defined(_MSC_VER)
 #  pragma warning(push)
+#  pragma warning(disable : 4514)  // Unreferenced inline function has been removed.
 #  pragma warning(disable : 28020) // Code analysis false positive for bounds-checked enum value arrays.
-#  pragma warning(disable : 4514) // Unreferenced inline function has been removed.
 #endif
 
 // Checks nameof_type compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  undef  NAMEOF_TYPE_SUPPORTED
 #  define NAMEOF_TYPE_SUPPORTED 1
 #endif
@@ -111,26 +102,18 @@
 #  endif
 #endif
 
-// Checks nameof_member compiler compatibility.
+// Checks nameof_member and nameof_pointer compiler compatibility.
 #if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
 #  undef  NAMEOF_MEMBER_SUPPORTED
 #  define NAMEOF_MEMBER_SUPPORTED 1
-#endif
-
-// Checks nameof_pointer compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
 #  undef  NAMEOF_POINTER_SUPPORTED
 #  define NAMEOF_POINTER_SUPPORTED 1
 #endif
 
-// Checks nameof_enum compiler compatibility.
-#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1910
+// Checks nameof_enum and enum aliases compiler compatibility.
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  undef  NAMEOF_ENUM_SUPPORTED
 #  define NAMEOF_ENUM_SUPPORTED 1
-#endif
-
-// Checks nameof_enum compiler aliases compatibility.
-#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  undef  NAMEOF_ENUM_SUPPORTED_ALIASES
 #  define NAMEOF_ENUM_SUPPORTED_ALIASES 1
 #endif
@@ -163,12 +146,62 @@ NAMEOF_USING_ALIAS_STRING
 using std::string;
 #endif
 
+// Checks whether nameof_type is supported by the compiler.
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+inline constexpr bool is_nameof_type_supported = true;
+#else
+inline constexpr bool is_nameof_type_supported = false;
+#endif
+
+// Checks whether nameof_type_rtti is supported by the compiler.
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+inline constexpr bool is_nameof_type_rtti_supported = true;
+#else
+inline constexpr bool is_nameof_type_rtti_supported = false;
+#endif
+
+// Checks whether nameof_member is supported by the compiler.
+#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+inline constexpr bool is_nameof_member_supported = true;
+#else
+inline constexpr bool is_nameof_member_supported = false;
+#endif
+
+// Checks whether nameof_pointer is supported by the compiler.
+#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+inline constexpr bool is_nameof_pointer_supported = true;
+#else
+inline constexpr bool is_nameof_pointer_supported = false;
+#endif
+
+// Checks whether nameof_enum is supported by the compiler.
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
+inline constexpr bool is_nameof_enum_supported = true;
+#else
+inline constexpr bool is_nameof_enum_supported = false;
+#endif
+
+// Keep the calling convention stable for fixed-offset __FUNCSIG__ parsing.
+#if defined(_MSC_VER) && !defined(__clang__)
+#  define NAMEOF_DETAIL_CDECL __cdecl
+#else
+#  define NAMEOF_DETAIL_CDECL
+#endif
+
+// The signature of the enclosing function without the "]" (GCC, Clang) or ">(void) noexcept" (MSVC) after its template arguments.
+#if defined(__clang__) || defined(__GNUC__)
+#  define NAMEOF_DETAIL_SIGNATURE ::nameof::string_view{__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - sizeof("]")}
+#elif defined(_MSC_VER)
+#  define NAMEOF_DETAIL_SIGNATURE ::nameof::string_view{__FUNCSIG__, sizeof(__FUNCSIG__) - sizeof(">(void) noexcept")}
+#else
+#  define NAMEOF_DETAIL_SIGNATURE ::nameof::string_view{}
+#endif
+
 namespace customize {
 
 // Compiler-specific enum reflection scans [min, max]. Redefine NAMEOF_ENUM_RANGE_MIN/MAX globally or specialize enum_range for a specific enum.
 template <typename E>
 struct enum_range {
-  static_assert(std::is_enum_v<E>, "nameof::customize::enum_range requires an enum type.");
   inline static constexpr int min = NAMEOF_ENUM_RANGE_MIN;
   inline static constexpr int max = NAMEOF_ENUM_RANGE_MAX;
 };
@@ -176,7 +209,6 @@ struct enum_range {
 // If you need custom enum names, specialize enum_name for that enum type.
 template <typename E>
 constexpr string_view enum_name(E) noexcept {
-  static_assert(std::is_enum_v<E>, "nameof::customize::enum_name requires an enum type.");
   return string_view{""};
 }
 
@@ -203,17 +235,15 @@ constexpr string_view pointer_name() noexcept {
 template <std::uint16_t N>
 class [[nodiscard]] cstring {
  public:
-  using value_type      = char;
-  using size_type       = std::size_t;
-  using difference_type = std::ptrdiff_t;
-  using pointer         = const char*;
-  using const_pointer   = const char*;
-  using reference       = const char&;
-  using const_reference = const char&;
-
-  using iterator       = const char*;
-  using const_iterator = const char*;
-
+  using value_type             = char;
+  using size_type              = std::size_t;
+  using difference_type        = std::ptrdiff_t;
+  using pointer                = const char*;
+  using const_pointer          = const char*;
+  using reference              = const char&;
+  using const_reference        = const char&;
+  using iterator               = const char*;
+  using const_iterator         = const char*;
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -468,6 +498,10 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
 
 namespace detail {
 
+// Keeps support static_asserts dependent, so they fire only when the API is used.
+template <bool Supported, typename...>
+inline constexpr bool supported_v = Supported;
+
 template <std::size_t N>
 constexpr auto to_cstring(string_view str) noexcept {
   static_assert(N <= (std::numeric_limits<std::uint16_t>::max)(), "nameof::cstring supports names of at most UINT16_MAX characters.");
@@ -556,7 +590,6 @@ constexpr string_view pretty_function_name(string_view signature) noexcept {
   if (template_begin == signature.size()) {
     return {};
   }
-
   for (std::size_t i = template_begin + 1; i + 2 < signature.size(); ++i) {
     if (signature[i] != ' ' && (signature[i] != ':' || signature[i + 1] != ':')) {
       continue;
@@ -607,14 +640,6 @@ template <typename T>
 using make_unsigned_t = std::make_unsigned_t<std::conditional_t<std::is_same_v<T, bool>, unsigned char, T>>;
 
 template <typename T>
-struct nameof_enum_supported
-#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
-template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T, typename R>
@@ -633,15 +658,12 @@ constexpr bool enum_value_equal(E lhs, E rhs) noexcept {
 
 namespace reflection {
 
-template <typename...>
-inline constexpr bool always_false_v = false;
-
 template <typename E>
 consteval auto enumerators() noexcept {
   if constexpr (std::meta::is_enumerable_type(^^E)) {
     return std::define_static_array(std::meta::enumerators_of(^^E));
   } else {
-    static_assert(always_false_v<E>, "nameof requires a complete enum definition.");
+    static_assert(supported_v<false, E>, "nameof requires a complete enum definition.");
     return std::array<std::meta::info, 0>{};
   }
 }
@@ -683,7 +705,7 @@ template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "nameof::detail::n requires an enum type.");
 
-  if constexpr (nameof_enum_supported<E>::value) {
+  if constexpr (is_nameof_enum_supported) {
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
     constexpr auto name = reflection::enum_name<V>();
 #elif defined(__clang__) || defined(__GNUC__)
@@ -738,7 +760,7 @@ constexpr bool NAMEOF_DETAIL_CDECL nv() noexcept {
   using E = decltype(V);
   static_assert(is_enum_v<E>, "nameof::detail::nv requires an enum type.");
 
-  if constexpr (nameof_enum_supported<E>::value) {
+  if constexpr (is_nameof_enum_supported) {
 #if defined(__GNUC__) && !defined(__clang__)
     constexpr auto prefix = sizeof("constexpr bool nameof::detail::nv() [with auto V = ") - 1;
     static_assert(sizeof(__PRETTY_FUNCTION__) > prefix + 2, "nameof::detail::nv requires a valid __PRETTY_FUNCTION__.");
@@ -1038,15 +1060,8 @@ constexpr string_view enum_flag_name(E value) noexcept {
 #endif
 }
 
-template <typename... T>
-struct nameof_type_supported
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
 #if defined(_MSC_VER) && !defined(__clang__)
+// MSVC prints a class-key before class and enum types. Wrapping every type keeps the prefix of n() fixed.
 template <typename T>
 struct identity {
   using type = T;
@@ -1061,7 +1076,7 @@ using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<U> && !std:
 
 template <typename... T>
 constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
-  if constexpr (nameof_type_supported<T...>::value) {
+  if constexpr (is_nameof_type_supported) {
 #if defined(__clang__)
     constexpr string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
 #elif defined(__GNUC__)
@@ -1122,14 +1137,6 @@ constexpr auto short_type_name() noexcept {
 template <typename T>
 inline constexpr auto short_type_name_v = short_type_name<T>();
 
-template <typename... T>
-struct nameof_type_rtti_supported
-#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
 template <typename T>
 string full_type_name(string name) {
   using U = std::remove_reference_t<T>;
@@ -1154,7 +1161,7 @@ string full_type_name(string name) {
 }
 
 #if __has_include(<cxxabi.h>)
-// std::free is not guaranteed to be addressable. The parentheses keep function-like free macros from expanding.
+// Avoid taking std::free's address and expanding free macros.
 struct free_deleter {
   void operator()(char* p) const noexcept { (std::free)(p); }
 };
@@ -1185,7 +1192,7 @@ inline demangled_name demangle(const char* tn) {
 
 template <typename T>
 string nameof_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 #if __has_include(<cxxabi.h>)
   const auto full_name = demangle(tn);
   const auto name = full_name.view();
@@ -1198,7 +1205,7 @@ string nameof_type_rtti(const char* tn) {
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
 string nameof_short_type_rtti(const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 #if __has_include(<cxxabi.h>)
   const auto full_name = demangle(tn);
   const auto name = pretty_type_name<T>(full_name.view());
@@ -1211,9 +1218,9 @@ string nameof_short_type_rtti(const char* tn) {
 
 template <typename T>
 string nameof_full_type_rtti([[maybe_unused]] const char* tn) {
-  static_assert(nameof_type_rtti_supported<T>::value, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = std::remove_reference_t<T>;
-  if constexpr ((std::is_pointer_v<U> || std::is_member_pointer_v<U> || std::is_array_v<U> || std::is_function_v<U>) && nameof_type_supported<T>::value) {
+  if constexpr ((std::is_pointer_v<U> || std::is_member_pointer_v<U> || std::is_array_v<U> || std::is_function_v<U>) && is_nameof_type_supported) {
     constexpr auto name = n<identity<T>>();
     return name.str();
   } else {
@@ -1221,19 +1228,11 @@ string nameof_full_type_rtti([[maybe_unused]] const char* tn) {
   }
 }
 
-template <typename... T>
-struct nameof_member_supported
-#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
 template <auto V, auto U = V>
 constexpr auto n() noexcept {
   [[maybe_unused]] constexpr auto custom_name = customize::member_name<V>();
 
-  if constexpr (custom_name.empty() && nameof_member_supported<decltype(V)>::value) {
+  if constexpr (custom_name.empty() && is_nameof_member_supported) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
@@ -1289,14 +1288,6 @@ template <auto V>
 inline constexpr auto member_name_v = cstring<0>{};
 #endif
 
-template <typename... T>
-struct nameof_pointer_supported
-#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
-    : std::true_type {};
-#else
-    : std::false_type {};
-#endif
-
 template <auto U, auto V>
 struct is_same : std::false_type {};
 
@@ -1314,7 +1305,7 @@ constexpr auto p() noexcept {
     return to_cstring<custom_name.size()>(custom_name);
   } else if constexpr (is_nullptr_v<V>) {
     return cstring<sizeof("nullptr") - 1>{"nullptr"};
-  } else if constexpr (nameof_pointer_supported<decltype(V)>::value) {
+  } else if constexpr (is_nameof_pointer_supported) {
 #if defined(__clang__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(__GNUC__)
@@ -1338,26 +1329,11 @@ inline constexpr auto pointer_name_v = p<V>();
 
 } // namespace nameof::detail
 
-// Checks whether nameof_type is supported by the compiler.
-inline constexpr bool is_nameof_type_supported = detail::nameof_type_supported<void>::value;
-
-// Checks whether nameof_type_rtti is supported by the compiler.
-inline constexpr bool is_nameof_type_rtti_supported = detail::nameof_type_rtti_supported<void>::value;
-
-// Checks whether nameof_member is supported by the compiler.
-inline constexpr bool is_nameof_member_supported = detail::nameof_member_supported<void>::value;
-
-// Checks whether nameof_pointer is supported by the compiler.
-inline constexpr bool is_nameof_pointer_supported = detail::nameof_pointer_supported<void>::value;
-
-// Checks whether nameof_enum is supported by the compiler.
-inline constexpr bool is_nameof_enum_supported = detail::nameof_enum_supported<void>::value;
-
 // Obtains name of enum value.
 template <typename E>
 [[nodiscard]] constexpr auto nameof_enum(E value) noexcept -> detail::enable_if_enum_t<E, string_view> {
   using D = detail::remove_cvref_t<E>;
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_enum_supported, D>, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::enum_name(static_cast<D>(value));
 }
 
@@ -1365,7 +1341,7 @@ template <typename E>
 template <typename E>
 [[nodiscard]] auto nameof_enum_or(E value, string_view default_value) -> detail::enable_if_enum_t<E, string> {
   using D = detail::remove_cvref_t<E>;
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_or is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_enum_supported, D>, "nameof::nameof_enum_or is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
   if (auto v = nameof_enum<D>(value); !v.empty()) {
     return string{v.data(), v.size()};
@@ -1378,7 +1354,7 @@ template <typename E>
 [[nodiscard]] auto nameof_enum_flag(E value, char sep = '|') -> detail::enable_if_enum_t<E, string> {
   using D = detail::remove_cvref_t<E>;
   using U = detail::make_unsigned_t<std::underlying_type_t<D>>;
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum_flag is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_enum_supported, D>, "nameof::nameof_enum_flag is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 
   const auto flag_value = static_cast<U>(value);
   if (flag_value == U{0}) {
@@ -1408,7 +1384,7 @@ template <typename E>
 template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
 [[nodiscard]] constexpr const auto& nameof_enum() noexcept {
   using D = decltype(V);
-  static_assert(detail::nameof_enum_supported<D>::value, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_enum_supported, D>, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   constexpr auto custom_name = customize::enum_name<D>(V);
   if constexpr (custom_name.empty()) {
     return detail::enum_name_v<D, V>;
@@ -1417,11 +1393,11 @@ template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
   }
 }
 
-// Obtains type name; reference and cv-qualifiers are ignored.
+// Obtains type name. Reference and cv-qualifiers are ignored.
 template <typename T>
 [[nodiscard]] constexpr const auto& nameof_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
-  static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_type_supported, U>, "nameof::nameof_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::type_name_v<U>;
 }
 
@@ -1429,7 +1405,7 @@ template <typename T>
 template <typename T>
 [[nodiscard]] constexpr const auto& nameof_full_type() noexcept {
   using U = detail::identity<T>;
-  static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_full_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_type_supported, U>, "nameof::nameof_full_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::type_name_v<U>;
 }
 
@@ -1437,31 +1413,29 @@ template <typename T>
 template <typename T, detail::enable_if_has_short_name_t<T, int> = 0>
 [[nodiscard]] constexpr const auto& nameof_short_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
-  static_assert(detail::nameof_type_supported<U>::value, "nameof::nameof_short_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_type_supported, U>, "nameof::nameof_short_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::short_type_name_v<U>;
 }
 
 // Obtains name of member.
 template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> = 0>
 [[nodiscard]] constexpr const auto& nameof_member() noexcept {
-  using U = decltype(V);
-  static_assert(detail::nameof_member_supported<U>::value, "nameof::nameof_member is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_member_supported, decltype(V)>, "nameof::nameof_member is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::member_name_v<V>;
 }
 
 // Obtains name of a function, a global or class static variable.
 template <auto V, std::enable_if_t<std::is_pointer_v<decltype(V)>, int> = 0>
 [[nodiscard]] constexpr const auto& nameof_pointer() noexcept {
-  using U = decltype(V);
-  static_assert(detail::nameof_pointer_supported<U>::value, "nameof::nameof_pointer is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
+  static_assert(detail::supported_v<is_nameof_pointer_supported, decltype(V)>, "nameof::nameof_pointer is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::pointer_name_v<V>;
 }
 
 } // namespace nameof
 
+// MSVC STL warns when <format> is included before C++20.
 #if __has_include(<format>) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
 #  include <format>
-
 #  if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
 template <std::uint16_t N>
 struct std::formatter<nameof::cstring<N>, char> : std::formatter<std::string_view, char> {
@@ -1517,7 +1491,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 // Obtains name of enum flag value.
 #define NAMEOF_ENUM_FLAG(...) ::nameof::nameof_enum_flag(__VA_ARGS__)
 
-// Obtains type name; reference and cv-qualifiers are ignored.
+// Obtains type name. Reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE(...) ::nameof::nameof_type<__VA_ARGS__>()
 
 // Obtains full type name with reference and cv-qualifiers.
@@ -1526,7 +1500,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 // Obtains short type name.
 #define NAMEOF_SHORT_TYPE(...) ::nameof::nameof_short_type<__VA_ARGS__>()
 
-// Obtains type name of expression; reference and cv-qualifiers are ignored.
+// Obtains type name of expression. Reference and cv-qualifiers are ignored.
 #define NAMEOF_TYPE_EXPR(...) ::nameof::nameof_type<decltype(__VA_ARGS__)>()
 
 // Obtains full type name of expression with reference and cv-qualifiers.
@@ -1553,6 +1527,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #undef NAMEOF_ARRAY_CONSTEXPR
 #undef NAMEOF_FOR_EACH_256
 #undef NAMEOF_DETAIL_CDECL
+#undef NAMEOF_DETAIL_SIGNATURE
 #undef NAMEOF_DETAIL_USE_STD_REFLECTION
 
 #if defined(__clang__)

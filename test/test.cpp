@@ -567,7 +567,6 @@ TEST_CASE("support constants") {
 }
 
 namespace unicode_names {
-
 enum class UnicodeIdentifiers { \u65E5\u672C\u8A9E = 1, ascii_\u65E5\u672C = 2 };
 enum class \u5217\u6319 { \u5024 = 1 };
 struct \u65E5\u672C {
@@ -576,7 +575,6 @@ struct \u65E5\u672C {
 };
 int \u5909\u6570 = 0;
 void \u95A2\u6570() {}
-
 } // namespace unicode_names
 
 TEST_CASE("Unicode identifiers") {

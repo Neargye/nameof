@@ -2,6 +2,13 @@
 
 include(CheckCXXSourceCompiles)
 
+# test_standalone.cpp checks that the header version matches the CMake project version.
+add_compile_definitions(
+    NAMEOF_TEST_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+    NAMEOF_TEST_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+    NAMEOF_TEST_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
     set(OPTIONS /W4 /WX)
     set(NAMEOF_TEST_FLAG_PREFIX /std:)
@@ -210,6 +217,14 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
         ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
     )
     target_compile_definitions(test-reflection-force-compiler-specific-cpp26 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
+
+    # Checks that NAMEOF_DETAIL_USE_STD_REFLECTION does not leak.
+    make_test(test_standalone.cpp test-standalone-reflection-cpp26 "")
+    target_compile_options(test-standalone-reflection-cpp26 PRIVATE
+        "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
+        ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
+    )
+    target_compile_definitions(test-standalone-reflection-cpp26 PRIVATE NAMEOF_TEST_STD_REFLECTION=1)
 
     make_compile_fail_test(
         incomplete-enum

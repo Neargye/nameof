@@ -33,7 +33,6 @@ enum class Extreme : long long {
 enum class UnicodeIdentifiers { \u65E5\u672C\u8A9E = 1 };
 
 namespace adl_comparison {
-
 enum class DeletedEquality { First = 1, AliasFirst = 1, Second = 4 };
 
 bool operator==(DeletedEquality, DeletedEquality) = delete;
@@ -44,7 +43,6 @@ enum class NonConstexprEquality { First = 1, Second = 4 };
 inline bool operator==(NonConstexprEquality, NonConstexprEquality) noexcept {
   return false;
 }
-
 } // namespace adl_comparison
 
 template <>

@@ -4,8 +4,13 @@
 
 #include <nameof.hpp>
 
-#if defined(NAMEOF_ARRAY_CONSTEXPR) || defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL)
+#if defined(NAMEOF_ARRAY_CONSTEXPR) || defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 #  error "nameof internal implementation macro leaked from the public header."
+#endif
+
+#if defined(NAMEOF_TEST_VERSION_MAJOR)
+static_assert(NAMEOF_VERSION_MAJOR == NAMEOF_TEST_VERSION_MAJOR && NAMEOF_VERSION_MINOR == NAMEOF_TEST_VERSION_MINOR && NAMEOF_VERSION_PATCH == NAMEOF_TEST_VERSION_PATCH,
+              "nameof.hpp version must match the CMake project version.");
 #endif
 
 #if defined(NAMEOF_TEST_NO_RTTI)
@@ -21,7 +26,9 @@ enum class DefaultRangeBoundary {
 #if defined(NAMEOF_ENUM_SUPPORTED)
 static_assert(nameof::nameof_enum(DefaultRangeBoundary::lower) == "lower");
 static_assert(nameof::nameof_enum(DefaultRangeBoundary::upper) == "upper");
+#  if !defined(NAMEOF_TEST_STD_REFLECTION) // Standard reflection ignores the range.
 static_assert(nameof::nameof_enum(DefaultRangeBoundary::outside).empty());
+#  endif
 #endif
 
 #if defined(__GNUC__) && !defined(_MSC_VER)
