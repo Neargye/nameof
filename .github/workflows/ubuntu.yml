@@ -50,7 +50,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Configure clang
+    - name: Install clang
       if: ${{ startsWith(matrix.compiler.cc, 'clang') }}
       run: |
         if command -v "$CXX" > /dev/null 2>&1; then
@@ -64,10 +64,10 @@ jobs:
         ubuntu_codename="$(lsb_release -cs)"
 
         echo "deb [signed-by=/etc/apt/keyrings/llvm-archive-keyring.gpg] https://apt.llvm.org/${ubuntu_codename}/ llvm-toolchain-${ubuntu_codename}-${clang_version} main" | sudo tee /etc/apt/sources.list.d/llvm.list
-        sudo apt update
-        sudo apt install -y ${{ matrix.compiler.cc }}
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.compiler.cc }}
 
-    - name: Configure gcc
+    - name: Install gcc
       if: ${{ startsWith(matrix.compiler.cc, 'gcc') }}
       run: |
         if command -v "$CXX" > /dev/null 2>&1; then
@@ -75,52 +75,67 @@ jobs:
         fi
 
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-        sudo apt update
-        sudo apt install -y ${{ matrix.compiler.cxx }}
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.compiler.cxx }}
 
     - name: Compiler version
-      run: '"$CXX" --version'
+      run: |
+        compiler="$("$CXX" --version | head -n 1)"
+        echo "$compiler"
+        echo "::notice title=Compiler::$compiler"
+        echo "**Compiler:** $compiler" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Strict warnings
       if: ${{ matrix.compiler.strict }}
       run: |
         # Users compile the header with their own flags, so keep it clean under strict warnings.
-        # gcc-9 covers the GCC < 11 -Wconversion pragma in the header.
+        # gcc-9 covers the static_cast enum scanning used before GCC 11.
         flags=(-Wall -Wextra -pedantic-errors -Werror -Wconversion -Wsign-conversion -Wold-style-cast -Wundef -Wcast-qual -Wnon-virtual-dtor -Wnull-dereference -Wimplicit-fallthrough)
         case "$CXX" in
           g++*) flags+=(-Wshadow -Wuseless-cast -Wduplicated-branches -Wduplicated-cond -Wlogical-op) ;;
           *) flags+=(-Wshadow-all -Wextra-semi -Wcomma -Wunreachable-code) ;;
         esac
+        sources=(
+          example/example.cpp
+          example/example_custom_name.cpp
+          test/test_standalone.cpp
+          test/test.cpp
+          test/test_aliases.cpp
+          test/test_range.cpp
+          test/test_range_negative.cpp
+          test/test_reflection.cpp
+        )
+        check() {
+          echo "$CXX $*"
+          "$CXX" -fsyntax-only "${flags[@]}" -DDOCTEST_CONFIG_USE_STD_HEADERS -Iinclude -Itest/3rdparty "$@"
+        }
         for std in ${{ matrix.compiler.strict }}; do
-          for src in example/example.cpp example/example_custom_name.cpp test/test_standalone.cpp test/test.cpp test/test_aliases.cpp; do
-            echo "$CXX -std=$std $src"
-            "$CXX" -std="$std" -fsyntax-only "${flags[@]}" -DDOCTEST_CONFIG_USE_STD_HEADERS -Iinclude -Itest/3rdparty "$src"
+          for src in "${sources[@]}"; do
+            check -std="$std" "$src"
           done
         done
+        # Cover the C++26 standard reflection backend.
+        if [ "$CXX" = "g++-16" ]; then
+          for src in test/test.cpp test/test_aliases.cpp test/test_reflection.cpp; do
+            check -std=c++26 -freflection -DNAMEOF_TEST_STD_REFLECTION=1 "$src"
+          done
+        fi
 
-    - name: Configure Release
-      run: cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
-
-    - name: Build Release
-      run: cmake --build build-release --parallel "$(nproc)" --config Release
-
-    - name: Test Release
-      run: ctest --test-dir build-release --parallel "$(nproc)" --output-on-failure --no-tests=error -C Release
-
-    - name: Configure Debug
-      run: cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
-
-    - name: Build Debug
-      run: cmake --build build-debug --parallel "$(nproc)" --config Debug
-
-    - name: Test Debug
-      run: ctest --test-dir build-debug --parallel "$(nproc)" --output-on-failure --no-tests=error -C Debug
+    - name: Build and test
+      run: |
+        for build_type in Release Debug; do
+          echo "::group::$build_type"
+          cmake -S . -B "build-$build_type" -DCMAKE_BUILD_TYPE="$build_type"
+          cmake --build "build-$build_type" --parallel "$(nproc)"
+          ctest --test-dir "build-$build_type" --parallel "$(nproc)" --output-on-failure --no-tests=error
+          echo "::endgroup::"
+        done
 
     - name: Require standard reflection tests
       if: ${{ matrix.compiler.cc == 'gcc-16' }}
       run: |
-        ctest --test-dir build-release --output-on-failure --no-tests=error -R "^test-reflection-semantics-cpp26$" -C Release
-        ctest --test-dir build-debug --output-on-failure --no-tests=error -R "^test-reflection-semantics-cpp26$" -C Debug
+        # The tests already ran above. Only check that CMake registered them.
+        ctest --test-dir build-Release -N -R "^test-reflection-semantics-cpp26$" | grep -q "Total Tests: 1"
 
     - name: Sanitizers (ASan + UBSan)
       if: ${{ matrix.compiler.sanitize }}
@@ -138,16 +153,23 @@ jobs:
 
   fmt:
     timeout-minutes: 30
-    name: fmt
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-24.04 # fmt 9
+        - ubuntu-26.04 # fmt 10
+
+    name: "fmt (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v7
 
     - name: Install fmt
       run: |
-        sudo apt update
-        sudo apt install -y libfmt-dev
+        sudo apt-get update
+        sudo apt-get install -y libfmt-dev
 
     - name: Configure
       run: |

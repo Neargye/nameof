@@ -26,43 +26,32 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - { os: windows-2022, vs: "Visual Studio 2022", toolset: "", platforms: [x64, Win32], build_types: [Release, Debug] }
-        - { os: windows-2025, vs: "Visual Studio 2026", toolset: "", platforms: [x64, Win32], build_types: [Release, Debug] }
-        - { os: windows-2022, vs: "MSVC v142", toolset: v142, platforms: [x64, Win32], build_types: [Release] }
-        - { os: windows-2025, vs: "Clang-cl", toolset: ClangCL, platforms: [x64], build_types: [Release] }
+        - { os: windows-2022, compiler: "msvc-2022", toolset: "", build_types: [Release, Debug] }
+        - { os: windows-2025, compiler: "msvc-2026", toolset: "", build_types: [Release, Debug] }
+        - { os: windows-2022, compiler: "msvc-v142", toolset: v142, build_types: [Release] }
+        - { os: windows-2025, compiler: "clang-cl", toolset: ClangCL, build_types: [Release] }
 
-    name: "${{ matrix.config.vs }}"
+    name: "${{ matrix.config.compiler }} (${{ matrix.config.os }})"
     steps:
     - uses: actions/checkout@v7
 
     - name: Build and test
       run: |
-        # Run every configuration and report all failures at the end.
-        $failed = @()
-        foreach ($platform in -split "${{ join(matrix.config.platforms, ' ') }}") {
-          Write-Output "::group::Configure $platform"
+        $PSNativeCommandUseErrorActionPreference = $true # Stop on the first failing command.
+        foreach ($platform in 'x64', 'Win32') {
           cmake -S . -B "build-$platform" -A $platform -T "${{ matrix.config.toolset }}"
-          $configured = $LASTEXITCODE -eq 0
-          Write-Output "::endgroup::"
-          if (-not $configured) {
-            $failed += "$platform / configure"
-            continue
-          }
-
-          foreach ($buildType in -split "${{ join(matrix.config.build_types, ' ') }}") {
+          foreach ($buildType in "${{ join(matrix.config.build_types, ' ') }}" -split ' ') {
             Write-Output "::group::$platform / $buildType"
-            cmake --build "build-$platform" --parallel $env:NUMBER_OF_PROCESSORS --config $buildType
-            if ($LASTEXITCODE -eq 0) {
-              ctest --test-dir "build-$platform" --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --no-tests=error -C $buildType
-            }
-            if ($LASTEXITCODE -ne 0) {
-              $failed += "$platform / $buildType"
-            }
+            cmake --build "build-$platform" --parallel --config $buildType
+            ctest --test-dir "build-$platform" --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --no-tests=error -C $buildType
             Write-Output "::endgroup::"
           }
         }
 
-        if ($failed) {
-          Write-Output "::error::Failed: $($failed -join ', ')"
-          exit 1
-        }
+    - name: Code analysis
+      if: ${{ matrix.config.compiler == 'msvc-2026' }}
+      run: |
+        $PSNativeCommandUseErrorActionPreference = $true
+        # Setting CMAKE_CXX_FLAGS replaces the default flags, so repeat them.
+        cmake -S . -B build-analyze -A x64 "-DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc /analyze"
+        cmake --build build-analyze --parallel --config Release

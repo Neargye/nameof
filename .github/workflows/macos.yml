@@ -31,20 +31,19 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Configure Release
-      run: cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+    - name: Compiler version
+      run: |
+        compiler="$(c++ --version | head -n 1), $(xcodebuild -version | head -n 1)"
+        echo "$compiler"
+        echo "::notice title=Compiler::$compiler"
+        echo "**Compiler:** $compiler" >> "$GITHUB_STEP_SUMMARY"
 
-    - name: Build Release
-      run: cmake --build build-release --parallel "$(sysctl -n hw.logicalcpu)" --config Release
-
-    - name: Test Release
-      run: ctest --test-dir build-release --parallel "$(sysctl -n hw.logicalcpu)" --output-on-failure --no-tests=error -C Release
-
-    - name: Configure Debug
-      run: cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
-
-    - name: Build Debug
-      run: cmake --build build-debug --parallel "$(sysctl -n hw.logicalcpu)" --config Debug
-
-    - name: Test Debug
-      run: ctest --test-dir build-debug --parallel "$(sysctl -n hw.logicalcpu)" --output-on-failure --no-tests=error -C Debug
+    - name: Build and test
+      run: |
+        for build_type in Release Debug; do
+          echo "::group::$build_type"
+          cmake -S . -B "build-$build_type" -DCMAKE_BUILD_TYPE="$build_type"
+          cmake --build "build-$build_type" --parallel "$(sysctl -n hw.logicalcpu)"
+          ctest --test-dir "build-$build_type" --parallel "$(sysctl -n hw.logicalcpu)" --output-on-failure --no-tests=error
+          echo "::endgroup::"
+        done
