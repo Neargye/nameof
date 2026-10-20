@@ -14,9 +14,12 @@ enum class Sparse : long long { FarLow = -1'000'000, InRange = 17, FarHigh = 900
 enum class Unordered { C = 30, A = 10, B = 20 };
 enum class Aliased { First = 1, AliasFirst = 1, Second = 2, AliasSecond = 2 };
 enum class Customized { Declared = 1 };
+enum class DeprecatedEnumerator { Current, Old [[deprecated("use Current")]] };
+enum class CustomSubview { Value };
 enum class SyntheticOnly {};
 enum class CustomizedFlags : unsigned { A = 1, B = 2, AB = 3 };
 enum class SyntheticOnlyFlags : unsigned { Composite = 3 };
+enum UnscopedSyntheticFlags { UnscopedComposite = 3 };
 enum class CompositeOnlyFlags : unsigned { Composite = 3 };
 enum class WideFlags : std::uint64_t { None = 0, A = 1, B = 2, AB = 3, High = std::uint64_t{1} << 63 };
 enum class BoolFlags : bool { Disabled = false, Enabled = true };
@@ -82,6 +85,11 @@ constexpr nameof::string_view nameof::customize::enum_name<CustomizedFlags>(Cust
 }
 
 template <>
+constexpr nameof::string_view nameof::customize::enum_name<UnscopedSyntheticFlags>(UnscopedSyntheticFlags value) noexcept {
+  return static_cast<int>(value) == 1 ? "UnscopedA" : static_cast<int>(value) == 2 ? "UnscopedB" : "";
+}
+
+template <>
 constexpr nameof::string_view nameof::customize::enum_name<SyntheticOnlyFlags>(SyntheticOnlyFlags value) noexcept {
   if (value == static_cast<SyntheticOnlyFlags>(1)) {
     return "SyntheticA";
@@ -92,7 +100,16 @@ constexpr nameof::string_view nameof::customize::enum_name<SyntheticOnlyFlags>(S
   return {};
 }
 
+template <>
+constexpr nameof::string_view nameof::customize::enum_name<CustomSubview>(CustomSubview) noexcept {
+  return {"ValueExtra", 5};
+}
+
 TEST_CASE("runtime enum backend") {
+  static_assert(nameof::nameof_enum(DeprecatedEnumerator::Current) == "Current");
+  static_assert(nameof::nameof_enum<DeprecatedEnumerator::Current>() == "Current");
+  static_assert(nameof::nameof_enum(CustomSubview::Value) == "Value");
+  static_assert(nameof::nameof_enum<CustomSubview::Value>() == "Value");
 #if defined(NAMEOF_TEST_STD_REFLECTION)
   static_assert(nameof::detail::reflection::enumerators_v<Dense>.size() == 5);
 #else
@@ -116,10 +133,10 @@ TEST_CASE("runtime enum backend") {
   static_assert(nameof::nameof_enum(Customized{2}) == "Synthetic");
   static_assert(nameof::nameof_enum<Customized{2}>() == "Synthetic");
   static_assert(nameof::nameof_enum(SyntheticOnly{42}) == "Only");
-  static_assert(nameof::nameof_enum<SyntheticOnly{42}>() == "Only");
   static_assert(nameof::nameof_enum(SyntheticOnly{900'000'000}) == "Far");
-  static_assert(nameof::nameof_enum<SyntheticOnly{900'000'000}>() == "Far");
   static_assert(nameof::nameof_enum(SyntheticOnly{43}).empty());
+  static_assert(nameof::nameof_enum<SyntheticOnly{42}>() == "Only");
+  static_assert(nameof::nameof_enum<SyntheticOnly{900'000'000}>() == "Far");
   CHECK(nameof::nameof_enum_or(SyntheticOnly{42}, "fallback") == "Only");
   CHECK(nameof::nameof_enum_or(SyntheticOnly{900'000'000}, "fallback") == "Far");
   CHECK(nameof::nameof_enum_or(SyntheticOnly{43}, "fallback") == "fallback");
@@ -150,6 +167,7 @@ TEST_CASE("flag backend") {
   static_assert(nameof::detail::values_v<WideFlags, true>[0] == WideFlags::A);
   static_assert(nameof::detail::values_v<WideFlags, true>[1] == WideFlags::B);
   static_assert(nameof::detail::values_v<WideFlags, true>[2] == WideFlags::High);
+  static_assert(nameof::detail::values_v<BoolFlags, true>.size() == 1);
 #endif
   CHECK(nameof::nameof_enum_flag(WideFlags::AB) == "A|B");
   CHECK(nameof::nameof_enum_flag(WideFlags::High) == "High");
@@ -160,7 +178,11 @@ TEST_CASE("flag backend") {
   CHECK(nameof::nameof_enum_flag(CustomizedFlags::AB) == "RenamedA|B");
   CHECK(nameof::nameof_enum_flag(static_cast<CustomizedFlags>(4)) == "SyntheticFlag");
   CHECK(nameof::nameof_enum_flag(SyntheticOnlyFlags::Composite) == "SyntheticA|SyntheticB");
+  CHECK(nameof::nameof_enum_flag(UnscopedComposite) == "UnscopedA|UnscopedB");
+  // With compiler-specific reflection, an enum without single-bit enumerators or custom flag names is rejected by nameof_enum_flag.
+#if defined(NAMEOF_TEST_STD_REFLECTION)
   CHECK(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).empty());
+#endif
   CHECK(nameof::nameof_enum_flag(BoolFlags::Enabled) == "Enabled");
   CHECK(nameof::nameof_enum_flag(BoolFlags::Disabled).empty());
 }
@@ -211,6 +233,6 @@ TEST_CASE_TEMPLATE("signed flag sign bit", T, std::int8_t, std::int16_t, std::in
   using E = typename SignedFlags<T>::Type;
   using U = std::make_unsigned_t<T>;
   CHECK(nameof::nameof_enum_flag(E::High) == "High");
-  CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<U>(E::High) | U{1})) == "Low|High");
-  CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<U>(E::High) | U{2})).empty());
+  CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<T>(static_cast<U>(E::High) | U{1}))) == "Low|High");
+  CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<T>(static_cast<U>(E::High) | U{2}))).empty());
 }

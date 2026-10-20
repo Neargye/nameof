@@ -113,6 +113,38 @@ constexpr auto& unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_e
 
 int main() {}
 
+#elif NAMEOF_COMPILE_FAIL_CASE == 11
+
+enum class ForwardDeclared : int;
+
+constexpr auto forward_declared_name = nameof::nameof_enum(ForwardDeclared{0});
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 12
+
+enum class Empty {};
+
+constexpr auto empty_name = nameof::nameof_enum(Empty{});
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 13
+
+enum class OutOfRange { value = 1000 };
+
+constexpr auto out_of_range_name = nameof::nameof_enum(OutOfRange::value);
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 14
+
+enum class CompositeOnlyFlags : unsigned { Composite = 3 };
+
+int main() {
+  return static_cast<int>(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).size());
+}
+
 #else
 
 #  error Unknown NAMEOF_COMPILE_FAIL_CASE.

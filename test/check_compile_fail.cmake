@@ -23,8 +23,11 @@ if(build_result EQUAL 0)
     )
 endif()
 
-string(FIND "${build_output}" "${EXPECTED_TEXT}" diagnostic_position)
-if(diagnostic_position EQUAL -1)
+# GCC and Clang echo the failing source line, which may contain the static_assert message itself.
+# Match the text only on a static_assert error line (GCC, Clang, MSVC C2338).
+string(REGEX REPLACE "([][+.*?()^$|\\{}])" "\\\\\\1" expected_regex "${EXPECTED_TEXT}")
+string(REGEX MATCH "error( ?: static.assert| C2338:)[^\n]*${expected_regex}" diagnostic_match "${build_output}")
+if(diagnostic_match STREQUAL "")
     message(FATAL_ERROR
         "Compile-fail target '${TARGET_NAME}' failed without the expected diagnostic:\n"
         "  ${EXPECTED_TEXT}\n"

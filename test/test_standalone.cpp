@@ -4,7 +4,7 @@
 
 #include <nameof.hpp>
 
-#if defined(NAMEOF_ARRAY_CONSTEXPR) || defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST)
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 

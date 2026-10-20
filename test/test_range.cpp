@@ -12,6 +12,21 @@ enum class PositiveOnlyRange { First = 32767, Last = 33023 };
 static_assert(nameof::nameof_enum(PositiveOnlyRange::First) == "First");
 static_assert(nameof::nameof_enum(PositiveOnlyRange::Last) == "Last");
 
+// The global range lies above the underlying type, so the clamped range is empty.
+enum class BelowGlobalRange : signed char { Value = 1 };
+
+static_assert(nameof::nameof_enum(BelowGlobalRange::Value).empty());
+
+enum class BelowWideRange : unsigned char { Value = 1 };
+
+template <>
+struct nameof::customize::enum_range<BelowWideRange> {
+  static constexpr unsigned long long min = (std::numeric_limits<unsigned long long>::max)() - 1;
+  static constexpr unsigned long long max = (std::numeric_limits<unsigned long long>::max)();
+};
+
+static_assert(nameof::nameof_enum(BelowWideRange::Value).empty());
+
 enum class IntMaxRange { First = (std::numeric_limits<int>::max)() - 2, Middle, Last };
 
 template <>

@@ -12,6 +12,10 @@ enum class NegativeOnlyRange { First = -32769, Last = -32768 };
 static_assert(nameof::nameof_enum(NegativeOnlyRange::First) == "First");
 static_assert(nameof::nameof_enum(NegativeOnlyRange::Last) == "Last");
 
+enum class AboveGlobalRange : unsigned char { Value = 1 };
+
+static_assert(nameof::nameof_enum(AboveGlobalRange::Value).empty());
+
 enum class IntMinRange { First = (std::numeric_limits<int>::min)(), Middle, Last };
 
 template <>

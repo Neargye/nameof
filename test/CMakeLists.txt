@@ -35,30 +35,18 @@ if(NAMEOF_TEST_FLAG_PREFIX)
 endif()
 
 if(NAMEOF_HAS_CPP26_FLAG)
+    # Probe the header itself, so the tests follow its backend selection.
     set(NAMEOF_STD_REFLECTION_PROBE [[
-        #include <meta>
-        #include <string_view>
+        #include <nameof.hpp>
         enum class reflected_enum { value };
-        static_assert(std::meta::is_enumerable_type(^^reflected_enum));
-        constexpr auto enumerators = std::define_static_array(std::meta::enumerators_of(^^reflected_enum));
-        constexpr std::string_view reflected_name(reflected_enum value) {
-            template for (constexpr auto enumerator : enumerators) {
-                constexpr auto candidate = [:enumerator:];
-                if (candidate == value) {
-                    constexpr auto identifier = std::meta::identifier_of(enumerator);
-                    constexpr auto name = std::define_static_string(identifier);
-                    return {name, identifier.size()};
-                }
-            }
-            return {};
-        }
-        constexpr auto name = reflected_name(reflected_enum::value);
-        static_assert(name == "value");
-        static_assert(name.data()[name.size()] == char{});
+        static_assert(nameof::detail::reflection::enumerators_v<reflected_enum>.size() == 1);
+        static_assert(nameof::nameof_enum(reflected_enum::value) == "value");
         int main() {}
     ]])
     set(NAMEOF_SAVED_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    set(NAMEOF_SAVED_REQUIRED_INCLUDES "${CMAKE_REQUIRED_INCLUDES}")
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}")
+    list(APPEND CMAKE_REQUIRED_INCLUDES "${PROJECT_SOURCE_DIR}/include")
     check_cxx_source_compiles(
         "${NAMEOF_STD_REFLECTION_PROBE}"
         NAMEOF_CAN_COMPILE_STD_REFLECTION_BY_DEFAULT
@@ -77,7 +65,9 @@ if(NAMEOF_HAS_CPP26_FLAG)
         endif()
     endif()
     set(CMAKE_REQUIRED_FLAGS "${NAMEOF_SAVED_REQUIRED_FLAGS}")
+    set(CMAKE_REQUIRED_INCLUDES "${NAMEOF_SAVED_REQUIRED_INCLUDES}")
     unset(NAMEOF_SAVED_REQUIRED_FLAGS)
+    unset(NAMEOF_SAVED_REQUIRED_INCLUDES)
     unset(NAMEOF_STD_REFLECTION_PROBE)
 endif()
 
@@ -190,15 +180,19 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 make_compile_fail_test(expression-no-name 1 "Expression does not have a name")
-make_compile_fail_test(inverted-range 2 "nameof::customize::enum_range must contain at least one value" UNEXPECTED_TEXT "names_v")
-make_compile_fail_test(range-too-large 3 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "names_v")
-make_compile_fail_test(range-not-int 4 "narrow")
-make_compile_fail_test(range-min-not-int 5 "narrow")
-make_compile_fail_test(range-unsigned-not-int 6 "narrow")
-make_compile_fail_test(range-full-int 7 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "names_v")
+make_compile_fail_test(inverted-range 2 "nameof::customize::enum_range must contain at least one value" UNEXPECTED_TEXT "detail::names_v<")
+make_compile_fail_test(range-too-large 3 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "detail::names_v<")
+make_compile_fail_test(range-not-int 4 "nameof::customize::enum_range bounds must fit in int" UNEXPECTED_TEXT "narrow")
+make_compile_fail_test(range-min-not-int 5 "nameof::customize::enum_range bounds must fit in int" UNEXPECTED_TEXT "narrow")
+make_compile_fail_test(range-unsigned-not-int 6 "nameof::customize::enum_range bounds must fit in int" UNEXPECTED_TEXT "narrow")
+make_compile_fail_test(range-full-int 7 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "detail::names_v<")
 make_compile_fail_test(name-too-long 8 "nameof::cstring supports names of at most UINT16_MAX characters")
 make_compile_fail_test(unnamed-struct-short-name 9 "Type does not have a short name.")
 make_compile_fail_test(unnamed-enum-short-name 10 "Type does not have a short name.")
+make_compile_fail_test(forward-declared-enum 11 "nameof::nameof_enum requires a defined enum")
+make_compile_fail_test(empty-enum 12 "nameof::nameof_enum requires a defined enum")
+make_compile_fail_test(enum-out-of-range 13 "nameof::nameof_enum requires a defined enum")
+make_compile_fail_test(enum-flag-without-bits 14 "nameof::nameof_enum_flag requires a defined enum")
 
 foreach(std IN ITEMS 20 23 26)
     if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)

@@ -45,12 +45,6 @@
 #  define NAMEOF_TEST_HAS_STD_FORMAT 1
 #endif
 
-#ifdef NDEBUG
-#  define NAMEOF_DEBUG_REQUIRE(...) REQUIRE(__VA_ARGS__)
-#else
-#  define NAMEOF_DEBUG_REQUIRE(...)
-#endif
-
 struct SomeStruct {
   int somefield = 0;
 
@@ -180,6 +174,15 @@ struct nameof::customize::enum_range<BoolRange> {
   static constexpr int max = 1;
 };
 
+enum class InvertedRangeFlags : unsigned { A = 1, B = 1u << 20 };
+
+// Flags scan the bits of the underlying type and ignore enum_range.
+template <>
+struct nameof::customize::enum_range<InvertedRangeFlags> {
+  static constexpr int min = 5;
+  static constexpr int max = 1;
+};
+
 namespace short_names {
 union Union {
   int i;
@@ -197,6 +200,10 @@ enum class EntirelyOutOfRange {
   too_low = NAMEOF_ENUM_RANGE_MIN - 1,
   too_high = NAMEOF_ENUM_RANGE_MAX + 1
 };
+
+enum class ForwardDeclaredEnum : int;
+
+enum class EmptyEnum {};
 
 enum class CustomEnum { default_name = 1, custom_name = 2 };
 
@@ -514,6 +521,23 @@ TEST_CASE("operator keyword boundaries") {
   static_assert(pretty_member_name("ns::operator unsigned int").empty());
 }
 
+TEST_CASE("enum name validity") {
+  using nameof::detail::enum_name_valid;
+  // Portable checks cover GCC, Clang and MSVC spellings.
+  static_assert(enum_name_valid("constexpr bool nameof::detail::nv() [with auto V = Color::RED"));
+  static_assert(enum_name_valid("bool nameof::detail::nv() [V = RED"));
+  static_assert(enum_name_valid("bool __cdecl nameof::detail::nv<RED"));
+  static_assert(enum_name_valid("auto __cdecl nameof::detail::n<enum Color,RED"));
+  static_assert(enum_name_valid("bool __cdecl nameof::detail::nv<`anonymous namespace'::Color::RED"));
+  static_assert(enum_name_valid("bool nameof::detail::nv() [V = f()::Local::\u65E5\u672C"));
+  static_assert(!enum_name_valid("constexpr bool nameof::detail::nv() [with auto V = (Color)5"));
+  static_assert(!enum_name_valid("constexpr bool nameof::detail::nv() [with auto V = (Color)-1"));
+  static_assert(!enum_name_valid("bool __cdecl nameof::detail::nv<(enum Color)0x5"));
+  static_assert(!enum_name_valid("auto __cdecl nameof::detail::n<enum Flag,(enum Flag)true"));
+  static_assert(!enum_name_valid("RED"));
+  static_assert(!enum_name_valid(""));
+}
+
 #if defined(_MSC_VER) && !defined(__clang__)
 TEST_CASE("function template argument parsing") {
   using nameof::detail::pretty_function_name;
@@ -544,8 +568,6 @@ static_assert(nameof::detail::is_valid<Numbers, 127>(), "nameof::detail::is_vali
 static_assert(!nameof::detail::is_valid<Numbers, 0>(), "nameof::detail::is_valid requires invalid enum values.");
 static_assert(nameof::detail::is_valid<AnimalFlags, 1>(), "nameof::detail::is_valid requires valid flag values.");
 static_assert(!nameof::detail::is_valid<AnimalFlags, 3>(), "nameof::detail::is_valid requires invalid flag values.");
-static_assert(nameof::detail::is_valid<CustomEnum, 2>(), "nameof::detail::is_valid requires custom enum names.");
-static_assert(!nameof::detail::is_valid<CustomEnum, 0>(), "nameof::detail::is_valid requires invalid custom enum values.");
 static_assert(nameof::detail::is_valid<HiddenEnum, 1>(), "nameof::detail::is_valid requires anonymous namespace enum values.");
 static_assert(!nameof::detail::is_valid<HiddenEnum, 0>(), "nameof::detail::is_valid requires invalid anonymous namespace enum values.");
 static_assert(nameof::detail::is_valid<NestedHiddenEnum, 1>(), "nameof::detail::is_valid requires nested anonymous namespace enum values.");
@@ -1189,7 +1211,7 @@ TEST_CASE("nameof_enum") {
     require_string_view_contract(blue_name, "BLUE");
     REQUIRE(nameof::nameof_enum(cm[1]) == "GREEN");
     REQUIRE(nameof::nameof_enum<const Color&>(cr) == "RED");
-    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Color>(0)).empty());
+    REQUIRE(nameof::nameof_enum(static_cast<Color>(0)).empty());
 
     constexpr Numbers no = Numbers::one;
     constexpr auto no_name = nameof::nameof_enum(no);
@@ -1199,9 +1221,9 @@ TEST_CASE("nameof_enum") {
 #if defined(NAMEOF_TEST_STD_REFLECTION)
     REQUIRE(nameof::nameof_enum(Numbers::many) == "many");
 #else
-    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(Numbers::many).empty());
+    REQUIRE(nameof::nameof_enum(Numbers::many).empty());
 #endif
-    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Numbers>(0)).empty());
+    REQUIRE(nameof::nameof_enum(static_cast<Numbers>(0)).empty());
 
     constexpr Directions dr = Directions::Right;
     constexpr auto dr_name = nameof::nameof_enum(dr);
@@ -1209,7 +1231,7 @@ TEST_CASE("nameof_enum") {
     REQUIRE(nameof::nameof_enum(Directions::Down) == "Down");
     REQUIRE(dr_name == "Right");
     REQUIRE(nameof::nameof_enum(Directions::Left) == "Left");
-    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<Directions>(0)).empty());
+    REQUIRE(nameof::nameof_enum(static_cast<Directions>(0)).empty());
 
     constexpr number nt = number::three;
     constexpr auto nt_name = nameof::nameof_enum(nt);
@@ -1219,9 +1241,9 @@ TEST_CASE("nameof_enum") {
 #if defined(NAMEOF_TEST_STD_REFLECTION)
     REQUIRE(nameof::nameof_enum(number::four) == "four");
 #else
-    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(number::four).empty());
+    REQUIRE(nameof::nameof_enum(number::four).empty());
 #endif
-    NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
+    REQUIRE(nameof::nameof_enum(static_cast<number>(0)).empty());
 
     REQUIRE(nameof::nameof_enum(BoolEnum::Off) == "Off");
     REQUIRE(nameof::nameof_enum(BoolEnum::On) == "On");
@@ -1306,11 +1328,12 @@ TEST_CASE("nameof_enum_flag") {
   REQUIRE(nameof::nameof_enum_flag<const AnimalFlags&>(af) == "HasClaws");
   REQUIRE(nameof::nameof_enum_flag(AnimalFlags::EatsFish) == "EatsFish");
   REQUIRE(nameof::nameof_enum_flag(afm[1]) == "CanFly");
-  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
   REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
+  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2), '$') == "HasClaws$CanFly");
   REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
   REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
-  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<AnimalFlags>(0)).empty());
 
   constexpr BigFlags bf = BigFlags::A;
   auto bf_name = nameof::nameof_enum_flag(bf);
@@ -1318,17 +1341,19 @@ TEST_CASE("nameof_enum_flag") {
   REQUIRE(bf_name == "A");
   REQUIRE(nameof::nameof_enum_flag(BigFlags::C) == "C");
   REQUIRE(nameof::nameof_enum_flag(bfm[1]) == "B");
-  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(0)).empty());
-  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 2)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(0)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 2)).empty());
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(1 | 0 | (static_cast<std::uint64_t>(0x1) << 40))) == "A|C");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
-  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(2)).empty());
-  NAMEOF_DEBUG_REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>(2)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
 
   REQUIRE(nameof::nameof_enum_flag(BoolFlag::On) == "On");
   REQUIRE(nameof::nameof_enum_flag(static_cast<BoolFlag>(false)).empty());
+
+  REQUIRE(nameof::nameof_enum_flag(static_cast<InvertedRangeFlags>(1u | (1u << 20))) == "A|B");
 }
 
 TEST_CASE("NAMEOF_ENUM") {
@@ -1340,7 +1365,7 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(blue_name == "BLUE");
   require_string_view_contract(blue_name, "BLUE");
   REQUIRE(NAMEOF_ENUM(cm[1]) == "GREEN");
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Color>(0)).empty());
+  REQUIRE(NAMEOF_ENUM(static_cast<Color>(0)).empty());
 
   constexpr Numbers no = Numbers::one;
   constexpr auto no_name = NAMEOF_ENUM(no);
@@ -1350,9 +1375,9 @@ TEST_CASE("NAMEOF_ENUM") {
 #if defined(NAMEOF_TEST_STD_REFLECTION)
   REQUIRE(NAMEOF_ENUM(Numbers::many) == "many");
 #else
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(Numbers::many).empty());
+  REQUIRE(NAMEOF_ENUM(Numbers::many).empty());
 #endif
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
+  REQUIRE(NAMEOF_ENUM(static_cast<Numbers>(0)).empty());
 
   constexpr Directions dr = Directions::Right;
   constexpr auto dr_name = NAMEOF_ENUM(dr);
@@ -1360,7 +1385,7 @@ TEST_CASE("NAMEOF_ENUM") {
   REQUIRE(NAMEOF_ENUM(Directions::Down) == "Down");
   REQUIRE(dr_name == "Right");
   REQUIRE(NAMEOF_ENUM(Directions::Left) == "Left");
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<Directions>(0)).empty());
+  REQUIRE(NAMEOF_ENUM(static_cast<Directions>(0)).empty());
 
   constexpr number nt = number::three;
   constexpr auto nt_name = NAMEOF_ENUM(nt);
@@ -1370,9 +1395,9 @@ TEST_CASE("NAMEOF_ENUM") {
 #if defined(NAMEOF_TEST_STD_REFLECTION)
   REQUIRE(NAMEOF_ENUM(number::four) == "four");
 #else
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(number::four).empty());
+  REQUIRE(NAMEOF_ENUM(number::four).empty());
 #endif
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
+  REQUIRE(NAMEOF_ENUM(static_cast<number>(0)).empty());
 
   REQUIRE(NAMEOF_ENUM(BoolEnum::Off) == "Off");
   REQUIRE(NAMEOF_ENUM(BoolEnum::On) == "On");
@@ -1425,11 +1450,12 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
   REQUIRE(NAMEOF_ENUM_FLAG(afm[1]) == "CanFly");
   REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::EatsFish) == "EatsFish");
   REQUIRE(NAMEOF_ENUM_FLAG(AnimalFlags::Endangered) == "Endangered");
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2)) == "HasClaws|CanFly");
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2), ',') == "HasClaws,CanFly");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 2 | 4)) == "HasClaws|CanFly|EatsFish");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(1 | 0 | 8)) == "HasClaws|Endangered");
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<AnimalFlags>(0)).empty());
 
   constexpr BigFlags bf = BigFlags::A;
   auto bf_name = NAMEOF_ENUM_FLAG(bf);
@@ -1438,13 +1464,13 @@ TEST_CASE("NAMEOF_ENUM_FLAG") {
   REQUIRE(NAMEOF_ENUM_FLAG(bfm[1]) == "B");
   REQUIRE(NAMEOF_ENUM_FLAG(BigFlags::C) == "C");
   REQUIRE(NAMEOF_ENUM_FLAG(BigFlags::D) == "D");
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(0)).empty());
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | 2)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(0)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | 2)).empty());
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20))) == "A|B");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(1 | (static_cast<std::uint64_t>(0x1) << 20) | (static_cast<std::uint64_t>(0x1) << 63))) == "A|B|D");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 1)) == "A|D");
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(2)).empty());
-  NAMEOF_DEBUG_REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>(2)).empty());
+  REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BigFlags>((static_cast<std::uint64_t>(0x1) << 63) | 2)).empty());
 
   REQUIRE(NAMEOF_ENUM_FLAG(BoolFlag::On) == "On");
   REQUIRE(NAMEOF_ENUM_FLAG(static_cast<BoolFlag>(false)).empty());
@@ -1458,6 +1484,11 @@ TEST_CASE("nameof_enum_or") {
   auto low_name = nameof::nameof_enum_or(low, "-121");
   auto high_name = nameof::nameof_enum_or(high, "121");
   auto entirely_out_of_range_name = nameof::nameof_enum_or(EntirelyOutOfRange::too_low, "fallback");
+  // nameof_enum rejects enums without names, nameof_enum_or falls back instead.
+#if !defined(NAMEOF_TEST_STD_REFLECTION)
+  REQUIRE(nameof::nameof_enum_or(ForwardDeclaredEnum{1}, "fallback") == "fallback");
+#endif
+  REQUIRE(nameof::nameof_enum_or(EmptyEnum{}, "fallback") == "fallback");
   constexpr OutOfRange oor[] = {OutOfRange::too_high, OutOfRange::too_low};
 #if defined(NAMEOF_TEST_STD_REFLECTION)
   REQUIRE(low_name == "too_low");
