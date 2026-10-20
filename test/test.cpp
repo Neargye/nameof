@@ -81,6 +81,23 @@ struct QualifiedMembers {
 struct OperatorMembers {
   int operator+(int) const;
   operator int() const;
+  operator unsigned int() const;
+  operator std::string() const;
+  int operator()(int) const;
+  bool operator<(int) const;
+  int operator>>(int) const;
+};
+
+template <auto>
+struct OperatorScope {
+  int field;
+  void method() {}
+  static inline int variable = 0;
+  static void function() {}
+};
+
+struct OperatorScopeConversion {
+  operator OperatorScope<&OperatorMembers::operator()>() const;
 };
 
 struct NameOfTest {
@@ -162,6 +179,13 @@ struct nameof::customize::enum_range<BoolRange> {
   static constexpr int min = 1;
   static constexpr int max = 1;
 };
+
+namespace short_names {
+union Union {
+  int i;
+  float f;
+};
+} // namespace short_names
 
 enum class OutOfRange {
   too_low = NAMEOF_ENUM_RANGE_MIN - 1,
@@ -380,12 +404,126 @@ TEST_CASE("expression name parsing") {
   for (const auto expression : {"", "   ", "()", "<>", "name(", "name)", "name<", "ns::",
                                 "42", "3.14", "\"text\"", "'x'", "R\"(text)\"", "L\"text\"", "L'x'",
                                 "U\"text\"", "U'x'", "u\"text\"", "u'x'", "u8\"text\"", "u8'x'",
-                                "LR\"(text)\"", "UR\"(text)\"", "uR\"(text)\"", "u8R\"(text)\""}) {
+                                "LR\"(text)\"", "UR\"(text)\"", "uR\"(text)\"", "u8R\"(text)\"",
+                                "'a'_x", "u8'a'_x", "L'a'_x"}) {
     CAPTURE(std::string{expression});
     REQUIRE(pretty_name(expression).empty());
     REQUIRE(pretty_name(expression, false).empty());
   }
 }
+
+template <auto>
+void SomeMethod5();
+
+template <auto>
+struct SomeBox {};
+
+TEST_CASE("expression suffix parsing") {
+  using nameof::detail::pretty_name;
+
+  // Template and call suffixes.
+  static_assert(pretty_name("ns::outer<inner<void(int)>>::value") == "value");
+  static_assert(pretty_name("ns::outer<int>::method<tag<void()>>((1), call(2))()") == "method");
+  static_assert(pretty_name("ns::outer<int>::method<tag<void()>>((1), call(2))()", false) == "method<tag<void()>>");
+  static_assert(pretty_name("ns::name<>()()") == "name");
+  static_assert(pretty_name("ns::name<>()()", false) == "name<>");
+  static_assert(pretty_name("ns::name") == "name");
+  static_assert(pretty_name("ns::name", false) == "name");
+  static_assert(pretty_name("ns::name  ", false) == "name");
+  static_assert(pretty_name("ns::123").empty());
+
+  // '>' inside parentheses and nested groups.
+  static_assert(pretty_name("ns::f<(1 > 0)>") == "f");
+  static_assert(pretty_name("ns::f<(1 > 0)>", false) == "f<(1 > 0)>");
+  static_assert(pretty_name("ns::g<sizeof(int[2])>") == "g");
+  static_assert(pretty_name("p->m<(1 > 0)>()") == "m");
+  static_assert(pretty_name("(a < b ? p : q)->f<int>()") == "f");
+  static_assert(pretty_name("ns::f<p->m>") == "f");
+  static_assert(pretty_name("ns::f<p->m>", false) == "f<p->m>");
+  static_assert(pretty_name("[v = a < b] { return object; }().f<int>()") == "f");
+  static_assert(NAMEOF(SomeMethod5<(1 > 0)>) == "SomeMethod5");
+  static_assert(NAMEOF_FULL(SomeMethod5<(1 > 0)>) == "SomeMethod5<(1 > 0)>");
+  static_assert(NAMEOF_FULL(SomeMethod5<(8 >> 1)>()) == "SomeMethod5<(8 >> 1)>");
+
+  // Character and string literals.
+  static_assert(pretty_name("ns::Box<'>'>") == "Box");
+  static_assert(pretty_name("ns::Box<'<'>") == "Box");
+  static_assert(pretty_name(R"(ns::Box<'\''>)") == "Box");
+  static_assert(pretty_name(R"(ns::Box<'\\'>)") == "Box");
+  static_assert(pretty_name("ns::f(')')") == "f");
+  static_assert(pretty_name(R"test(ns::f(")("))test") == "f");
+  static_assert(pretty_name(R"test(ns::f("\")"))test") == "f");
+  static_assert(pretty_name(R"test(ns::f(")"sv))test") == "f");
+  static_assert(pretty_name(R"test(ns::f("a"_suffix"("))test") == "f");
+  static_assert(pretty_name("ns::f('('_x)") == "f");
+  static_assert(pretty_name(R"test(ns::f(L'a', u'(', U')', u8'x', L"(", u")", U"[", u8"]"))test") == "f");
+  static_assert(pretty_name(R"test(ns::f("\\", "\"()", '\'', '\\'))test") == "f");
+  static_assert(pretty_name(R"(operator""_x)").empty());
+  static_assert(pretty_name("42 + x").empty());
+  static_assert(NAMEOF(SomeMethod5<'>'>) == "SomeMethod5");
+  static_assert(NAMEOF_FULL(SomeMethod5<'>'>) == "SomeMethod5<'>'>");
+  static_assert(NAMEOF(std::char_traits<char>::to_int_type(u8'a')) == "to_int_type");
+  static_assert(NAMEOF(std::char_traits<char>::to_int_type(true?'a':'b')) == "to_int_type");
+  static_assert(NAMEOF_FULL(::SomeMethod5<(true?'a':'b')>()) == "SomeMethod5<(true?'a':'b')>");
+#if defined(NAMEOF_TYPE_SUPPORTED)
+  static_assert(NAMEOF_SHORT_TYPE(SomeBox<'>'>) == "SomeBox");
+  static_assert(NAMEOF_SHORT_TYPE(SomeBox<'<'>) == "SomeBox");
+  static_assert(NAMEOF_SHORT_TYPE(short_names::Union) == "Union");
+#endif
+
+  // Digit separators.
+  static_assert(pretty_name("ns::g<1'000>") == "g");
+  static_assert(pretty_name("ns::g<0xFF'FF>()") == "g");
+  static_assert(NAMEOF(std::make_pair(0x1.ffff'ffffp0, "x")) == "make_pair");
+  static_assert(NAMEOF(std::make_pair(1.e1'0, "x")) == "make_pair");
+
+  // MSVC quoted scopes.
+  static_assert(pretty_name("Box<`anonymous namespace'::X>") == "Box");
+  static_assert(pretty_name("Box<struct `void __cdecl `anonymous namespace'::f(void)'::Local>") == "Box");
+  static_assert(pretty_name("f<`anonymous namespace'::X>('a')") == "f");
+
+  // Unbalanced suffixes.
+  static_assert(pretty_name("name() ").empty());
+  static_assert(pretty_name("ns::name<").empty());
+  static_assert(pretty_name("ns::name>").empty());
+  static_assert(pretty_name("ns::name(").empty());
+  static_assert(pretty_name("ns::name)").empty());
+}
+
+TEST_CASE("many expression literals") {
+  // Keep 128 separate literals to catch repeated constexpr scanning.
+  static_assert(NAMEOF(std::char_traits<char>::length(
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x"
+    "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x" "x")) == "length");
+}
+
+TEST_CASE("operator keyword boundaries") {
+  using nameof::detail::pretty_member_name;
+  static_assert(pretty_member_name("ns::operator_name") == "operator_name");
+  static_assert(pretty_member_name("ns::cooperator") == "cooperator");
+  static_assert(pretty_member_name("ns::Operator") == "Operator");
+  static_assert(pretty_member_name("&ns::Cooperator::field") == "field");
+  static_assert(pretty_member_name("&operator_ns::S::field") == "field");
+  static_assert(pretty_member_name("ns::operator int").empty());
+  static_assert(pretty_member_name("ns::operator unsigned int").empty());
+}
+
+#if defined(_MSC_VER) && !defined(__clang__)
+TEST_CASE("function template argument parsing") {
+  using nameof::detail::pretty_function_name;
+  static_assert(pretty_function_name("auto __cdecl nameof::detail::p<void __cdecl ns::f<tag<void()>>(int)>(void) noexcept") == "f");
+  static_assert(pretty_function_name("auto __cdecl nameof::detail::p<void __cdecl ns::f<tag<&T::operator<>>(int)>(void) noexcept").empty());
+  static_assert(pretty_function_name("auto __cdecl nameof::detail::p<void __cdecl ns::f<tag<&T::operator_name>>(int)>(void) noexcept") == "f");
+  static_assert(pretty_function_name("auto __cdecl nameof::detail::p<void __cdecl ns::f<tag<void()>").empty());
+}
+#endif
+
 static_assert(NAMEOF(SomeMethod3 ()) == "SomeMethod3");
 static_assert(NAMEOF(SomeMethod4<int, float> (1)) == "SomeMethod4");
 static_assert(NAMEOF_FULL(SomeMethod4<int, float> (1)) == "SomeMethod4<int, float>");
@@ -1900,6 +2038,19 @@ TEST_CASE("short null pointer type names") {
 #endif
 }
 
+struct {
+  int value;
+} unnamed_struct_object;
+
+enum { unnamed_enum_value };
+
+TEST_CASE("short names of unnamed types") {
+  // No aliases here: MSVC names an unnamed type after the first alias that refers to it.
+  static_assert(nameof::detail::pretty_type_name(NAMEOF_TYPE_EXPR(unnamed_struct_object), true, false).empty());
+  static_assert(nameof::detail::pretty_type_name(NAMEOF_TYPE_EXPR(unnamed_enum_value), true, false).empty());
+  REQUIRE(unnamed_struct_object.value == 0);
+}
+
 TEST_CASE("NAMEOF_SHORT_TYPE_EXPR") {
   constexpr auto type_name = NAMEOF_SHORT_TYPE_EXPR(struct_var);
   REQUIRE(type_name == "SomeStruct");
@@ -1960,17 +2111,17 @@ TEST_CASE("NAMEOF_FULL_TYPE_RTTI") {
   require_string_contract(ptr_name, "TestRtti::Derived&");
   require_string_contract(const_ref_name, "const TestRtti::Derived&");
   require_string_contract(volatile_ref_name, "volatile TestRtti::Derived&");
-  require_string_contract(cv_ref_name, "volatile const TestRtti::Derived&");
+  require_string_contract(cv_ref_name, "const volatile TestRtti::Derived&");
 #elif defined(_MSC_VER)
   require_string_contract(ptr_name, "struct TestRtti::Derived&");
   require_string_contract(const_ref_name, "const struct TestRtti::Derived&");
   require_string_contract(volatile_ref_name, "volatile struct TestRtti::Derived&");
-  require_string_contract(cv_ref_name, "volatile const struct TestRtti::Derived&");
+  require_string_contract(cv_ref_name, "const volatile struct TestRtti::Derived&");
 #elif defined(__GNUC__)
   require_string_contract(ptr_name, "TestRtti::Derived&");
   require_string_contract(const_ref_name, "const TestRtti::Derived&");
   require_string_contract(volatile_ref_name, "volatile TestRtti::Derived&");
-  require_string_contract(cv_ref_name, "volatile const TestRtti::Derived&");
+  require_string_contract(cv_ref_name, "const volatile TestRtti::Derived&");
 #endif
 }
 
@@ -2122,6 +2273,79 @@ struct StructWithOverloadedAddressMember {
   Value field;
 };
 
+// Older MSVC spells data member pointers as offsets and needs a fake object, which requires external linkage.
+#if !defined(_MSC_VER) || defined(__clang__) || _MSC_VER >= 1944
+namespace {
+struct HiddenMembers {
+  int hidden_field;
+  void hidden_method() {}
+};
+}
+
+TEST_CASE("NAMEOF_MEMBER internal linkage") {
+  struct LocalMembers {
+    int local_field;
+  };
+  static_assert(NAMEOF_MEMBER(&HiddenMembers::hidden_field) == "hidden_field");
+  static_assert(NAMEOF_MEMBER(&HiddenMembers::hidden_method) == "hidden_method");
+  static_assert(NAMEOF_MEMBER(&LocalMembers::local_field) == "local_field");
+  REQUIRE(nameof::nameof_member<&HiddenMembers::hidden_field>() == "hidden_field");
+  REQUIRE(nameof::nameof_member<&LocalMembers::local_field>() == "local_field");
+  [] {
+    struct LambdaLocalMembers {
+      int field;
+      void method() {}
+    };
+    static_assert(NAMEOF_MEMBER(&LambdaLocalMembers::field) == "field");
+    static_assert(NAMEOF_MEMBER(&LambdaLocalMembers::method) == "method");
+  }();
+}
+#endif
+
+struct OperatorBodyScope {
+  operator int() const {
+    struct Local {
+      int field;
+      void method() {}
+    };
+    static_assert(NAMEOF_MEMBER(&Local::field) == "field");
+#if !defined(_MSC_VER) || defined(__clang__) // MSVC spells only "operator" for the enclosing scope of a local member function.
+    static_assert(NAMEOF_MEMBER(&Local::method) == "method");
+#endif
+    return 0;
+  }
+
+  void operator()() const & noexcept {
+    struct Local {
+      int field;
+    };
+    static_assert(NAMEOF_MEMBER(&Local::field) == "field");
+  }
+};
+
+TEST_CASE("operator in enclosing function scope") {
+  const OperatorBodyScope scope{};
+  REQUIRE(static_cast<int>(scope) == 0);
+  scope();
+}
+
+TEST_CASE_TEMPLATE("operator in enclosing template arguments", T,
+                   OperatorScope<&OperatorMembers::operator()>,
+                   OperatorScope<&OperatorMembers::operator<>,
+                   OperatorScope<(&OperatorMembers::operator>>)>,
+                   OperatorScope<&OperatorMembers::operator int>,
+                   OperatorScope<&OperatorMembers::operator std::string>) {
+  static_assert(NAMEOF_MEMBER(&T::field) == "field");
+  static_assert(NAMEOF_POINTER(&T::variable) == "variable");
+#if defined(_MSC_VER) && !defined(__clang__)
+  static_assert(NAMEOF_MEMBER(&T::method).empty());
+  static_assert(NAMEOF_POINTER(&T::function).empty());
+#else
+  static_assert(NAMEOF_MEMBER(&T::method) == "method");
+  static_assert(NAMEOF_POINTER(&T::function) == "function");
+#endif
+}
+
 TEST_CASE("NAMEOF_MEMBER") {
   static_assert(NAMEOF_MEMBER(&StructWithOverloadedAddressMember::field) == "field");
   REQUIRE(NAMEOF_MEMBER(&SomeStruct::somefield) == "somefield");
@@ -2148,12 +2372,17 @@ TEST_CASE("nameof_member") {
   REQUIRE(nameof::nameof_member<&QualifiedMembers::noexcept_member>() == "noexcept_member");
   REQUIRE(nameof::nameof_member<&QualifiedMembers::combined_member>() == "combined_member");
   REQUIRE(nameof::nameof_member<&QualifiedMembers::template_member<int>>() == "template_member");
-#if defined(_MSC_VER) && !defined(__clang__)
-  static_assert(nameof::nameof_member<static_cast<int SomeStruct::*>(nullptr)>().empty());
-  static_assert(nameof::nameof_member<static_cast<void (SomeStruct::*)(int)>(nullptr)>().empty());
+  static_assert(nameof::nameof_member<static_cast<int SomeStruct::*>(nullptr)>() == "nullptr");
+  static_assert(nameof::nameof_member<static_cast<void (SomeStruct::*)(int)>(nullptr)>() == "nullptr");
+  static_assert(NAMEOF_MEMBER(static_cast<int SomeStruct::*>(nullptr)) == "nullptr");
   REQUIRE(nameof::nameof_member<&OperatorMembers::operator+>().empty());
   REQUIRE(nameof::nameof_member<&OperatorMembers::operator int>().empty());
-#endif
+  REQUIRE(nameof::nameof_member<&OperatorMembers::operator unsigned int>().empty());
+  REQUIRE(nameof::nameof_member<&OperatorMembers::operator std::string>().empty());
+  REQUIRE(nameof::nameof_member<&OperatorMembers::operator()>().empty());
+  static_assert(nameof::nameof_member<&OperatorMembers::operator<>().empty());
+  static_assert(nameof::nameof_member<(&OperatorMembers::operator>>)>().empty());
+  static_assert(nameof::nameof_member<&OperatorScopeConversion::operator OperatorScope<&OperatorMembers::operator()>>().empty());
   REQUIRE(nameof::nameof_member<&Long::LL::field>() == "field");
   constexpr auto member_ptr = &SomeStruct::somefield;
   REQUIRE(nameof::nameof_member<member_ptr>() == "somefield");
@@ -2203,9 +2432,9 @@ TEST_CASE("nameof_pointer function signatures") {
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_pointer) == "function_returning_function_pointer");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_array_pointer) == "function_returning_array_pointer");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_member_pointer) == "function_returning_member_pointer");
-#if !defined(_MSC_VER) || defined(__clang__) || _MSC_VER >= 1930 // MSVC 2019 does not deduce decltype(&f<T>) as a pointer.
+  // MSVC 2019 deduces decltype(&f<T>) as a function type instead of a pointer.
   static_assert(NAMEOF_POINTER(&pointer_functions::template_function<int>) == "template_function");
-#endif
+  static_assert(nameof::nameof_pointer<&pointer_functions::template_function<int>>() == "template_function");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_type_tag) == "function_returning_function_type_tag");
   static_assert(NAMEOF_POINTER(&pointer_functions::function_returning_function_value_tag) == "function_returning_function_value_tag");
   static_assert(NAMEOF_MEMBER(&pointer_functions::TaggedMembers::method) == "method");
@@ -2224,6 +2453,12 @@ TEST_CASE("NAMEOF_POINTER") {
   auto pointer_view = std::string_view{};
   pointer_view = NAMEOF_POINTER(&someglobalconstvariable);
   require_string_view_uses_cstring_storage(pointer_view, nameof::detail::pointer_name_v<&someglobalconstvariable>, "someglobalconstvariable");
+}
+
+unsigned long long operator""_test_literal(unsigned long long value) { return value; }
+
+TEST_CASE("nameof_pointer operators") {
+  REQUIRE(nameof::nameof_pointer<&operator""_test_literal>().empty());
 }
 
 TEST_CASE("nameof_pointer") {

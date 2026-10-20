@@ -172,12 +172,19 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_G
     target_compile_options(test-standalone-wconversion-cpp17 PRIVATE -Wconversion)
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Also implied by -fsanitize=undefined: GCC then rejects `&T::method == nullptr` in constant expressions.
+    make_test(test_standalone.cpp test-standalone-no-delete-null-pointer-checks-cpp17 17)
+    target_compile_options(test-standalone-no-delete-null-pointer-checks-cpp17 PRIVATE -fno-delete-null-pointer-checks)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     foreach(convention IN ITEMS Gv Gr Gz)
         check_cxx_compiler_flag("/${convention}" NAMEOF_HAS_${convention})
         if(NAMEOF_HAS_${convention})
-            make_test(test_standalone.cpp test-standalone-${convention}-cpp17 17)
-            target_compile_options(test-standalone-${convention}-cpp17 PRIVATE /${convention})
+            # C++20 enables NAMEOF_MEMBER and NAMEOF_POINTER on MSVC, whose function names carry the convention.
+            make_test(test_standalone.cpp test-standalone-${convention}-cpp20 20)
+            target_compile_options(test-standalone-${convention}-cpp20 PRIVATE /${convention})
         endif()
     endforeach()
 endif()
@@ -190,6 +197,8 @@ make_compile_fail_test(range-min-not-int 5 "narrow")
 make_compile_fail_test(range-unsigned-not-int 6 "narrow")
 make_compile_fail_test(range-full-int 7 "nameof::customize::enum_range must contain fewer than UINT16_MAX values" UNEXPECTED_TEXT "names_v")
 make_compile_fail_test(name-too-long 8 "nameof::cstring supports names of at most UINT16_MAX characters")
+make_compile_fail_test(unnamed-struct-short-name 9 "Type does not have a short name.")
+make_compile_fail_test(unnamed-enum-short-name 10 "Type does not have a short name.")
 
 foreach(std IN ITEMS 20 23 26)
     if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)

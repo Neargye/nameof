@@ -44,6 +44,26 @@ static_assert(nameof::nameof_enum(unfixed_second) == "unfixed_second");
 static_assert(nameof::nameof_enum(static_cast<UnfixedEnum>(3)).empty());
 #endif
 
+struct StandaloneMembers {
+  int field;
+  void method() {}
+};
+
+void standalone_function() {}
+
+// With GCC -fno-delete-null-pointer-checks, `&T::method == nullptr` is not a constant expression.
+#if defined(NAMEOF_MEMBER_SUPPORTED)
+static_assert(NAMEOF_MEMBER(&StandaloneMembers::field) == "field");
+static_assert(NAMEOF_MEMBER(&StandaloneMembers::method) == "method");
+static_assert(NAMEOF_MEMBER(static_cast<int StandaloneMembers::*>(nullptr)) == "nullptr");
+static_assert(NAMEOF_MEMBER(static_cast<void (StandaloneMembers::*)()>(nullptr)) == "nullptr");
+#endif
+
+#if defined(NAMEOF_POINTER_SUPPORTED)
+static_assert(NAMEOF_POINTER(&standalone_function) == "standalone_function");
+static_assert(NAMEOF_POINTER(static_cast<void (*)()>(nullptr)) == "nullptr");
+#endif
+
 #if defined(NAMEOF_TYPE_SUPPORTED)
 static_assert(NAMEOF_TYPE(int) == "int");
 static_assert(NAMEOF_FULL_TYPE(int) == "int");

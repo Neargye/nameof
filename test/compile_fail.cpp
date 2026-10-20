@@ -95,6 +95,24 @@ constexpr auto& too_long_type_name = nameof::nameof_type<TooLongName>();
 
 int main() {}
 
+#elif NAMEOF_COMPILE_FAIL_CASE == 9
+
+struct {
+  int value;
+} unnamed_struct_object;
+
+constexpr auto& unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_struct_object)>();
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 10
+
+enum { unnamed_enum_value };
+
+constexpr auto& unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_enum_value)>();
+
+int main() {}
+
 #else
 
 #  error Unknown NAMEOF_COMPILE_FAIL_CASE.

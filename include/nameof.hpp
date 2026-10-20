@@ -378,72 +378,169 @@ constexpr bool is_name_char(char c) noexcept {
   return is_name_start(c) || (c >= '0' && c <= '9');
 }
 
+// Find the opening quote of the literal whose closing quote is at end, or npos.
+constexpr std::size_t find_literal_begin(string_view name, std::size_t end) noexcept {
+  for (std::size_t i = end; i > 0; --i) {
+    if (name[i - 1] != name[end]) {
+      continue;
+    }
+    // A quote preceded by an odd number of backslashes is escaped.
+    std::size_t escapes_begin = i - 1;
+    while (escapes_begin > 0 && name[escapes_begin - 1] == '\\') {
+      --escapes_begin;
+    }
+    if ((i - 1 - escapes_begin) % 2 == 0) {
+      return i - 1;
+    }
+    i = escapes_begin + 1;
+  }
+  return std::string_view::npos;
+}
+
+// Find the start of trailing groups and preceding spaces, or npos if unbalanced: " (a)(b)" in "f<int> (a)(b)" for '(' and ')'.
+// One backward pass: suffix_depth counts open/close groups, nested_depth counts other brackets inside them.
+constexpr std::size_t find_suffix_begin(string_view name, char open, char close) noexcept {
+  for (std::size_t i = name.size(), suffix_depth = 0, nested_depth = 0; i > 0; --i) {
+    const auto c = name[i - 1];
+    // Inside a suffix group only brackets and quotes matter.
+    if (suffix_depth > 0 && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '<' && c != '>' && c != '`' && c != '\'' && c != '"') {
+      continue;
+    }
+    const auto next = i < name.size() ? name[i] : '\0';
+    // MSVC quotes scopes as in `anonymous namespace'::name.
+    const auto closes_scope = c == '\'' && next == ':' && i + 1 < name.size() && name[i + 1] == ':';
+    // Ignore digit separators such as 1'000 and 0xFF'FF.
+    const auto closes_literal = c == '"' || (c == '\'' && (next == '_' || !is_name_char(next)));
+    if (suffix_depth > 0 && c != close && (c == ')' || c == ']' || c == '}' || closes_scope)) {
+      ++nested_depth;
+    } else if (suffix_depth > 0 && closes_literal) {
+      // Skip the whole literal, so brackets and quotes inside it are ignored.
+      const auto literal_begin = find_literal_begin(name, i - 1);
+      if (literal_begin == std::string_view::npos) {
+        return std::string_view::npos;
+      }
+      i = literal_begin + 1;
+    } else if (suffix_depth > 0 && c != open && (c == '(' || c == '[' || c == '{' || c == '`')) {
+      // An opening bracket without a matching closing one is unbalanced.
+      if (nested_depth == 0) {
+        return std::string_view::npos;
+      }
+      --nested_depth;
+    } else if (nested_depth > 0) {
+      continue;
+    } else if (c == close && !(c == '>' && i > 1 && name[i - 2] == '-')) { // "->" is not a bracket.
+      ++suffix_depth;
+    } else if (c == open) {
+      if (suffix_depth == 0) {
+        return std::string_view::npos;
+      }
+      --suffix_depth;
+    } else if (suffix_depth == 0) {
+      // The first character outside the groups ends the name.
+      while (i > 0 && name[i - 1] == ' ') {
+        --i;
+      }
+      return i;
+    }
+  }
+  // Only groups, no name before them.
+  return 0;
+}
+
+// The last identifier of an expression or a qualified name: "ns::S<int>::f<int>(x)" -> "f", or "f<int>" without remove_suffix.
+// Empty for literals, numbers and other expressions without a name.
 constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
-  if (name.size() >= 1 && (name[0] == '"' || name[0] == '\'')) {
-    return {}; // Narrow multibyte string literal.
-  } else if (name.size() >= 2 && (name[0] == 'R' || name[0] == 'L' || name[0] == 'U' || name[0] == 'u') && (name[1] == '"' || name[1] == '\'')) {
-    return {}; // Raw, wide or Unicode literal.
-  } else if (name.size() >= 3 && name[0] == 'u' && name[1] == '8' && (name[2] == '"' || name[2] == '\'')) {
-    return {}; // UTF-8 encoded string literal.
-  } else if (name.size() >= 1 && (name[0] >= '0' && name[0] <= '9')) {
-    return {}; // Invalid name.
+  std::size_t prefix_end = 0;
+  while (prefix_end < name.size() && is_name_char(name[prefix_end])) {
+    ++prefix_end;
   }
-
-  for (std::size_t i{name.size()}, depth{0}; i > 0; --i) {
-    if (name[i - 1] == ')') {
-      ++depth;
-    } else if (name[i - 1] == '(') {
-      if (depth == 0) {
-        return {};
-      }
-      --depth;
-    } else if (depth == 0) {
-      name.remove_suffix(name.size() - i);
-      break;
-    }
+  if (prefix_end < name.size() && (name[prefix_end] == '"' || name[prefix_end] == '\'')) {
+    return {}; // Literal, possibly with an encoding or raw prefix.
+  } else if (!name.empty() && name[0] >= '0' && name[0] <= '9') {
+    return {};
   }
-
-  while (!name.empty() && name[name.size() - 1] == ' ') {
-    name.remove_suffix(1);
-  }
-
-  auto suffix_begin{name.size()};
-  for (std::size_t depth{0}; suffix_begin > 0; --suffix_begin) {
-    if (name[suffix_begin - 1] == '>') {
-      ++depth;
-    } else if (name[suffix_begin - 1] == '<') {
-      if (depth == 0) {
-        return {};
-      }
-      --depth;
-    } else if (depth == 0) {
-      break;
-    }
-  }
-
-  while (suffix_begin > 0 && name[suffix_begin - 1] == ' ') {
-    --suffix_begin;
-  }
-
-  const auto suffix_size{name.size() - suffix_begin};
-  for (std::size_t i{suffix_begin}; i > 0; --i) {
-    if (!is_name_char(name[i - 1])) {
-      name.remove_prefix(i);
-      break;
-    }
-  }
-  if (remove_suffix) {
-    name.remove_suffix(suffix_size);
-  }
-
-  if (!name.empty() && is_name_start(name[0])) {
+  // Fast path for a plain identifier.
+  if (prefix_end != 0 && prefix_end == name.size()) {
     return name;
   }
 
-  return {}; // Invalid name.
+  // Drop trailing call arguments, then template arguments.
+  const auto name_end = find_suffix_begin(name, '(', ')');
+  if (name_end == std::string_view::npos) {
+    return {};
+  }
+
+  const auto suffix_begin = find_suffix_begin({name.data(), name_end}, '<', '>');
+  if (suffix_begin == std::string_view::npos) {
+    return {};
+  }
+
+  // The name is the identifier right before the suffix, so qualifiers and object expressions are dropped.
+  std::size_t name_begin = suffix_begin;
+  while (name_begin > 0 && is_name_char(name[name_begin - 1])) {
+    --name_begin;
+  }
+
+  const auto name_size = (remove_suffix ? suffix_begin : name_end) - name_begin;
+  if (name_size > 0 && is_name_start(name[name_begin])) {
+    return {name.data() + name_begin, name_size};
+  }
+
+  return {};
+}
+
+constexpr bool is_operator_keyword(string_view str, std::size_t i) noexcept {
+  return i + 8 <= str.size() && str[i] == 'o' &&
+         string_view{str.data() + i, 8}.compare("operator") == 0 &&
+         (i == 0 || !is_name_char(str[i - 1])) &&
+         (i + 8 == str.size() || !is_name_char(str[i + 8]));
+}
+
+// Operators have no name, but pretty_name yields "operator" for "S::operator()", "__conv_op" for GCC conversion operators
+// and the token after the keyword for "S::operator new", Clang "S::operator int" and "operator\"\"_x".
+constexpr string_view pretty_member_name(string_view signature) noexcept {
+  const auto name = pretty_name(signature);
+  if (name.empty() || name.compare("operator") == 0 || name.compare("__conv_op") == 0) {
+    return {};
+  }
+  // Look for the keyword left of the name. Enclosing templates and function scopes stop at '>' or ')'.
+  for (auto i = static_cast<std::size_t>(name.data() - signature.data()); i > 0; --i) {
+    const auto c = signature[i - 1];
+    if (!is_name_char(c) && c != ':' && c != ' ' && c != '"') {
+      break;
+    }
+    if (is_operator_keyword(signature, i - 1)) {
+      return {};
+    }
+  }
+  return name;
 }
 
 #if defined(_MSC_VER) && !defined(__clang__)
+constexpr std::size_t skip_template_arguments(string_view signature, std::size_t i) noexcept {
+  if (i >= signature.size() || signature[i] != '<') {
+    return i;
+  }
+  std::size_t depth = 0;
+  do {
+    const auto c = signature[i];
+    // Operator names inside template arguments are not supported.
+    if (is_operator_keyword(signature, i)) {
+      return std::string_view::npos;
+    }
+    if (c == '<') {
+      ++depth;
+    } else if (c == '>') {
+      --depth;
+    }
+    ++i;
+  } while (i < signature.size() && depth > 0);
+
+  return depth == 0 ? i : std::string_view::npos;
+}
+
+// MSVC spells function pointers as declarations: p<&void __cdecl f(void)>, p<void __cdecl ns::g<int>(void)>.
+// The name is the first identifier after ' ' or "::" that is followed by its parameters, possibly after template arguments.
 constexpr string_view pretty_function_name(string_view signature) noexcept {
   std::size_t template_begin = 0;
   for (; template_begin < signature.size() && signature[template_begin] != '<'; ++template_begin) {}
@@ -459,32 +556,21 @@ constexpr string_view pretty_function_name(string_view signature) noexcept {
     if (!is_name_start(signature[name_begin])) {
       continue;
     }
-    auto name_end = name_begin + 1;
+
+    std::size_t name_end = name_begin + 1;
     while (name_end < signature.size() && is_name_char(signature[name_end])) {
       ++name_end;
     }
+
     const auto name = string_view{signature.data() + name_begin, name_end - name_begin};
     if (name.compare("operator") == 0) {
       return {};
     }
 
-    auto parameter_begin = name_end;
-    if (parameter_begin < signature.size() && signature[parameter_begin] == '<') {
-      std::size_t depth = 0;
-      do {
-        if (signature[parameter_begin] == '<') {
-          ++depth;
-        } else if (signature[parameter_begin] == '>') {
-          --depth;
-        }
-        ++parameter_begin;
-      } while (parameter_begin < signature.size() && depth > 0);
-
-      if (depth > 0) {
-        return {};
-      }
+    const auto parameter_begin = skip_template_arguments(signature, name_end);
+    if (parameter_begin == std::string_view::npos) {
+      return {};
     }
-
     if (parameter_begin < signature.size() && signature[parameter_begin] == '(') {
       return name;
     }
@@ -926,9 +1012,15 @@ template <typename T>
 struct identity {
   using type = T;
 };
+
+template <typename T>
+using remove_identity_t = typename T::type;
 #else
 template <typename T>
 using identity = T;
+
+template <typename T>
+using remove_identity_t = T;
 #endif
 
 template <typename T, typename R, typename U = remove_cvref_t<T>>
@@ -937,15 +1029,23 @@ using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<U> && !std:
 template <typename... T>
 constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
   if constexpr (is_nameof_type_supported) {
+    constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
 #if defined(__clang__)
-    constexpr string_view name{__PRETTY_FUNCTION__ + 31, sizeof(__PRETTY_FUNCTION__) - 34};
+    constexpr auto prefix = sizeof("auto nameof::detail::n() [T = <") - 1;
+    constexpr auto suffix = sizeof(">") - 1;
 #elif defined(__GNUC__)
-    constexpr string_view name{__PRETTY_FUNCTION__ + 46, sizeof(__PRETTY_FUNCTION__) - 49};
+    constexpr auto prefix = sizeof("constexpr auto nameof::detail::n() [with T = {") - 1;
+    constexpr auto suffix = sizeof("}") - 1;
 #elif defined(_MSC_VER)
-    constexpr string_view name{__FUNCSIG__ + 63, sizeof(__FUNCSIG__) - 81 - (__FUNCSIG__[sizeof(__FUNCSIG__) - 19] == ' ' ? 1 : 0)};
+    constexpr auto prefix = sizeof("auto __cdecl nameof::detail::n<struct nameof::detail::identity<") - 1;
+    // MSVC puts a space before the closing '>' of a nested template.
+    constexpr auto suffix = signature[signature.size() - 2] == ' ' ? sizeof(" >") - 1 : sizeof(">") - 1;
 #else
-    constexpr auto name = string_view{""};
+    constexpr std::size_t prefix = 0;
+    constexpr std::size_t suffix = 0;
 #endif
+    static_assert(signature.size() >= prefix + suffix, "nameof::detail::n requires a valid signature.");
+    constexpr auto name = string_view{signature.data() + prefix, signature.size() - prefix - suffix};
     return to_cstring<name.size()>(name);
   } else {
     return cstring<0>{};
@@ -954,11 +1054,7 @@ constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
 
 template <typename... T>
 constexpr auto type_name() noexcept {
-#if defined(_MSC_VER) && !defined(__clang__)
-  constexpr auto custom_name = customize::type_name<typename T::type...>();
-#else
-  constexpr auto custom_name = customize::type_name<T...>();
-#endif
+  constexpr auto custom_name = customize::type_name<remove_identity_t<T>...>();
   if constexpr (custom_name.empty()) {
     return n<T...>();
   } else {
@@ -969,27 +1065,29 @@ constexpr auto type_name() noexcept {
 template <typename... T>
 inline constexpr auto type_name_v = type_name<T...>();
 
-template <typename T>
-constexpr string_view pretty_type_name(string_view name) noexcept {
-  using U = remove_cvref_t<T>;
-  if constexpr (std::is_arithmetic_v<U>) {
-    return name;
-  } else if constexpr (std::is_null_pointer_v<U>) {
+// Not a template, so short type names do not instantiate type traits per type.
+constexpr string_view pretty_type_name(string_view name, bool is_qualified, bool is_null_pointer) noexcept {
+  if (is_null_pointer) {
     return "nullptr_t";
-  } else {
-    return pretty_name(name);
+  } else if (!is_qualified) {
+    return name;
   }
+  name = pretty_name(name);
+#if defined(_MSC_VER)
+  // MSVC spells unnamed types as "struct <unnamed-type-x>", which leaves only the class-key.
+  if (name.size() <= 6 && (name.compare("struct") == 0 || name.compare("class") == 0 || name.compare("union") == 0 || name.compare("enum") == 0)) {
+    return {};
+  }
+#endif
+  return name;
 }
 
 template <typename T>
 constexpr auto short_type_name() noexcept {
-#if defined(_MSC_VER) && !defined(__clang__)
-  using U = typename T::type;
-#else
-  using U = T;
-#endif
+  using U = remove_identity_t<T>;
   constexpr auto custom_name = customize::type_name<U>();
-  constexpr auto name = custom_name.empty() ? pretty_type_name<U>(type_name_v<T>) : pretty_name(custom_name);
+  constexpr auto name = custom_name.empty() ? pretty_type_name(type_name_v<T>, std::is_class_v<U> || std::is_union_v<U> || std::is_enum_v<U>, std::is_null_pointer_v<U>)
+                                            : pretty_name(custom_name);
   static_assert(!name.empty(), "Type does not have a short name.");
   return to_cstring<name.size()>(name);
 }
@@ -998,15 +1096,15 @@ template <typename T>
 inline constexpr auto short_type_name_v = short_type_name<T>();
 
 template <typename T>
-string full_type_name(string name) {
+string qualified_type_name(string name) {
   using U = std::remove_reference_t<T>;
   if constexpr (std::is_const_v<U> || std::is_volatile_v<U>) {
     string qualified_name;
-    if constexpr (std::is_volatile_v<U>) {
-      qualified_name.append("volatile ", 9);
-    }
     if constexpr (std::is_const_v<U>) {
       qualified_name.append("const ", 6);
+    }
+    if constexpr (std::is_volatile_v<U>) {
+      qualified_name.append("volatile ", 9);
     }
     qualified_name.append(name);
     name = std::move(qualified_name);
@@ -1027,91 +1125,102 @@ struct free_deleter {
 };
 
 using demangle_ptr = std::unique_ptr<char, free_deleter>;
+#endif
 
 struct demangled_name {
-  demangle_ptr p;
-  string_view v;
-
-  [[nodiscard]] string_view view() const noexcept { return v; }
+  string_view name;
+#if __has_include(<cxxabi.h>)
+  demangle_ptr buffer;
+#endif
 };
 
 inline demangled_name demangle(const char* tn) {
   assert(tn != nullptr);
-  if (tn == nullptr) {
-    return {demangle_ptr{}, string_view{""}};
+#if __has_include(<cxxabi.h>)
+  int status = 0;
+  demangle_ptr buffer{tn != nullptr ? abi::__cxa_demangle(tn, nullptr, nullptr, &status) : nullptr};
+  if (status == 0 && buffer) {
+    // Inlining this into the return triggers a false Clang -Wreturn-stack-address.
+    const auto name = string_view{buffer.get()};
+    return {name, std::move(buffer)};
   }
-  int status{0};
-  demangle_ptr p{abi::__cxa_demangle(tn, nullptr, nullptr, &status)};
-  if (status != 0) {
-    p.reset();
-  }
-  const auto v = p ? string_view{p.get()} : string_view{tn};
-  return {std::move(p), v};
-}
+  return {string_view{tn != nullptr ? tn : ""}, nullptr};
+#else
+  return {string_view{tn != nullptr ? tn : ""}};
 #endif
+}
 
 template <typename T>
-string nameof_type_rtti(const char* tn) {
+[[nodiscard]] string nameof_type_rtti(const char* tn) {
   static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-#if __has_include(<cxxabi.h>)
-  const auto full_name = demangle(tn);
-  const auto name = full_name.view();
-#else
-  const auto name = string_view{tn != nullptr ? tn : ""};
-#endif
-  assert(!name.empty() && "Type does not have a name.");
-  return {name.data(), name.size()};
+  const auto demangled = demangle(tn);
+  assert(!demangled.name.empty() && "Type does not have a name.");
+  return {demangled.name.data(), demangled.name.size()};
 }
 
 template <typename T, enable_if_has_short_name_t<T, int> = 0>
-string nameof_short_type_rtti(const char* tn) {
+[[nodiscard]] string nameof_short_type_rtti(const char* tn) {
   static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-#if __has_include(<cxxabi.h>)
-  const auto full_name = demangle(tn);
-  const auto name = pretty_type_name<T>(full_name.view());
-#else
-  const auto name = pretty_type_name<T>(tn != nullptr ? tn : "");
-#endif
+  using U = remove_cvref_t<T>;
+  const auto demangled = demangle(tn);
+  // The dynamic type of a polymorphic object is a class, so only static arithmetic types keep the whole name.
+  const auto name = pretty_type_name(demangled.name, !std::is_arithmetic_v<U>, std::is_null_pointer_v<U>);
   assert(!name.empty() && "Type does not have a short name.");
   return {name.data(), name.size()};
 }
 
 template <typename T>
-string nameof_full_type_rtti([[maybe_unused]] const char* tn) {
+[[nodiscard]] string nameof_full_type_rtti([[maybe_unused]] const char* tn) {
   static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_FULL_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = std::remove_reference_t<T>;
   if constexpr ((std::is_pointer_v<U> || std::is_member_pointer_v<U> || std::is_array_v<U> || std::is_function_v<U>) && is_nameof_type_supported) {
     constexpr auto name = n<identity<T>>();
     return name.str();
   } else {
-    return full_type_name<T>(nameof_type_rtti<T>(tn));
+    return qualified_type_name<T>(nameof_type_rtti<T>(tn));
   }
 }
+
+// Weak symbols and GCC -fno-delete-null-pointer-checks can prevent constexpr pointer comparisons.
+template <auto P, typename T = std::decay_t<decltype(P)>>
+inline constexpr bool is_nullptr_v = std::is_same_v<std::integral_constant<T, P>, std::integral_constant<T, static_cast<T>(nullptr)>>;
 
 template <auto V, auto U = V>
 constexpr auto n() noexcept {
-  [[maybe_unused]] constexpr auto custom_name = customize::member_name<V>();
-
-  if constexpr (custom_name.empty() && is_nameof_member_supported) {
+  constexpr auto custom_name = customize::member_name<V>();
+  if constexpr (!custom_name.empty()) {
+    return to_cstring<custom_name.size()>(custom_name);
+  } else if constexpr (is_nameof_member_supported) {
 #if defined(__clang__) || defined(__GNUC__)
-    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+    constexpr auto name = pretty_member_name(NAMEOF_DETAIL_SIGNATURE);
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-    constexpr auto name = std::is_member_function_pointer_v<decltype(U)>
-                            ? pretty_function_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 1})
-                            : pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 18});
+    constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
+    // In the MSVC < 19.44 fallback, U is Store{...} and the name ends before its '}'.
+    constexpr auto suffix = std::is_same_v<decltype(V), decltype(U)> ? 0 : sizeof("}") - 1;
+    // MSVC null member pointers can parse as names.
+    constexpr auto name = V == nullptr ? string_view{"nullptr"}
+                        : std::is_member_function_pointer_v<decltype(U)> ? pretty_function_name(signature)
+                        : pretty_name({signature.data(), signature.size() - suffix});
 #else
     constexpr auto name = string_view{""};
 #endif
-    return to_cstring<name.size()>(name);
+    if constexpr (!name.empty()) {
+      return to_cstring<name.size()>(name);
+    } else if constexpr (is_nullptr_v<V>) {
+      return cstring<sizeof("nullptr") - 1>{"nullptr"};
+    } else {
+      return cstring<0>{};
+    }
   } else {
-    return to_cstring<custom_name.size()>(custom_name);
+    return cstring<0>{};
   }
 }
 
-#if defined(__clang__) || defined(__GNUC__)
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) && _MSC_VER >= 1944
 template <auto V>
 inline constexpr auto member_name_v = n<V>();
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+// MSVC < 19.44 requires a fake object to name data members.
 template <typename From, typename Type>
 From get_base_type(Type From::*);
 
@@ -1148,37 +1257,32 @@ template <auto V>
 inline constexpr auto member_name_v = cstring<0>{};
 #endif
 
-template <auto U, auto V>
-struct is_same : std::false_type {};
-
-template <auto U>
-struct is_same<U, U> : std::true_type {};
-
-template <auto P>
-inline constexpr bool is_nullptr_v = is_same<P, static_cast<std::remove_reference_t<decltype(P)>>(nullptr)>::value;
-
 template <auto V>
 constexpr auto p() noexcept {
   constexpr auto custom_name = customize::pointer_name<V>();
-
   if constexpr (!custom_name.empty()) {
     return to_cstring<custom_name.size()>(custom_name);
-  } else if constexpr (is_nullptr_v<V>) {
-    return cstring<sizeof("nullptr") - 1>{"nullptr"};
   } else if constexpr (is_nameof_pointer_supported) {
 #if defined(__clang__)
-    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
+    constexpr auto name = pretty_member_name(NAMEOF_DETAIL_SIGNATURE);
 #elif defined(__GNUC__)
-    constexpr bool has_parenthesis = __PRETTY_FUNCTION__[sizeof(__PRETTY_FUNCTION__) - 3] == ')';
-    constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2 - has_parenthesis});
+    constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
+    // GCC spells pointers to variables as "(& name)".
+    constexpr auto suffix = signature[signature.size() - 1] == ')' ? sizeof(")") - 1 : 0;
+    constexpr auto name = pretty_member_name({signature.data(), signature.size() - suffix});
 #elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-    constexpr auto name = std::is_function_v<std::remove_pointer_t<decltype(V)>>
-                            ? pretty_function_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 1})
-                            : pretty_name({__FUNCSIG__, sizeof(__FUNCSIG__) - 17});
+    constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
+    constexpr auto name = std::is_function_v<std::remove_pointer_t<decltype(V)>> ? pretty_function_name(signature) : pretty_name(signature);
 #else
     constexpr auto name = string_view{""};
 #endif
-    return to_cstring<name.size()>(name);
+    if constexpr (!name.empty()) {
+      return to_cstring<name.size()>(name);
+    } else if constexpr (is_nullptr_v<V>) {
+      return cstring<sizeof("nullptr") - 1>{"nullptr"};
+    } else {
+      return cstring<0>{};
+    }
   } else {
     return cstring<0>{};
   }
@@ -1285,7 +1389,7 @@ template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> =
 }
 
 // Obtains name of a function, a global or class static variable.
-template <auto V, std::enable_if_t<std::is_pointer_v<decltype(V)>, int> = 0>
+template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>, int> = 0>
 [[nodiscard]] constexpr const auto& nameof_pointer() noexcept {
   static_assert(detail::supported_v<is_nameof_pointer_supported, decltype(V)>, "nameof::nameof_pointer is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::pointer_name_v<V>;

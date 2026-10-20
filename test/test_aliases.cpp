@@ -10,14 +10,16 @@
 
 #include <doctest/doctest.h>
 
+// Aliases are expected to have the std::string and std::string_view interfaces.
+// These types define only the members nameof uses, so a new requirement shows up here.
 struct MyString {
-  MyString() : str{} {} // required
-  MyString(const char* s) : str{s} {} // required
-  MyString(const char* s, std::size_t l) : str{s, l} {} // required
-  bool empty() const { return str.empty(); } // required
-  MyString& append(std::size_t count, char c) { str.append(count, c); return *this; } // required
-  MyString& append(const char* s, std::size_t count) { str.append(s, count); return *this; } // required
-  MyString& append(const MyString& s) { str.append(s.str); return *this; } // required
+  MyString() : str{} {}
+  MyString(const char* s) : str{s} {}
+  MyString(const char* s, std::size_t l) : str{s, l} {}
+  bool empty() const { return str.empty(); }
+  MyString& append(std::size_t count, char c) { str.append(count, c); return *this; }
+  MyString& append(const char* s, std::size_t count) { str.append(s, count); return *this; }
+  MyString& append(const MyString& s) { str.append(s.str); return *this; }
 
   std::size_t size() const { return str.size(); }
   int compare(const char* s) const { return str.compare(s); }
@@ -27,28 +29,21 @@ struct MyString {
 };
 
 struct MyStringView {
-  using value_type = char; // required
-  static constexpr auto npos = std::string_view::npos; // required
-
-  constexpr MyStringView() noexcept : str{} {} // required
-  constexpr MyStringView(const char* s) noexcept : str{s} {} // required
-  constexpr MyStringView(const char* s, std::size_t size) noexcept : str{s, size} {} // required
+  constexpr MyStringView() noexcept : str{} {}
+  constexpr MyStringView(const char* s) noexcept : str{s} {}
+  constexpr MyStringView(const char* s, std::size_t size) noexcept : str{s, size} {}
   constexpr MyStringView(const MyStringView&) noexcept = default;
-  constexpr MyStringView& operator=(const MyStringView&) = delete;
-  constexpr bool empty() const noexcept { return str.empty(); } // required
-  constexpr std::size_t size() const noexcept { return str.size(); } // required
-  constexpr const char* data() const noexcept { return str.data(); } // required
-  constexpr const char& operator[](std::size_t i) const noexcept { return str[i]; } // required
-  constexpr void remove_prefix(std::size_t n) noexcept { str.remove_prefix(n); } // required
-  constexpr void remove_suffix(std::size_t n) noexcept { str.remove_suffix(n); } // required
-  constexpr int compare(MyStringView s) const noexcept { return str.compare(s.str); } // required
+  constexpr MyStringView& operator=(const MyStringView&) noexcept = default;
+  constexpr bool empty() const noexcept { return str.empty(); }
+  constexpr std::size_t size() const noexcept { return str.size(); }
+  constexpr const char* data() const noexcept { return str.data(); }
+  constexpr const char& operator[](std::size_t i) const noexcept { return str[i]; }
+  constexpr int compare(MyStringView s) const noexcept { return str.compare(s.str); }
 
   constexpr int compare(const char* s) const noexcept { return str.compare(s); }
 
  private:
   std::string_view str;
-
-  constexpr MyStringView(std::string_view s) noexcept : str{s} {}
 };
 
 #define NAMEOF_USING_ALIAS_STRING using string = MyString;
@@ -59,8 +54,7 @@ struct MyStringView {
 enum class Color { RED = 1, GREEN = 2, BLUE = 4 };
 
 static_assert(std::is_copy_constructible_v<MyStringView>);
-static_assert(!std::is_copy_assignable_v<MyStringView>);
-static_assert(!std::is_move_assignable_v<MyStringView>);
+static_assert(std::is_nothrow_copy_assignable_v<MyStringView>);
 static_assert(noexcept(nameof::nameof_enum(Color::RED)));
 static_assert(!noexcept(nameof::nameof_enum_flag(Color::RED)));
 
@@ -89,8 +83,8 @@ TEST_CASE("string") {
   REQUIRE(cn.empty());
   REQUIRE(cn.size() == 0);
 
-  auto qualified_name = nameof::detail::full_type_name<const volatile int&&>(nameof::string{"int"});
-  REQUIRE(qualified_name.compare("volatile const int&&") == 0);
+  auto qualified_name = nameof::detail::qualified_type_name<const volatile int&&>(nameof::string{"int"});
+  REQUIRE(qualified_name.compare("const volatile int&&") == 0);
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   void (* const callback)() = nullptr;
   const auto pointer_name = NAMEOF_FULL_TYPE_RTTI(callback);
@@ -147,6 +141,7 @@ TEST_CASE("short type names") {
   constexpr nameof::string_view null_name = NAMEOF_SHORT_TYPE(std::nullptr_t);
   static_assert(arithmetic_name.compare("unsigned int") == 0);
   static_assert(null_name.compare("nullptr_t") == 0);
+  static_assert(NAMEOF_SHORT_TYPE(AliasStruct).compare("AliasStruct") == 0);
 #endif
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   const unsigned int value = 0;
