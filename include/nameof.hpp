@@ -249,7 +249,8 @@ class [[nodiscard]] cstring {
 
   constexpr explicit cstring(string_view str) noexcept : cstring{check_size(str), std::make_integer_sequence<std::uint16_t, N>{}} {}
 
-  constexpr cstring() = delete;
+  template <bool Empty = (N == 0), std::enable_if_t<Empty, int> = 0>
+  constexpr cstring() noexcept : chars_{} {}
 
   constexpr cstring(const cstring&) = default;
 
@@ -285,11 +286,11 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
 
-  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[N - 1]; }
+  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[N == 0 ? 0 : N - 1]; }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return size(); }
 
-  [[nodiscard]] constexpr bool empty() const noexcept { return false; }
+  [[nodiscard]] constexpr bool empty() const noexcept { return N == 0; }
 
   [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{data(), size()}.compare(str); }
 
@@ -299,193 +300,52 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr operator string_view() const& noexcept { return {data(), size()}; }
 
-  [[nodiscard]] constexpr operator string_view() const&& noexcept = delete;
+  // A view of a temporary such as NAMEOF(x) would dangle.
+  constexpr operator string_view() const&& noexcept = delete;
 
   [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return data(); }
 
   [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
+  // Without the cstring<M> overloads, comparing two cstrings is ambiguous between the string_view ones.
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator==(const cstring& lhs, const cstring<M>& rhs) noexcept { return N == M && lhs.compare(rhs) == 0; }
+  [[nodiscard]] friend constexpr bool operator==(const cstring& lhs, string_view rhs) noexcept { return lhs.size() == rhs.size() && lhs.compare(rhs) == 0; }
+  [[nodiscard]] friend constexpr bool operator==(string_view lhs, const cstring& rhs) noexcept { return lhs.size() == rhs.size() && lhs.compare(rhs) == 0; }
+
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator!=(const cstring& lhs, const cstring<M>& rhs) noexcept { return N != M || lhs.compare(rhs) != 0; }
+  [[nodiscard]] friend constexpr bool operator!=(const cstring& lhs, string_view rhs) noexcept { return lhs.size() != rhs.size() || lhs.compare(rhs) != 0; }
+  [[nodiscard]] friend constexpr bool operator!=(string_view lhs, const cstring& rhs) noexcept { return lhs.size() != rhs.size() || lhs.compare(rhs) != 0; }
+
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator<(const cstring& lhs, const cstring<M>& rhs) noexcept { return lhs.compare(rhs) < 0; }
+  [[nodiscard]] friend constexpr bool operator<(const cstring& lhs, string_view rhs) noexcept { return lhs.compare(rhs) < 0; }
+  [[nodiscard]] friend constexpr bool operator<(string_view lhs, const cstring& rhs) noexcept { return lhs.compare(rhs) < 0; }
+
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator<=(const cstring& lhs, const cstring<M>& rhs) noexcept { return lhs.compare(rhs) <= 0; }
+  [[nodiscard]] friend constexpr bool operator<=(const cstring& lhs, string_view rhs) noexcept { return lhs.compare(rhs) <= 0; }
+  [[nodiscard]] friend constexpr bool operator<=(string_view lhs, const cstring& rhs) noexcept { return lhs.compare(rhs) <= 0; }
+
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator>(const cstring& lhs, const cstring<M>& rhs) noexcept { return lhs.compare(rhs) > 0; }
+  [[nodiscard]] friend constexpr bool operator>(const cstring& lhs, string_view rhs) noexcept { return lhs.compare(rhs) > 0; }
+  [[nodiscard]] friend constexpr bool operator>(string_view lhs, const cstring& rhs) noexcept { return lhs.compare(rhs) > 0; }
+
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator>=(const cstring& lhs, const cstring<M>& rhs) noexcept { return lhs.compare(rhs) >= 0; }
+  [[nodiscard]] friend constexpr bool operator>=(const cstring& lhs, string_view rhs) noexcept { return lhs.compare(rhs) >= 0; }
+  [[nodiscard]] friend constexpr bool operator>=(string_view lhs, const cstring& rhs) noexcept { return lhs.compare(rhs) >= 0; }
+
  private:
   [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return assert(str.size() == N), str; }
 
   template <std::uint16_t... J>
-  constexpr cstring(string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
+  constexpr cstring([[maybe_unused]] string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
 
   char chars_[static_cast<std::size_t>(N) + 1];
 };
-
-template <>
-class [[nodiscard]] cstring<0> {
- public:
-  using value_type      = char;
-  using size_type       = std::size_t;
-  using difference_type = std::ptrdiff_t;
-  using pointer         = const char*;
-  using const_pointer   = const char*;
-  using reference       = const char&;
-  using const_reference = const char&;
-
-  using iterator       = const char*;
-  using const_iterator = const char*;
-
-  using reverse_iterator       = std::reverse_iterator<iterator>;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-  constexpr explicit cstring([[maybe_unused]] string_view str) noexcept { assert(str.empty()); }
-
-  constexpr cstring() = default;
-
-  constexpr cstring(const cstring&) = default;
-
-  constexpr cstring(cstring&&) = default;
-
-  ~cstring() = default;
-
-  cstring& operator=(const cstring&) = default;
-
-  cstring& operator=(cstring&&) = default;
-
-  [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_; }
-
-  [[nodiscard]] constexpr size_type size() const noexcept { return 0; }
-
-  [[nodiscard]] constexpr const_iterator begin() const noexcept { return data(); }
-
-  [[nodiscard]] constexpr const_iterator end() const noexcept { return data() + size(); }
-
-  [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
-
-  [[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
-
-  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
-
-  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
-
-  [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
-
-  [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
-
-  [[nodiscard]] constexpr const_reference operator[](size_type) const noexcept { return chars_[0]; }
-
-  [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
-
-  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[0]; }
-
-  [[nodiscard]] constexpr size_type length() const noexcept { return 0; }
-
-  [[nodiscard]] constexpr bool empty() const noexcept { return true; }
-
-  [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{}.compare(str); }
-
-  [[nodiscard]] constexpr const char* c_str() const noexcept { return chars_; }
-
-  [[nodiscard]] string str() const { return {data(), size()}; }
-
-  [[nodiscard]] constexpr operator string_view() const& noexcept { return {data(), size()}; }
-
-  [[nodiscard]] constexpr operator string_view() const&& noexcept = delete;
-
-  [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return chars_; }
-
-  [[nodiscard]] explicit operator string() const { return {data(), size()}; }
-
- private:
-  static constexpr char chars_[1] = {};
-};
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator==(const cstring<N>& lhs, string_view rhs) noexcept {
-  return lhs.compare(rhs) == 0;
-}
-
-template <std::uint16_t N, std::uint16_t M>
-[[nodiscard]] constexpr bool operator==(const cstring<N>& lhs, const cstring<M>& rhs) noexcept {
-  if constexpr (N != M) {
-    return false;
-  } else {
-    return lhs.compare(string_view{rhs.data(), rhs.size()}) == 0;
-  }
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator==(string_view lhs, const cstring<N>& rhs) noexcept {
-  return lhs.compare(rhs) == 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator!=(const cstring<N>& lhs, string_view rhs) noexcept {
-  return lhs.compare(rhs) != 0;
-}
-
-template <std::uint16_t N, std::uint16_t M>
-[[nodiscard]] constexpr bool operator!=(const cstring<N>& lhs, const cstring<M>& rhs) noexcept {
-  return !(lhs == rhs);
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator!=(string_view lhs, const cstring<N>& rhs) noexcept {
-  return lhs.compare(rhs) != 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator>(const cstring<N>& lhs, string_view rhs) noexcept {
-  return lhs.compare(rhs) > 0;
-}
-
-template <std::uint16_t N, std::uint16_t M>
-[[nodiscard]] constexpr bool operator>(const cstring<N>& lhs, const cstring<M>& rhs) noexcept {
-  return lhs.compare(string_view{rhs.data(), rhs.size()}) > 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator>(string_view lhs, const cstring<N>& rhs) noexcept {
-  return lhs.compare(rhs) > 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator>=(const cstring<N>& lhs, string_view rhs) noexcept {
-  return lhs.compare(rhs) >= 0;
-}
-
-template <std::uint16_t N, std::uint16_t M>
-[[nodiscard]] constexpr bool operator>=(const cstring<N>& lhs, const cstring<M>& rhs) noexcept {
-  return lhs.compare(string_view{rhs.data(), rhs.size()}) >= 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator>=(string_view lhs, const cstring<N>& rhs) noexcept {
-  return lhs.compare(rhs) >= 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator<(const cstring<N>& lhs, string_view rhs) noexcept {
-  return lhs.compare(rhs) < 0;
-}
-
-template <std::uint16_t N, std::uint16_t M>
-[[nodiscard]] constexpr bool operator<(const cstring<N>& lhs, const cstring<M>& rhs) noexcept {
-  return lhs.compare(string_view{rhs.data(), rhs.size()}) < 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator<(string_view lhs, const cstring<N>& rhs) noexcept {
-  return lhs.compare(rhs) < 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator<=(const cstring<N>& lhs, string_view rhs) noexcept {
-  return lhs.compare(rhs) <= 0;
-}
-
-template <std::uint16_t N, std::uint16_t M>
-[[nodiscard]] constexpr bool operator<=(const cstring<N>& lhs, const cstring<M>& rhs) noexcept {
-  return lhs.compare(string_view{rhs.data(), rhs.size()}) <= 0;
-}
-
-template <std::uint16_t N>
-[[nodiscard]] constexpr bool operator<=(string_view lhs, const cstring<N>& rhs) noexcept {
-  return lhs.compare(rhs) <= 0;
-}
 
 template <typename Char, typename Traits, std::uint16_t N>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& str) {

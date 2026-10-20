@@ -265,6 +265,7 @@ TEST_CASE_TEMPLATE("mixed integer comparisons at boundaries", T, bool, char, sig
 constexpr ::nameof::cstring<3> cstring_abc{::nameof::string_view{"abc"}};
 constexpr ::nameof::cstring<3> cstring_abd{::nameof::string_view{"abd"}};
 static_assert(std::is_nothrow_default_constructible_v<::nameof::cstring<0>>);
+static_assert(!std::is_default_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_same_v<::nameof::cstring<0>::value_type, char>);
 static_assert(std::is_same_v<::nameof::cstring<3>::value_type, char>);
 static_assert(std::is_same_v<std::iterator_traits<::nameof::cstring<3>::iterator>::value_type, ::nameof::cstring<3>::value_type>);
@@ -296,6 +297,7 @@ static_assert(count_char(cstring_abc, 'b') == 1);
 static_assert(count_char(::nameof::cstring<0>{}, 'b') == 0);
 static_assert(has_matching_ends(cstring_abc));
 static_assert(has_matching_ends(::nameof::cstring<0>{}));
+static_assert(::nameof::cstring<0>{}.front() == '\0' && ::nameof::cstring<0>{}.back() == '\0');
 
 static_assert(std::is_nothrow_copy_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_move_constructible_v<::nameof::cstring<3>>);
@@ -308,9 +310,58 @@ static_assert(!noexcept(static_cast<::nameof::string>(cstring_abc)));
 static_assert(!(cstring_abc == cstring_abd));
 static_assert(cstring_abc != cstring_abd);
 static_assert(cstring_abc < cstring_abd);
+static_assert(!(cstring_abc < cstring_abc) && !(::nameof::string_view{"abc"} > cstring_abc));
 static_assert(cstring_abc <= cstring_abd);
 static_assert(!(cstring_abc > cstring_abd));
 static_assert(!(cstring_abc >= cstring_abd));
+
+constexpr ::nameof::cstring<4> cstring_abcd{::nameof::string_view{"abcd"}};
+static_assert(cstring_abc != cstring_abcd && cstring_abc < cstring_abcd && cstring_abcd > cstring_abc);
+static_assert(!(cstring_abc == cstring_abcd) && cstring_abc <= cstring_abcd && cstring_abcd >= cstring_abc);
+static_assert(cstring_abc == ::nameof::string_view{"abc"} && ::nameof::string_view{"abc"} == cstring_abc);
+static_assert(cstring_abc < ::nameof::string_view{"abd"} && ::nameof::string_view{"abd"} > cstring_abc);
+static_assert(cstring_abc == "abc" && "abc" == cstring_abc && "abd" != cstring_abc);
+static_assert(::nameof::cstring<0>{} == "" && ::nameof::cstring<0>{} < cstring_abc);
+
+TEST_CASE("cstring comparisons with std::string") {
+  REQUIRE(cstring_abc == std::string{"abc"});
+  REQUIRE(std::string{"abd"} > cstring_abc);
+}
+
+TEST_CASE("cstring equality with different lengths and embedded nulls") {
+  constexpr nameof::cstring<0> empty{};
+  constexpr nameof::cstring<3> value{nameof::string_view{"a\0b", 3}};
+  constexpr nameof::cstring<2> prefix{nameof::string_view{"a\0", 2}};
+  constexpr nameof::cstring<3> other{nameof::string_view{"a\0c", 3}};
+  constexpr nameof::string_view null_view{};
+  static_assert(empty == null_view && null_view == empty);
+  static_assert(!(empty != null_view) && !(null_view != empty));
+  static_assert(value == value && !(value != value));
+  static_assert(value != prefix && prefix != value);
+  static_assert(!(value == prefix) && !(prefix == value));
+  static_assert(value != other && !(value == other));
+  static_assert(value != null_view && null_view != value);
+  static_assert(!(value == null_view) && !(null_view == value));
+
+  std::string text{"a\0bc", 4};
+  for (std::size_t size = 0; size <= text.size(); ++size) {
+    const nameof::string_view view{text.data(), size};
+    const bool equal = size == 3;
+    REQUIRE((value == view) == equal);
+    REQUIRE((view == value) == equal);
+    REQUIRE((value != view) != equal);
+    REQUIRE((view != value) != equal);
+    REQUIRE((empty == view) == (size == 0));
+    REQUIRE((view == empty) == (size == 0));
+  }
+  text[2] = 'c';
+  const nameof::string_view view{text.data(), 3};
+  REQUIRE(value != view);
+  REQUIRE(view != value);
+  REQUIRE_FALSE(value == view);
+  REQUIRE_FALSE(view == value);
+}
+
 static_assert(nameof::detail::pretty_name("(").empty());
 static_assert(nameof::detail::pretty_name("<").empty());
 
