@@ -94,7 +94,8 @@ A header-only C++17 library that provides nameof macros and functions for obtain
   NAMEOF_SHORT_TYPE(T) -> "SomeClass"
   nameof::nameof_short_type<T>() -> "SomeClass"
 
-  my::detail::Base* ptr = new my::detail::Derived();
+  my::detail::Derived derived;
+  my::detail::Base* ptr = &derived;
   // Obtains type name using RTTI.
   NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
   NAMEOF_FULL_TYPE_RTTI(*ptr) -> "my::detail::Derived&"
@@ -151,7 +152,9 @@ nameof requires C++17 or newer and supports:
 
 * Clang/LLVM >= 5
 * GCC >= 9
-* Visual Studio >= 2017
+* Visual Studio >= 2019
+
+Enum APIs automatically use [C++26 standard reflection](doc/limitations.md#c26-standard-reflection) when available.
 
 See the [reference](doc/reference.md#compiler-compatibility) for feature-specific requirements.
 

@@ -23,20 +23,21 @@
 
 * Before use, read the [limitations](limitations.md).
 
-* To check whether nameof_enum is supported by your compiler, use the macro `NAMEOF_ENUM_SUPPORTED` or the constexpr constant `nameof::is_nameof_enum_supported`.<br>
-  If nameof_enum is used on an unsupported compiler, a compilation error occurs. To suppress the check, define the macro `NAMEOF_ENUM_NO_CHECK_SUPPORT`.
+* Check compiler support with a macro or constexpr constant:
 
-* To check whether nameof_type is supported by your compiler, use the macro `NAMEOF_TYPE_SUPPORTED` or the constexpr constant `nameof::is_nameof_type_supported`.<br>
-  If nameof_type is used on an unsupported compiler, a compilation error occurs. To suppress the check, define the macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+  | API | Macro | Constant in `nameof` |
+  | --- | --- | --- |
+  | Enum | `NAMEOF_ENUM_SUPPORTED` | `is_nameof_enum_supported` |
+  | Type | `NAMEOF_TYPE_SUPPORTED` | `is_nameof_type_supported` |
+  | RTTI type | `NAMEOF_TYPE_RTTI_SUPPORTED` | `is_nameof_type_rtti_supported` |
+  | Member | `NAMEOF_MEMBER_SUPPORTED` | `is_nameof_member_supported` |
+  | Pointer | `NAMEOF_POINTER_SUPPORTED` | `is_nameof_pointer_supported` |
 
-* To check whether nameof_type_rtti is supported by your compiler, use the macro `NAMEOF_TYPE_RTTI_SUPPORTED` or the constexpr constant `nameof::is_nameof_type_rtti_supported`.<br>
-  If nameof_type_rtti is used on an unsupported compiler, a compilation error occurs. To suppress the check, define the macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+  Unsupported APIs fail to compile when used. Define `NAMEOF_ENUM_NO_CHECK_SUPPORT` to disable enum support checks, or `NAMEOF_TYPE_NO_CHECK_SUPPORT` for the other APIs above.
 
-* To check whether nameof_member is supported by your compiler, use the macro `NAMEOF_MEMBER_SUPPORTED` or the constexpr constant `nameof::is_nameof_member_supported`.<br>
-  If nameof_member is used on an unsupported compiler, a compilation error occurs. To suppress the check, define the macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+* `nameof::cstring<N>` is a constexpr string of `N` characters plus a null terminator.
 
-* To check whether nameof_pointer is supported by your compiler, use the macro `NAMEOF_POINTER_SUPPORTED` or the constexpr constant `nameof::is_nameof_pointer_supported`.<br>
-  If nameof_pointer is used on an unsupported compiler, a compilation error occurs. To suppress the check, define the macro `NAMEOF_TYPE_NO_CHECK_SUPPORT`.
+* Type names are compiler-specific unless customized.
 
 * To customize a name, specialize the corresponding function in `namespace nameof::customize`: `enum_name`, `type_name`, `member_name`, or `pointer_name`. See the [enum and type example](../example/example_custom_name.cpp).
 
@@ -64,9 +65,9 @@ nameof requires C++17 or newer and supports:
 
 * Clang/LLVM >= 5
 * GCC >= 9
-* Visual Studio >= 2017
+* Visual Studio >= 2019
 
-RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER` require Visual Studio >= 2022 and C++ >= 20; on Clang >= 5 and GCC >= 9, C++17.
+RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER` require Visual Studio >= 2019 and C++ >= 20. On Clang >= 5 and GCC >= 9, C++17 is sufficient.
 
 ## `NAMEOF`
 
@@ -133,7 +134,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string_view`. Marked `constexpr` and `noexcept`.
 
-* If value has no name, returns empty `string_view`. With compiler-specific reflection, out-of-range values also return empty.
+* Returns a custom or reflected name, otherwise an empty `string_view`.
+
+* With compiler-specific reflection, non-empty scan ranges require an enumerator. Use `NAMEOF_ENUM_OR` for fallback lookup.
 
 * Examples
 
@@ -149,7 +152,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string`.
 
-* If value has no name, returns `default_value`. With compiler-specific reflection, this includes out-of-range values.
+* Returns a custom or reflected name, otherwise `default_value`.
 
 * Examples
 
@@ -184,9 +187,11 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string`.
 
-* Composite enumerator names are not used; the value is decomposed into named single-bit values.
+* Composite enumerator names are not used. The value is decomposed into named single-bit values.
 
 * If value is zero or contains unnamed bit, returns empty `string`.
+
+* With compiler-specific reflection, compilation fails if the enum has no single-bit enumerator, for example a forward-declared or empty enum.
 
 * Examples
 
@@ -208,13 +213,11 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_TYPE`
 
-* Obtains type name; reference and cv-qualifiers are ignored (`NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
+* Obtains type name. Reference and cv-qualifiers are ignored (`NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
 
 * Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
-
-* If type has no name, compilation fails: `"Type does not have a name."`
 
 * Examples
 
@@ -232,8 +235,6 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns compiler-specific type name.
 
-* If type has no name, compilation fails: `"Type does not have a name."`
-
 * Examples
 
   ```cpp
@@ -250,9 +251,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns compiler-specific type name.
 
-* Array and pointer types are not supported.
+* Array, pointer, member pointer, and function types are not supported.
 
-* If type has no name, compilation fails: `"Type does not have a name."`
+* If type has no short name, compilation fails: `"Type does not have a short name."`
 
 * Examples
 
@@ -264,13 +265,11 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_TYPE_EXPR`
 
-* Obtains type name of expression; reference and cv-qualifiers are ignored.
+* Obtains type name of expression. Reference and cv-qualifiers are ignored.
 
 * Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
 * Returns compiler-specific type name.
-
-* If type has no name, compilation fails: `"Type does not have a name."`
 
 * Examples
 
@@ -289,8 +288,6 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns compiler-specific type name.
 
-* If type has no name, compilation fails: `"Type does not have a name."`
-
 * Examples
 
   ```cpp
@@ -308,9 +305,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns compiler-specific type name.
 
-* Array and pointer types are not supported.
+* Array, pointer, member pointer, and function types are not supported.
 
-* If type has no name, compilation fails: `"Type does not have a name."`
+* If type has no short name, compilation fails: `"Type does not have a short name."`
 
 * Examples
 
@@ -322,14 +319,15 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_TYPE_RTTI`
 
-* Obtains type name using RTTI; reference and cv-qualifiers are ignored.
+* Obtains type name using RTTI. Reference and cv-qualifiers are ignored.
 
 * Returns `string`.
 
 * Examples
 
   ```cpp
-  volatile const my::detail::Base* ptr = new my::detail::Derived();
+  my::detail::Derived derived;
+  const volatile my::detail::Base* ptr = &derived;
   NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
   ```
 
@@ -337,28 +335,31 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains type name using RTTI and preserves reference and cv-qualifiers.
 
+* Pointer, array, function, and member pointer types are named like `NAMEOF_FULL_TYPE`, because `typeid` reports their static type.
+
 * Returns `string`.
 
 * Examples
 
   ```cpp
-  my::detail::Base* ptr = new my::detail::Derived();
-  volatile const my::detail::Base& cv_ref = *ptr;
-  NAMEOF_FULL_TYPE_RTTI(cv_ref) -> "volatile const my::detail::Derived&"
+  my::detail::Derived derived;
+  const volatile my::detail::Base& cv_ref = derived;
+  NAMEOF_FULL_TYPE_RTTI(cv_ref) -> "const volatile my::detail::Derived&"
   ```
 
 ## `NAMEOF_SHORT_TYPE_RTTI`
 
-* Obtains short type name using RTTI; namespace qualification, template arguments, references, and cv-qualifiers are omitted.
+* Obtains short type name using RTTI. Namespace qualification, template arguments, references, and cv-qualifiers are omitted.
 
 * Returns `string`.
 
-* Array and pointer types are not supported.
+* Array, pointer, member pointer, and function types are not supported.
 
 * Examples
 
   ```cpp
-  volatile const my::detail::Base* ptr = new my::detail::Derived();
+  my::detail::Derived derived;
+  const volatile my::detail::Base* ptr = &derived;
   NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "Derived"
   ```
 
@@ -368,7 +369,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
 
-* On Visual Studio, the containing class must be fully defined before use.
+* If member pointer is null, returns `"nullptr"` by default.
+
+* On older Visual Studio versions, the containing class must be fully defined and have external linkage.
 
 * Examples
 
