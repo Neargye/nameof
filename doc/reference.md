@@ -4,7 +4,7 @@
 * [`NAMEOF_FULL` obtains full name of variable, function, macro.](#nameof_full)
 * [`NAMEOF_RAW` obtains raw expression text.](#nameof_raw)
 * [`NAMEOF_ENUM` obtains name of enum value.](#nameof_enum)
-* [`NAMEOF_ENUM_OR` obtains name of enum value or default value if no name is available.](#nameof_enum_or)
+* [`NAMEOF_ENUM_OR` obtains enum name or fallback.](#nameof_enum_or)
 * [`NAMEOF_ENUM_CONST` obtains name of enum value at compile time.](#nameof_enum_const)
 * [`NAMEOF_ENUM_FLAG` obtains name of enum flag value.](#nameof_enum_flag)
 * [`NAMEOF_TYPE` obtains type name.](#nameof_type)
@@ -17,7 +17,7 @@
 * [`NAMEOF_FULL_TYPE_RTTI` obtains full type name using RTTI.](#nameof_full_type_rtti)
 * [`NAMEOF_SHORT_TYPE_RTTI` obtains short type name using RTTI.](#nameof_short_type_rtti)
 * [`NAMEOF_MEMBER` obtains name of member.](#nameof_member)
-* [`NAMEOF_POINTER` obtains name of a function, a global or class static variable.](#nameof_pointer)
+* [`NAMEOF_POINTER` obtains name of a function, global variable, or static data member.](#nameof_pointer)
 
 ## Synopsis
 
@@ -35,13 +35,34 @@
 
   Unsupported APIs fail to compile when used. Define `NAMEOF_ENUM_NO_CHECK_SUPPORT` to disable enum support checks, or `NAMEOF_TYPE_NO_CHECK_SUPPORT` for the other APIs above.
 
-* `nameof::cstring<N>` is a constexpr string of `N` characters plus a null terminator.
+* `nameof::cstring<N>` is a constexpr null-terminated string of `N` characters (`N <= UINT16_MAX`). Use `data()` or `c_str()` for the buffer, `size()` for its length, and `.str()` for an owning string. Comparisons with `cstring` and `string_view` and stream output are supported.
+
+* `string_view` conversion requires an lvalue `cstring` that outlives the view. Save `NAMEOF`, `NAMEOF_FULL`, or `NAMEOF_RAW` results first. APIs returning a reference to `cstring` use static storage.
 
 * Type names are compiler-specific unless customized.
 
-* To customize a name, specialize the corresponding function in `namespace nameof::customize`: `enum_name`, `type_name`, `member_name`, or `pointer_name`. See the [enum and type example](../example/example_custom_name.cpp).
+* Specialize `enum_name`, `type_name`, `member_name`, or `pointer_name` in `nameof::customize` to provide custom names. An empty name selects the default. See the [enum and type example](../example/example_custom_name.cpp).
 
-* C++26 standard reflection is selected automatically for enum APIs when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to retain range-based reflection. See [limitations](limitations.md#c26-standard-reflection).
+* `type_name` uses the type without cv/ref qualifiers, except `NAMEOF_FULL_TYPE`, which uses the exact type. `NAMEOF_SHORT_TYPE` keeps the custom name's last identifier. RTTI APIs ignore custom names.
+
+* Specialize `member_name` and `pointer_name` for the exact pointer value, including typed null pointers.
+
+  ```cpp
+  struct Item { int value; };
+  inline int global_value = 0;
+
+  template <>
+  constexpr nameof::string_view nameof::customize::member_name<&Item::value>() noexcept {
+    return "Value";
+  }
+
+  template <>
+  constexpr nameof::string_view nameof::customize::pointer_name<&global_value>() noexcept {
+    return "Global";
+  }
+  ```
+
+* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep range-based reflection.
 
 * To change the string types, use these macros:
 
@@ -53,11 +74,11 @@
   #include <nameof.hpp>
   ```
 
-  The aliases must provide the subset of `std::string` and `std::string_view` operations used by nameof. See the tested [minimal interface](../test/test_aliases.cpp).
+  Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `std::format` support for `nameof::cstring` is enabled when the standard library supports it. For `fmt`, include `<fmt/format.h>` before `<nameof.hpp>`.
+* `cstring` supports `std::format` when available. For `fmt`, include `<fmt/format.h>` before `<nameof.hpp>`.
 
-* RTTI-based APIs follow `typeid` rules: the dynamic type is reported only for polymorphic glvalues.
+* `NAMEOF`, `NAMEOF_FULL`, `NAMEOF_RAW`, and `*_TYPE_EXPR` do not evaluate their arguments. RTTI APIs follow `typeid` rules and evaluate polymorphic glvalues to obtain the dynamic type.
 
 ## Compiler compatibility
 
@@ -67,13 +88,13 @@ nameof requires C++17 or newer and supports:
 * GCC >= 9
 * Visual Studio >= 2019
 
-RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER` require Visual Studio >= 2019 and C++ >= 20. On Clang >= 5 and GCC >= 9, C++17 is sufficient.
+`NAMEOF_TYPE_RTTI`, `NAMEOF_FULL_TYPE_RTTI`, and `NAMEOF_SHORT_TYPE_RTTI` require RTTI to be enabled, so they are unavailable with `-fno-rtti` or `/GR-`. `NAMEOF_MEMBER` and `NAMEOF_POINTER` require C++20 on MSVC and C++17 on Clang or GCC.
 
 ## `NAMEOF`
 
 * Obtains name of variable, function, macro.
 
-* Returns `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * If argument has no name, compilation fails: `"Expression does not have a name."`
 
@@ -99,9 +120,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_FULL`
 
-* Obtains full (with template suffix) name of variable, function, macro.
+* Obtains name of variable, function, or macro, including template arguments.
 
-* Returns `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * If argument has no name, compilation fails: `"Expression does not have a name."`
 
@@ -117,9 +138,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_RAW`
 
-* Obtains raw expression text.
+* Obtains expression text by preprocessor stringization. Whitespace outside literals is normalized.
 
-* Returns `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -136,7 +157,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns a custom or reflected name, otherwise an empty `string_view`.
 
-* With compiler-specific reflection, non-empty scan ranges require an enumerator. Use `NAMEOF_ENUM_OR` for fallback lookup.
+* With compiler-specific reflection, non-empty scan ranges require an enumerator or a custom name, otherwise compilation fails. Use `NAMEOF_ENUM_OR` for fallback lookup.
 
 * Examples
 
@@ -148,11 +169,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_ENUM_OR`
 
-* Obtains name of enum value or default value if no name is available.
+* Obtains name of enum value or a fallback.
 
-* Returns `string`.
-
-* Returns a custom or reflected name, otherwise `default_value`.
+* Returns a `string` with the custom or reflected enum name, or `default_value`.
 
 * Examples
 
@@ -168,11 +187,11 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains name of enum value known at compile time.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
-* This version has a lower compile-time cost and is not restricted by the [`enum_range`](limitations.md#nameof-enum).
+* Has a lower compile-time cost than `NAMEOF_ENUM` and ignores [`enum_range`](limitations.md#nameof-enum).
 
-* If value has no name, returns empty `nameof::cstring`.
+* Returns a custom or reflected name, otherwise an empty `nameof::cstring`.
 
 * Examples
 
@@ -187,11 +206,11 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Returns `string`.
 
-* Composite enumerator names are not used. The value is decomposed into named single-bit values.
+* Joins custom or reflected names of individual set bits. Composite enumerator names are ignored.
 
 * If value is zero or contains unnamed bit, returns empty `string`.
 
-* With compiler-specific reflection, compilation fails if the enum has no single-bit enumerator, for example a forward-declared or empty enum.
+* Compiler-specific reflection requires a single-bit enumerator or custom flag name, otherwise compilation fails.
 
 * Examples
 
@@ -215,9 +234,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains type name. Reference and cv-qualifiers are ignored (`NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
-
-* Returns compiler-specific type name.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -231,9 +248,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains full type name with reference and cv-qualifiers.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
-
-* Returns compiler-specific type name.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -247,9 +262,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains short type name.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
-
-* Returns compiler-specific type name.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Array, pointer, member pointer, and function types are not supported.
 
@@ -267,9 +280,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains type name of expression. Reference and cv-qualifiers are ignored.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
-
-* Returns compiler-specific type name.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -282,11 +293,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_FULL_TYPE_EXPR`
 
-* Obtains full type name of expression with reference and cv-qualifiers.
+* Obtains the name of `decltype(expr)`, preserving reference and cv-qualifiers.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
-
-* Returns compiler-specific type name.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -295,15 +304,17 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
   T var = 42;
   NAMEOF_FULL_TYPE_EXPR(var) -> "const int&"
   nameof::nameof_full_type<decltype(var)>() -> "const int&"
+
+  int x = 0;
+  NAMEOF_FULL_TYPE_EXPR(x) -> "int"
+  NAMEOF_FULL_TYPE_EXPR((x)) -> "int&"
   ```
 
 ## `NAMEOF_SHORT_TYPE_EXPR`
 
 * Obtains short type name of expression.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
-
-* Returns compiler-specific type name.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * Array, pointer, member pointer, and function types are not supported.
 
@@ -335,7 +346,7 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains type name using RTTI and preserves reference and cv-qualifiers.
 
-* Pointer, array, function, and member pointer types are named like `NAMEOF_FULL_TYPE`, because `typeid` reports their static type.
+* Pointer, array, function, and member pointer types use compile-time names.
 
 * Returns `string`.
 
@@ -367,11 +378,11 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 * Obtains name of member.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * If member pointer is null, returns `"nullptr"` by default.
 
-* On older Visual Studio versions, the containing class must be fully defined and have external linkage.
+* For data members on Visual Studio before 2022 17.14, the containing class must be fully defined and have external linkage.
 
 * Examples
 
@@ -386,9 +397,9 @@ RTTI-based APIs require RTTI to be enabled. `NAMEOF_MEMBER` and `NAMEOF_POINTER`
 
 ## `NAMEOF_POINTER`
 
-* Obtains name of a function, a global or class static variable.
+* Obtains name of a function, global variable, or static data member.
 
-* Returns a reference to `nameof::cstring`, a constexpr null-terminated string type. Marked `constexpr` and `noexcept`.
+* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
 * If pointer is null, returns `"nullptr"` by default.
 

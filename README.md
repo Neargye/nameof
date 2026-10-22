@@ -6,7 +6,7 @@
 
 # Nameof C++
 
-A header-only C++17 library that provides nameof macros and functions for obtaining the name of a variable, type, function, macro, or enum.
+A header-only C++17 library for obtaining names of variables, types, functions, macros, and enum values.
 
 ## Documentation
 
@@ -36,10 +36,10 @@ A header-only C++17 library that provides nameof macros and functions for obtain
   // Name of macro.
   NAMEOF(__LINE__) -> "__LINE__"
 
-  // Obtains full name of variable, function, macro.
+  // Name with template arguments.
   NAMEOF_FULL(somevar.some_method<int>()) -> "some_method<int>"
 
-  // Obtains raw expression text.
+  // Raw expression text.
   NAMEOF_RAW(somevar.some_method<int>()) -> "somevar.some_method<int>()"
   ```
 
@@ -54,7 +54,7 @@ A header-only C++17 library that provides nameof macros and functions for obtain
   nameof::nameof_enum(color) -> "RED"
 
   // Name of enum value known at compile time.
-  // This version has a lower compile-time cost and is not restricted by the enum_range limitation.
+  // Compiles faster than NAMEOF_ENUM and ignores enum_range.
   NAMEOF_ENUM_CONST(Color::GREEN) -> "GREEN"
   nameof::nameof_enum<Color::GREEN>() -> "GREEN"
 
@@ -65,7 +65,7 @@ A header-only C++17 library that provides nameof macros and functions for obtain
   NAMEOF_ENUM_FLAG(flag) -> "CanFly|EatsFish"
   nameof::nameof_enum_flag(flag, '$') -> "CanFly$EatsFish"
 
-  // Obtains name of enum value or default value if no name is available.
+  // Enum name or fallback.
   NAMEOF_ENUM_OR(Color::GREEN, "none") -> "GREEN"
   NAMEOF_ENUM_OR((Color)0, "none") -> "none"
   nameof::nameof_enum_or(Color::GREEN, "none") -> "GREEN"
@@ -96,7 +96,7 @@ A header-only C++17 library that provides nameof macros and functions for obtain
 
   my::detail::Derived derived;
   my::detail::Base* ptr = &derived;
-  // Obtains type name using RTTI.
+  // Dynamic type of a polymorphic object.
   NAMEOF_TYPE_RTTI(*ptr) -> "my::detail::Derived"
   NAMEOF_FULL_TYPE_RTTI(*ptr) -> "my::detail::Derived&"
   NAMEOF_SHORT_TYPE_RTTI(*ptr) -> "Derived"
@@ -104,13 +104,13 @@ A header-only C++17 library that provides nameof macros and functions for obtain
   struct A {
     int this_is_the_name;
   };
-  // Obtains name of member.
+  // Member name.
   NAMEOF_MEMBER(&A::this_is_the_name) -> "this_is_the_name"
   nameof::nameof_member<&A::this_is_the_name>() -> "this_is_the_name"
 
   int someglobalvariable = 0;
   const int someglobalconstvariable = 42;
-  // Obtains name of a function, a global or class static variable.
+  // Name of a function, global variable, or static data member.
   NAMEOF_POINTER(&someglobalconstvariable) -> "someglobalconstvariable"
   nameof::nameof_pointer<&someglobalconstvariable>() -> "someglobalconstvariable"
 
@@ -123,16 +123,18 @@ A header-only C++17 library that provides nameof macros and functions for obtain
 
 * **Single header:** add [nameof.hpp](include/nameof.hpp) to your project.
 
-* **CMake package:**
+* **CMake:**
 
   ```cmake
   find_package(nameof CONFIG REQUIRED)
   target_link_libraries(your_target PRIVATE nameof::nameof)
   ```
 
+* **pkg-config:** use `pkg-config --cflags nameof` after installation.
+
 * **vcpkg:** install the [nameof package](https://github.com/microsoft/vcpkg/tree/master/ports/nameof) with `vcpkg install nameof`.
 
-* **[Conan](https://www.conan.io/):** add `nameof/x.y.z` to the `requires` section, where `x.y.z` is the required release version.
+* **[Conan](https://www.conan.io/):** add `nameof/x.y.z` to `requires`, replacing `x.y.z` with the release version.
 
 * **AUR:** install `nameof` with an AUR helper, for example `yay -S nameof`.
 
@@ -142,7 +144,7 @@ A header-only C++17 library that provides nameof macros and functions for obtain
   CPMAddPackage(
       NAME nameof
       GITHUB_REPOSITORY Neargye/nameof
-      GIT_TAG vx.y.z # Replace `x.y.z` with the release version you want to use.
+      GIT_TAG vx.y.z # Replace x.y.z with the release version.
   )
   ```
 
