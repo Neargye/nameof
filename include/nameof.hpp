@@ -251,7 +251,7 @@ class [[nodiscard]] cstring {
 
   cstring& operator=(cstring&&) = default;
 
-  [[nodiscard]] constexpr const_pointer data() const noexcept { return chars_; }
+  [[nodiscard]] constexpr const_pointer data() const noexcept { return N == 0 ? empty_ : chars_; }
 
   [[nodiscard]] constexpr size_type size() const noexcept { return N; }
 
@@ -271,11 +271,11 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return assert(i < size()), chars_[i]; }
+  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return assert(i < size()), data()[i]; }
 
-  [[nodiscard]] constexpr const_reference front() const noexcept { return chars_[0]; }
+  [[nodiscard]] constexpr const_reference front() const noexcept { return data()[0]; }
 
-  [[nodiscard]] constexpr const_reference back() const noexcept { return chars_[N == 0 ? 0 : N - 1]; }
+  [[nodiscard]] constexpr const_reference back() const noexcept { return data()[N == 0 ? 0 : N - 1]; }
 
   [[nodiscard]] constexpr size_type length() const noexcept { return size(); }
 
@@ -333,6 +333,7 @@ class [[nodiscard]] cstring {
   template <std::uint16_t... J>
   constexpr cstring([[maybe_unused]] string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
 
+  static constexpr char empty_[1]{};
   char chars_[static_cast<std::size_t>(N) + 1];
 };
 
@@ -1037,6 +1038,9 @@ struct demangled_name {
     }
 #endif
   }
+
+  demangled_name(const demangled_name&) = delete;
+  demangled_name& operator=(const demangled_name&) = delete;
 
 #if __has_include(<cxxabi.h>)
   // Avoid expanding free macros.

@@ -330,6 +330,24 @@ static_assert(has_matching_ends(cstring_abc));
 static_assert(has_matching_ends(::nameof::cstring<0>{}));
 static_assert(::nameof::cstring<0>{}.front() == '\0' && ::nameof::cstring<0>{}.back() == '\0');
 
+// Pointers from empty temporaries must remain valid after the full expression.
+constexpr const char* cstring_empty_pointers[] = {
+  ::nameof::cstring<0>{}.data(),
+  ::nameof::cstring<0>{}.c_str(),
+  ::nameof::cstring<0>{}.begin(),
+  ::nameof::cstring<0>{}.end(),
+  &::nameof::cstring<0>{}.front(),
+  &::nameof::cstring<0>{}.back()
+};
+static_assert([] {
+  for (const auto* p : cstring_empty_pointers) {
+    if (p != cstring_empty_pointers[0] || *p != '\0') {
+      return false;
+    }
+  }
+  return true;
+}());
+
 static_assert(std::is_nothrow_copy_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_move_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_copy_assignable_v<::nameof::cstring<3>>);
