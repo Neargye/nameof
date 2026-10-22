@@ -562,16 +562,16 @@ static_assert(nameof::nameof_type<long>() >= nameof::nameof_type<long>());
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
 #  if !defined(NAMEOF_TEST_STD_REFLECTION)
-static_assert(nameof::detail::is_valid<Color, -12>(), "nameof::detail::is_valid requires valid enum values.");
-static_assert(!nameof::detail::is_valid<Color, 0>(), "nameof::detail::is_valid requires invalid enum values.");
-static_assert(nameof::detail::is_valid<Numbers, 127>(), "nameof::detail::is_valid requires valid enum values.");
-static_assert(!nameof::detail::is_valid<Numbers, 0>(), "nameof::detail::is_valid requires invalid enum values.");
-static_assert(nameof::detail::is_valid<AnimalFlags, 1>(), "nameof::detail::is_valid requires valid flag values.");
-static_assert(!nameof::detail::is_valid<AnimalFlags, 3>(), "nameof::detail::is_valid requires invalid flag values.");
-static_assert(nameof::detail::is_valid<HiddenEnum, 1>(), "nameof::detail::is_valid requires anonymous namespace enum values.");
-static_assert(!nameof::detail::is_valid<HiddenEnum, 0>(), "nameof::detail::is_valid requires invalid anonymous namespace enum values.");
-static_assert(nameof::detail::is_valid<NestedHiddenEnum, 1>(), "nameof::detail::is_valid requires nested anonymous namespace enum values.");
-static_assert(!nameof::detail::is_valid<NestedHiddenEnum, 0>(), "nameof::detail::is_valid requires invalid nested anonymous namespace enum values.");
+static_assert(nameof::detail::nv<nameof::detail::enum_cast<Color>(-12)>(), "nameof::detail::nv requires valid enum values.");
+static_assert(!nameof::detail::nv<nameof::detail::enum_cast<Color>(0)>(), "nameof::detail::nv requires invalid enum values.");
+static_assert(nameof::detail::nv<nameof::detail::enum_cast<Numbers>(127)>(), "nameof::detail::nv requires valid enum values.");
+static_assert(!nameof::detail::nv<nameof::detail::enum_cast<Numbers>(0)>(), "nameof::detail::nv requires invalid enum values.");
+static_assert(nameof::detail::nv<nameof::detail::enum_cast<AnimalFlags>(1)>(), "nameof::detail::nv requires valid flag values.");
+static_assert(!nameof::detail::nv<nameof::detail::enum_cast<AnimalFlags>(3)>(), "nameof::detail::nv requires invalid flag values.");
+static_assert(nameof::detail::nv<nameof::detail::enum_cast<HiddenEnum>(1)>(), "nameof::detail::nv requires anonymous namespace enum values.");
+static_assert(!nameof::detail::nv<nameof::detail::enum_cast<HiddenEnum>(0)>(), "nameof::detail::nv requires invalid anonymous namespace enum values.");
+static_assert(nameof::detail::nv<nameof::detail::enum_cast<NestedHiddenEnum>(1)>(), "nameof::detail::nv requires nested anonymous namespace enum values.");
+static_assert(!nameof::detail::nv<nameof::detail::enum_cast<NestedHiddenEnum>(0)>(), "nameof::detail::nv requires invalid nested anonymous namespace enum values.");
 #  endif
 static_assert(nameof::nameof_enum(HiddenEnum::A) == "A", "nameof::nameof_enum requires anonymous namespace enum values.");
 static_assert(NAMEOF_ENUM_CONST(HiddenEnum::A) == "A", "NAMEOF_ENUM_CONST requires anonymous namespace enum values.");

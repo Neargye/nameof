@@ -43,11 +43,9 @@
 #include <iosfwd>
 #include <iterator>
 #include <limits>
-#include <memory>
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <typeinfo>
 #include <utility>
 
 #if !defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION) && defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L && defined(__cpp_expansion_statements) && __cpp_expansion_statements >= 202506L
@@ -67,46 +65,33 @@
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(push)
 #  pragma warning(disable : 4514)  // Unreferenced inline function has been removed.
+#  pragma warning(disable : 6326)  // Code analysis false positive for constant comparisons in consteval helpers.
 #  pragma warning(disable : 28020) // Code analysis false positive for bounds-checked enum value arrays.
 #endif
 
 // Checks nameof_type compiler compatibility.
 #if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
-#  undef  NAMEOF_TYPE_SUPPORTED
 #  define NAMEOF_TYPE_SUPPORTED 1
 #endif
 
-// Checks nameof_type_rtti compiler compatibility.
-#if defined(__clang__)
-#  if __has_feature(cxx_rtti)
-#    undef  NAMEOF_TYPE_RTTI_SUPPORTED
-#    define NAMEOF_TYPE_RTTI_SUPPORTED 1
-#  endif
-#elif defined(__GNUC__) && __GNUC__ >= 9
-#  if defined(__GXX_RTTI)
-#    undef  NAMEOF_TYPE_RTTI_SUPPORTED
-#    define NAMEOF_TYPE_RTTI_SUPPORTED 1
-#  endif
-#elif defined(_MSC_VER)
-#  if defined(_CPPRTTI)
-#    undef  NAMEOF_TYPE_RTTI_SUPPORTED
-#    define NAMEOF_TYPE_RTTI_SUPPORTED 1
-#  endif
+// Checks nameof_type_rtti compiler compatibility. Not __cpp_rtti: clang-cl defines it even with /GR-.
+#if defined(__GXX_RTTI) || defined(_CPPRTTI)
+#  define NAMEOF_TYPE_RTTI_SUPPORTED 1
+#endif
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+#  include <typeinfo>
 #endif
 
 // Checks nameof_member and nameof_pointer compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
-#  undef  NAMEOF_MEMBER_SUPPORTED
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSVC_LANG >= 202002L
 #  define NAMEOF_MEMBER_SUPPORTED 1
-#  undef  NAMEOF_POINTER_SUPPORTED
 #  define NAMEOF_POINTER_SUPPORTED 1
 #endif
 
 // Checks nameof_enum and enum aliases compiler compatibility.
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
-#  undef  NAMEOF_ENUM_SUPPORTED
 #  define NAMEOF_ENUM_SUPPORTED 1
-#  undef  NAMEOF_ENUM_SUPPORTED_ALIASES
 #  define NAMEOF_ENUM_SUPPORTED_ALIASES 1
 #endif
 
@@ -139,35 +124,35 @@ using std::string;
 #endif
 
 // Checks whether nameof_type is supported by the compiler.
-#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_TYPE_SUPPORTED) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
 inline constexpr bool is_nameof_type_supported = true;
 #else
 inline constexpr bool is_nameof_type_supported = false;
 #endif
 
 // Checks whether nameof_type_rtti is supported by the compiler.
-#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
 inline constexpr bool is_nameof_type_rtti_supported = true;
 #else
 inline constexpr bool is_nameof_type_rtti_supported = false;
 #endif
 
 // Checks whether nameof_member is supported by the compiler.
-#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_MEMBER_SUPPORTED) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
 inline constexpr bool is_nameof_member_supported = true;
 #else
 inline constexpr bool is_nameof_member_supported = false;
 #endif
 
 // Checks whether nameof_pointer is supported by the compiler.
-#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_POINTER_SUPPORTED) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
 inline constexpr bool is_nameof_pointer_supported = true;
 #else
 inline constexpr bool is_nameof_pointer_supported = false;
 #endif
 
 // Checks whether nameof_enum is supported by the compiler.
-#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
+#if defined(NAMEOF_ENUM_SUPPORTED) || defined(NAMEOF_ENUM_NO_CHECK_SUPPORT)
 inline constexpr bool is_nameof_enum_supported = true;
 #else
 inline constexpr bool is_nameof_enum_supported = false;
@@ -187,6 +172,12 @@ inline constexpr bool is_nameof_enum_supported = false;
 #  define NAMEOF_DETAIL_SIGNATURE ::nameof::string_view{__FUNCSIG__, sizeof(__FUNCSIG__) - sizeof(">(void) noexcept")}
 #else
 #  define NAMEOF_DETAIL_SIGNATURE ::nameof::string_view{}
+#endif
+
+#if defined(__cpp_consteval) && __cpp_consteval >= 201811L
+#  define NAMEOF_DETAIL_CONSTEVAL consteval
+#else
+#  define NAMEOF_DETAIL_CONSTEVAL constexpr
 #endif
 
 #if defined(__has_builtin)
@@ -633,7 +624,7 @@ constexpr auto enum_name([[maybe_unused]] E value) noexcept {
 
 // The enumerator is the last identifier, after "::" (V = Color::RED, MSVC nv<Color::RED>), ' ' (V = BLUE),
 // or on MSVC '<' (nv<BLUE>) and ',' (enum_name<enum E,BLUE>). Unnamed values are casts: (Color)5, MSVC (enum Color)0x5.
-constexpr bool enum_name_valid(string_view signature) noexcept {
+NAMEOF_DETAIL_CONSTEVAL bool enum_name_valid(string_view signature) noexcept {
   std::size_t i = signature.size();
   while (i > 0 && is_name_char(signature[i - 1])) {
     --i;
@@ -647,7 +638,7 @@ constexpr bool enum_name_valid(string_view signature) noexcept {
 }
 
 template <typename E, E V>
-constexpr auto enum_name() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto enum_name() noexcept {
   if constexpr (is_nameof_enum_supported) {
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
     constexpr auto name = reflection::enum_name(V);
@@ -665,7 +656,7 @@ template <typename E, E V>
 inline constexpr auto enum_name_v = enum_name<E, V>();
 
 template <typename E, E V>
-constexpr auto custom_enum_name() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto custom_enum_name() noexcept {
   constexpr auto name = customize::enum_name<E>(V);
   return to_cstring<name.size()>(name);
 }
@@ -676,7 +667,7 @@ inline constexpr auto custom_enum_name_v = custom_enum_name<E, V>();
 #if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
 
 template <auto V>
-constexpr bool nv() noexcept {
+NAMEOF_DETAIL_CONSTEVAL bool nv() noexcept {
   if constexpr (is_nameof_enum_supported) {
     return enum_name_valid(NAMEOF_DETAIL_SIGNATURE);
   } else {
@@ -685,7 +676,7 @@ constexpr bool nv() noexcept {
 }
 
 template <typename E, typename U>
-constexpr E enum_cast(U value) noexcept {
+NAMEOF_DETAIL_CONSTEVAL E enum_cast(U value) noexcept {
 #if defined(NAMEOF_DETAIL_HAS_BIT_CAST)
   // Clang 16+ rejects out-of-range static_casts to enums without a fixed underlying type in constant expressions:
   // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
@@ -695,22 +686,16 @@ constexpr E enum_cast(U value) noexcept {
 #endif
 }
 
-template <typename E, auto V>
-constexpr bool is_valid() noexcept {
-  return nv<enum_cast<E>(V)>();
-}
-
 // The value at offset i from O. For flags, the range is bit positions, so the value is 1 << (i + O).
-template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr U underlying_value([[maybe_unused]] std::size_t i) noexcept {
+template <typename E, int O, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL auto value_at([[maybe_unused]] std::size_t i) noexcept {
+  using U = std::underlying_type_t<E>;
   if constexpr (IsFlags) {
     if constexpr (std::is_same_v<U, bool>) {
       return true;
     } else {
       return static_cast<U>(make_unsigned_t<U>{1} << (static_cast<int>(i) + O));
     }
-  } else if constexpr (std::is_same_v<U, bool>) {
-    return static_cast<int>(i) + O != 0;
   } else {
     return static_cast<U>(static_cast<int>(i) + O);
   }
@@ -718,7 +703,7 @@ constexpr U underlying_value([[maybe_unused]] std::size_t i) noexcept {
 
 // std::cmp_less is C++20 and rejects bool.
 template <typename L, typename R>
-constexpr bool cmp_less(L lhs, R rhs) noexcept {
+NAMEOF_DETAIL_CONSTEVAL bool cmp_less(L lhs, R rhs) noexcept {
   static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral types.");
 
   if constexpr (std::is_same_v<L, bool>) {
@@ -736,7 +721,7 @@ constexpr bool cmp_less(L lhs, R rhs) noexcept {
 
 // Preserve bounds until checked for narrowing to int.
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr auto reflected_min() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto reflected_min() noexcept {
   if constexpr (IsFlags) {
     return 0;
   } else if constexpr (cmp_less((std::numeric_limits<U>::min)(), customize::enum_range<E>::min)) {
@@ -747,7 +732,7 @@ constexpr auto reflected_min() noexcept {
 }
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr auto reflected_max() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto reflected_max() noexcept {
   if constexpr (IsFlags) {
     return std::is_same_v<U, bool> ? 0 : std::numeric_limits<make_unsigned_t<U>>::digits - 1;
   } else if constexpr (cmp_less(customize::enum_range<E>::max, (std::numeric_limits<U>::max)())) {
@@ -778,12 +763,12 @@ struct valid_offsets_t {
 };
 
 template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J>
-constexpr void valid_offsets(valid_offsets_t<Size>& vc) noexcept {
-#define NAMEOF_ENUM_V(O)                                                     \
-  if constexpr ((J + O) < Size) {                                            \
-    if constexpr (is_valid<E, underlying_value<E, Min, IsFlags>(J + O)>()) { \
-      vc.append(J + O);                                                      \
-    }                                                                        \
+NAMEOF_DETAIL_CONSTEVAL void valid_offsets(valid_offsets_t<Size>& vc) noexcept {
+#define NAMEOF_ENUM_V(O)                                                  \
+  if constexpr ((J + O) < Size) {                                         \
+    if constexpr (nv<enum_cast<E>(value_at<E, Min, IsFlags>(J + O))>()) { \
+      vc.append(J + O);                                                   \
+    }                                                                     \
   }
 
   NAMEOF_FOR_EACH_256(NAMEOF_ENUM_V)
@@ -795,19 +780,19 @@ constexpr void valid_offsets(valid_offsets_t<Size>& vc) noexcept {
 }
 
 template <typename E, bool IsFlags, std::size_t Size, int Min>
-constexpr auto valid_offsets() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto valid_offsets() noexcept {
   valid_offsets_t<Size> vc;
   valid_offsets<E, IsFlags, Size, Min, 0>(vc);
   return vc;
 }
 
 template <typename E, bool IsFlags, std::size_t Size, int Min>
-constexpr auto values() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto values() noexcept {
   constexpr auto vc = valid_offsets<E, IsFlags, Size, Min>();
   if constexpr (vc.count > 0) {
     std::array<E, vc.count> values = {};
     for (std::size_t i = 0; i < vc.count; ++i) {
-      values[i] = static_cast<E>(underlying_value<E, Min, IsFlags>(vc.offsets[i]));
+      values[i] = static_cast<E>(value_at<E, Min, IsFlags>(vc.offsets[i]));
     }
     return values;
   } else {
@@ -829,7 +814,7 @@ struct reflected_range {
 };
 
 template <typename E, bool IsFlags>
-constexpr auto values() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto values() noexcept {
   using R = reflected_range<E, IsFlags>;
   static_assert(R::valid_order, "nameof::customize::enum_range must contain at least one value.");
   if constexpr (R::empty) {
@@ -858,7 +843,7 @@ template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<
 inline constexpr auto max_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_v<E, IsFlags>.back()) : U{0};
 
 template <typename E, bool IsFlags, std::size_t... J>
-constexpr auto names(std::index_sequence<J...>) noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto names(std::index_sequence<J...>) noexcept {
   return std::array<string_view, sizeof...(J)>{{enum_name_v<E, values_v<E, IsFlags>[J]>...}};
 }
 
@@ -866,7 +851,7 @@ template <typename E, bool IsFlags = false>
 inline constexpr auto names_v = names<E, IsFlags>(std::make_index_sequence<count_v<E, IsFlags>>{});
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
-constexpr bool is_sparse() noexcept {
+NAMEOF_DETAIL_CONSTEVAL bool is_sparse() noexcept {
   if constexpr (IsFlags) {
     return true; // Flags are searched linearly.
   } else {
@@ -879,7 +864,7 @@ template <typename E, bool IsFlags = false>
 inline constexpr bool is_sparse_v = is_sparse<E, IsFlags>();
 
 template <typename E, bool IsFlags>
-constexpr bool has_names() noexcept {
+NAMEOF_DETAIL_CONSTEVAL bool has_names() noexcept {
   using R = reflected_range<E, IsFlags>;
   // Invalid ranges already fail in values() with a clearer message.
   if constexpr (count_v<E, IsFlags> > 0 || R::empty || !R::valid_bounds || !R::valid_size) {
@@ -887,7 +872,7 @@ constexpr bool has_names() noexcept {
   } else {
     // No reflected values: accept the enum if customize::enum_name names any value in the range.
     for (std::size_t i = 0; i <= R::span; ++i) {
-      if (!customize::enum_name<E>(enum_cast<E>(underlying_value<E, static_cast<int>(R::min), IsFlags>(i))).empty()) {
+      if (!customize::enum_name<E>(enum_cast<E>(value_at<E, static_cast<int>(R::min), IsFlags>(i))).empty()) {
         return true;
       }
     }
@@ -948,13 +933,14 @@ template <typename T, typename R, typename U = remove_cvref_t<T>>
 using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<U> && !std::is_pointer_v<U> && !std::is_member_pointer_v<U> && !std::is_function_v<U>, R>;
 
 template <typename... T>
-constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto NAMEOF_DETAIL_CDECL n() noexcept {
   if constexpr (is_nameof_type_supported) {
     constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
 #if defined(__clang__)
     constexpr auto prefix = sizeof("auto nameof::detail::n() [T = <") - 1;
     constexpr auto suffix = sizeof(">") - 1;
 #elif defined(__GNUC__)
+    // GCC spells "consteval" here in C++20, which has the same length.
     constexpr auto prefix = sizeof("constexpr auto nameof::detail::n() [with T = {") - 1;
     constexpr auto suffix = sizeof("}") - 1;
 #elif defined(_MSC_VER)
@@ -974,7 +960,7 @@ constexpr auto NAMEOF_DETAIL_CDECL n() noexcept {
 }
 
 template <typename... T>
-constexpr auto type_name() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto type_name() noexcept {
   constexpr auto custom_name = customize::type_name<remove_identity_t<T>...>();
   if constexpr (custom_name.empty()) {
     return n<T...>();
@@ -1004,7 +990,7 @@ constexpr string_view pretty_type_name(string_view name, bool is_qualified, bool
 }
 
 template <typename T>
-constexpr auto short_type_name() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto short_type_name() noexcept {
   using U = remove_identity_t<T>;
   constexpr auto custom_name = customize::type_name<U>();
   constexpr auto name = custom_name.empty() ? pretty_type_name(type_name_v<T>, std::is_class_v<U> || std::is_union_v<U> || std::is_enum_v<U>, std::is_null_pointer_v<U>)
@@ -1039,42 +1025,34 @@ string qualified_type_name(string name) {
   return name;
 }
 
+// typeid name, demangled if possible. Frees the buffer itself, so the header does not need <memory>.
+struct demangled_name {
+  explicit demangled_name(const char* tn) noexcept : name{tn != nullptr ? tn : ""} {
+    assert(tn != nullptr);
 #if __has_include(<cxxabi.h>)
-// Avoid taking std::free's address and expanding free macros.
-struct free_deleter {
-  void operator()(char* p) const noexcept { (std::free)(p); }
-};
+    int status = 0;
+    buffer = tn != nullptr ? abi::__cxa_demangle(tn, nullptr, nullptr, &status) : nullptr;
+    if (status == 0 && buffer != nullptr) {
+      name = string_view{buffer};
+    }
+#endif
+  }
 
-using demangle_ptr = std::unique_ptr<char, free_deleter>;
+#if __has_include(<cxxabi.h>)
+  // Avoid expanding free macros.
+  ~demangled_name() { (std::free)(buffer); }
 #endif
 
-struct demangled_name {
   string_view name;
 #if __has_include(<cxxabi.h>)
-  demangle_ptr buffer;
+  char* buffer = nullptr;
 #endif
 };
-
-inline demangled_name demangle(const char* tn) {
-  assert(tn != nullptr);
-#if __has_include(<cxxabi.h>)
-  int status = 0;
-  demangle_ptr buffer{tn != nullptr ? abi::__cxa_demangle(tn, nullptr, nullptr, &status) : nullptr};
-  if (status == 0 && buffer) {
-    // Inlining this into the return triggers a false Clang -Wreturn-stack-address.
-    const auto name = string_view{buffer.get()};
-    return {name, std::move(buffer)};
-  }
-  return {string_view{tn != nullptr ? tn : ""}, nullptr};
-#else
-  return {string_view{tn != nullptr ? tn : ""}};
-#endif
-}
 
 template <typename T>
 [[nodiscard]] string nameof_type_rtti(const char* tn) {
   static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
-  const auto demangled = demangle(tn);
+  const demangled_name demangled{tn};
   assert(!demangled.name.empty() && "Type does not have a name.");
   return {demangled.name.data(), demangled.name.size()};
 }
@@ -1083,7 +1061,7 @@ template <typename T, enable_if_has_short_name_t<T, int> = 0>
 [[nodiscard]] string nameof_short_type_rtti(const char* tn) {
   static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_SHORT_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   using U = remove_cvref_t<T>;
-  const auto demangled = demangle(tn);
+  const demangled_name demangled{tn};
   // The dynamic type of a polymorphic object is a class, so only static arithmetic types keep the whole name.
   const auto name = pretty_type_name(demangled.name, !std::is_arithmetic_v<U>, std::is_null_pointer_v<U>);
   assert(!name.empty() && "Type does not have a short name.");
@@ -1107,7 +1085,7 @@ template <auto P, typename T = std::decay_t<decltype(P)>>
 inline constexpr bool is_nullptr_v = std::is_same_v<std::integral_constant<T, P>, std::integral_constant<T, static_cast<T>(nullptr)>>;
 
 template <auto V, auto U = V>
-constexpr auto n() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto n() noexcept {
   constexpr auto custom_name = customize::member_name<V>();
   if constexpr (!custom_name.empty()) {
     return to_cstring<custom_name.size()>(custom_name);
@@ -1164,7 +1142,8 @@ consteval auto get_member_name() noexcept {
     constexpr bool is_defined = sizeof(decltype(get_base_type(V))) != 0;
     static_assert(is_defined, "nameof::nameof_member can only be used if the struct is fully defined. Use the NAMEOF macro, or separate the definition and declaration.");
     if constexpr (is_defined) {
-      return n<V, Store{std::addressof(nonexist_object<decltype(get_base_type(V))>.*V)}>();
+      // __builtin_addressof instead of std::addressof, which needs <memory>.
+      return n<V, Store{__builtin_addressof(nonexist_object<decltype(get_base_type(V))>.*V)}>();
     } else {
       return cstring<0>{};
     }
@@ -1179,7 +1158,7 @@ inline constexpr auto member_name_v = cstring<0>{};
 #endif
 
 template <auto V>
-constexpr auto p() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto p() noexcept {
   constexpr auto custom_name = customize::pointer_name<V>();
   if constexpr (!custom_name.empty()) {
     return to_cstring<custom_name.size()>(custom_name);
@@ -1318,7 +1297,7 @@ template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>,
 
 } // namespace nameof
 
-// MSVC STL warns when <format> is included before C++20.
+// Included here, so std::format works regardless of include order. MSVC STL warns when <format> is included before C++20.
 #if __has_include(<format>) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
 #  include <format>
 #  if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
@@ -1412,6 +1391,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #undef NAMEOF_FOR_EACH_256
 #undef NAMEOF_DETAIL_CDECL
 #undef NAMEOF_DETAIL_SIGNATURE
+#undef NAMEOF_DETAIL_CONSTEVAL
 #undef NAMEOF_DETAIL_USE_STD_REFLECTION
 #undef NAMEOF_DETAIL_HAS_BIT_CAST
 
