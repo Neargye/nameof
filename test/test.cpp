@@ -17,7 +17,7 @@
 
 #if __has_include(<fmt/format.h>)
 #  include <fmt/format.h>
-#  include <fmt/ranges.h> // Inlcuded to check conflict with fmt range formatter
+#  include <fmt/ranges.h> // Checks that the cstring formatter does not conflict with the range formatter.
 #  if defined(FMT_VERSION)
 #    define NAMEOF_TEST_HAS_FMT_FORMAT 1
 #  endif
