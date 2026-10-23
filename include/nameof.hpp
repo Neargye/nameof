@@ -1316,6 +1316,12 @@ struct std::formatter<nameof::cstring<N>, char> : std::formatter<std::string_vie
 #endif
 
 #if defined(FMT_VERSION)
+FMT_BEGIN_NAMESPACE
+template <typename T, typename Char> struct is_range; // Predeclaration from <fmt/ranges.h>
+FMT_END_NAMESPACE
+// Mark cstring as not-a-range, to prevent usage of fmt range formatter
+template <std::uint16_t N> struct fmt::is_range<nameof::cstring<N>, char> : std::false_type {};
+
 template <std::uint16_t N>
 struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
   template <typename FormatContext>
