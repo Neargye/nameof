@@ -674,6 +674,83 @@ const SomeClass<int> volatile * ptr_c = nullptr;
 const Color color = Color::RED;
 
 template <typename T, typename = void>
+struct has_nameof_enum : std::false_type {};
+
+template <typename T>
+struct has_nameof_enum<T, std::void_t<decltype(nameof::nameof_enum(std::declval<T>()))>> : std::true_type {};
+
+template <typename T, typename = void>
+struct has_nameof_enum_or : std::false_type {};
+
+template <typename T>
+struct has_nameof_enum_or<T, std::void_t<decltype(nameof::nameof_enum_or(std::declval<T>(), nameof::string_view{}))>> : std::true_type {};
+
+template <typename T, typename = void>
+struct has_nameof_enum_flag : std::false_type {};
+
+template <typename T>
+struct has_nameof_enum_flag<T, std::void_t<decltype(nameof::nameof_enum_flag(std::declval<T>()))>> : std::true_type {};
+
+template <auto V, typename = void>
+struct has_nameof_enum_const : std::false_type {};
+
+template <auto V>
+struct has_nameof_enum_const<V, std::void_t<decltype(nameof::nameof_enum<V>())>> : std::true_type {};
+
+template <auto V, typename = void>
+struct has_nameof_member : std::false_type {};
+
+template <auto V>
+struct has_nameof_member<V, std::void_t<decltype(nameof::nameof_member<V>())>> : std::true_type {};
+
+template <auto V, typename = void>
+struct has_nameof_pointer : std::false_type {};
+
+template <auto V>
+struct has_nameof_pointer<V, std::void_t<decltype(nameof::nameof_pointer<V>())>> : std::true_type {};
+
+static_assert(has_nameof_enum<Color>::value);
+static_assert(has_nameof_enum<const Color&>::value);
+static_assert(!has_nameof_enum<int>::value);
+static_assert(!has_nameof_enum<Color*>::value);
+static_assert(!has_nameof_enum<SomeStruct>::value);
+static_assert(has_nameof_enum_or<Color>::value);
+static_assert(has_nameof_enum_or<const Color&>::value);
+static_assert(!has_nameof_enum_or<int>::value);
+static_assert(!has_nameof_enum_or<Color*>::value);
+static_assert(!has_nameof_enum_or<SomeStruct>::value);
+static_assert(has_nameof_enum_flag<AnimalFlags>::value);
+static_assert(has_nameof_enum_flag<const AnimalFlags&>::value);
+static_assert(!has_nameof_enum_flag<int>::value);
+static_assert(!has_nameof_enum_flag<AnimalFlags*>::value);
+static_assert(!has_nameof_enum_flag<SomeStruct>::value);
+static_assert(!has_nameof_enum_const<42>::value);
+static_assert(!has_nameof_enum_const<nullptr>::value);
+static_assert(!has_nameof_member<42>::value);
+static_assert(!has_nameof_member<nullptr>::value);
+static_assert(!has_nameof_member<&someglobalvariable>::value);
+static_assert(!has_nameof_member<&SomeMethod3>::value);
+static_assert(!has_nameof_pointer<42>::value);
+static_assert(!has_nameof_pointer<nullptr>::value);
+static_assert(!has_nameof_pointer<&SomeStruct::somefield>::value);
+static_assert(!has_nameof_pointer<&SomeStruct::SomeMethod1>::value);
+
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
+static_assert(has_nameof_enum_const<Color::RED>::value);
+#endif
+#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
+static_assert(has_nameof_member<&SomeStruct::somefield>::value);
+static_assert(has_nameof_member<&SomeStruct::SomeMethod1>::value);
+static_assert(has_nameof_member<static_cast<int SomeStruct::*>(nullptr)>::value);
+#endif
+#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED
+static_assert(has_nameof_pointer<&someglobalvariable>::value);
+static_assert(has_nameof_pointer<&SomeMethod3>::value);
+static_assert(has_nameof_pointer<&SomeMethod4<int, int>>::value);
+static_assert(has_nameof_pointer<static_cast<int*>(nullptr)>::value);
+#endif
+
+template <typename T, typename = void>
 struct has_nameof_short_type : std::false_type {};
 
 template <typename T>
@@ -692,6 +769,12 @@ static_assert(!has_nameof_short_type<int SomeStruct::*>::value);
 static_assert(!has_nameof_short_type<void (SomeStruct::*)(int)>::value);
 
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
+static_assert(!std::is_copy_constructible_v<nameof::detail::demangled_name>);
+static_assert(!std::is_copy_assignable_v<nameof::detail::demangled_name>);
+static_assert(!std::is_move_constructible_v<nameof::detail::demangled_name>);
+static_assert(!std::is_move_assignable_v<nameof::detail::demangled_name>);
+static_assert(std::is_nothrow_destructible_v<nameof::detail::demangled_name>);
+
 template <typename T, typename = void>
 struct has_nameof_short_type_rtti : std::false_type {};
 
@@ -762,6 +845,44 @@ void require_static_cstring_api_contract(const Name& name, ::nameof::string_view
   static_assert(std::is_constructible_v<::nameof::string, const Name&>);
   require_cstring_contract(name, expected);
   require_string_contract(::nameof::string{name}, expected);
+}
+
+TEST_CASE("runtime calls through function pointers") {
+  // Taking their addresses prevents compile-time-only declarations from passing these tests.
+#if defined(NAMEOF_ENUM_SUPPORTED) && NAMEOF_ENUM_SUPPORTED
+  auto volatile enum_name = &nameof::nameof_enum<Color>;
+  auto volatile enum_const_name = &nameof::nameof_enum<Color::RED>;
+  auto volatile enum_or_name = &nameof::nameof_enum_or<Color>;
+  auto volatile enum_flag_name = &nameof::nameof_enum_flag<AnimalFlags>;
+  CHECK(enum_name(Color::GREEN) == "GREEN");
+  CHECK(enum_name(static_cast<Color>(0)).empty());
+  CHECK(enum_const_name() == "RED");
+  CHECK(enum_or_name(Color::BLUE, "fallback") == "BLUE");
+  CHECK(enum_or_name(static_cast<Color>(0), "fallback") == "fallback");
+  CHECK(enum_flag_name(static_cast<AnimalFlags>(HasClaws | CanFly), '+') == "HasClaws+CanFly");
+#endif
+#if defined(NAMEOF_TYPE_SUPPORTED) && NAMEOF_TYPE_SUPPORTED
+  auto volatile type_name = &nameof::nameof_type<const SomeStruct&>;
+  auto volatile full_type_name = &nameof::nameof_full_type<const SomeStruct&>;
+  auto volatile short_type_name = &nameof::nameof_short_type<const SomeStruct&>;
+  CHECK(type_name() == NAMEOF_TYPE(SomeStruct));
+  CHECK(full_type_name() == NAMEOF_FULL_TYPE(const SomeStruct&));
+  CHECK(short_type_name() == "SomeStruct");
+#endif
+#if defined(NAMEOF_MEMBER_SUPPORTED) && NAMEOF_MEMBER_SUPPORTED
+  auto volatile member_name = &nameof::nameof_member<&SomeStruct::somefield>;
+  CHECK(member_name() == "somefield");
+#endif
+#if defined(NAMEOF_POINTER_SUPPORTED) && NAMEOF_POINTER_SUPPORTED
+  auto volatile pointer_name = &nameof::nameof_pointer<&someglobalvariable>;
+  CHECK(pointer_name() == "someglobalvariable");
+#endif
+  auto volatile pretty_name = &nameof::detail::pretty_name;
+  auto volatile to_cstring = &nameof::detail::to_cstring<5>;
+  std::string expression = "scope::value";
+  const auto name = pretty_name(expression, true);
+  CHECK(name == "value");
+  CHECK(to_cstring(name) == "value");
 }
 
 TEST_CASE("support constants") {

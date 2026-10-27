@@ -10,12 +10,23 @@
 
 #include <doctest/doctest.h>
 
+#if __has_include(<fmt/format.h>)
+#  include <fmt/format.h>
+#endif
+
 // Aliases are expected to have the std::string and std::string_view interfaces.
 // These types define only the members nameof uses, so a new requirement shows up here.
 struct MyString {
+  struct ConstructionError {};
+  static inline bool throw_on_construction = false;
+
   MyString() : str{} {}
   MyString(const char* s) : str{s} {}
-  MyString(const char* s, std::size_t l) : str{s, l} {}
+  MyString(const char* s, std::size_t l) : str{s, l} {
+    if (throw_on_construction) {
+      throw ConstructionError{};
+    }
+  }
   bool empty() const { return str.empty(); }
   MyString& append(std::size_t count, char c) { str.append(count, c); return *this; }
   MyString& append(const char* s, std::size_t count) { str.append(s, count); return *this; }
@@ -50,6 +61,11 @@ struct MyStringView {
 #define NAMEOF_USING_ALIAS_STRING_VIEW using string_view = MyStringView;
 
 #include <nameof.hpp>
+
+#if defined(FMT_VERSION)
+// The main suite includes fmt/ranges.h before nameof.hpp. Check the other order here.
+#  include <fmt/ranges.h>
+#endif
 
 enum class Color { RED = 1, GREEN = 2, BLUE = 4 };
 
@@ -91,6 +107,28 @@ TEST_CASE("string") {
   REQUIRE(pointer_name.compare(NAMEOF_FULL_TYPE_EXPR(callback).c_str()) == 0);
 #endif
 }
+
+#if defined(NAMEOF_TYPE_RTTI_SUPPORTED) && NAMEOF_TYPE_RTTI_SUPPORTED
+TEST_CASE("RTTI with a throwing string alias") {
+  const AliasStruct value{};
+  MyString::throw_on_construction = true;
+  // Leak sanitizers check that demangled buffers are freed during stack unwinding.
+  CHECK_THROWS_AS(static_cast<void>(NAMEOF_TYPE_RTTI(value)), MyString::ConstructionError);
+  CHECK_THROWS_AS(static_cast<void>(NAMEOF_FULL_TYPE_RTTI(value)), MyString::ConstructionError);
+  CHECK_THROWS_AS(static_cast<void>(NAMEOF_SHORT_TYPE_RTTI(value)), MyString::ConstructionError);
+  MyString::throw_on_construction = false;
+  CHECK(NAMEOF_SHORT_TYPE_RTTI(value).compare("AliasStruct") == 0);
+}
+#endif
+
+#if defined(FMT_VERSION)
+TEST_CASE("fmt with aliases and ranges included after nameof") {
+  CHECK(fmt::format("{:>5}", NAMEOF_TYPE(int)) == "  int");
+  CHECK(fmt::format("{}", nameof::cstring<0>{}).empty());
+  constexpr nameof::cstring<3> embedded_null{nameof::string_view{"a\0b", 3}};
+  CHECK(fmt::format("{}", embedded_null) == std::string("a\0b", 3));
+}
+#endif
 
 TEST_CASE("cstring stream formatting with aliases") {
   std::ostringstream os;

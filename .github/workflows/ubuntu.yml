@@ -178,7 +178,7 @@ jobs:
           -DNAMEOF_TEST_REQUIRE_FMT=ON
 
     - name: Build
-      run: cmake --build build --parallel "$(nproc)" --target test-cpp17
+      run: cmake --build build --parallel "$(nproc)" --target test-cpp17 test_aliases-cpp17
 
     - name: Test
-      run: ctest --test-dir build --parallel "$(nproc)" --output-on-failure --no-tests=error -R "^test-cpp17$"
+      run: ctest --test-dir build --parallel "$(nproc)" --output-on-failure --no-tests=error -R "^test(_aliases)?-cpp17$"
