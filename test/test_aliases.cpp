@@ -99,7 +99,9 @@ TEST_CASE("string") {
   REQUIRE(cn.empty());
   REQUIRE(cn.size() == 0);
 
-  auto qualified_name = nameof::detail::qualified_type_name<const volatile int&&>(nameof::string{"int"});
+  // GCC 11 falsely reports an SSO overread in std::string move assignment when this call is inlined.
+  auto volatile qualify = &nameof::detail::qualified_type_name<const volatile int&&>;
+  auto qualified_name = qualify(nameof::string{"int"});
   REQUIRE(qualified_name.compare("const volatile int&&") == 0);
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   void (* const callback)() = nullptr;
