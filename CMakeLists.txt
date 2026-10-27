@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required(VERSION 3.22)
 
 project(nameof
-    VERSION "0.10.6"
+    VERSION "0.11.0"
     HOMEPAGE_URL "https://github.com/Neargye/nameof"
     DESCRIPTION "A library that provides nameof macros and functions to simply obtain the name of a variable, type, function, macro, and enum."
     LANGUAGES CXX
