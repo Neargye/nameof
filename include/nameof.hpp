@@ -69,6 +69,13 @@
 #  pragma warning(disable : 6262)  // Code analysis counts the stack of compile-time helpers that hold a 512-name block.
 #  pragma warning(disable : 6326)  // Code analysis false positive for constant comparisons in consteval helpers.
 #  pragma warning(disable : 28020) // Code analysis false positive for bounds-checked enum value arrays.
+#elif defined(__clang__)
+#  pragma clang diagnostic push
+#  if __has_warning("-Wenum-constexpr-conversion")
+#    pragma clang diagnostic ignored "-Wenum-constexpr-conversion" // Clang 16-19: scanning casts candidates outside the value range of unfixed enums.
+#  elif __clang_major__ >= 16
+#    define NAMEOF_DETAIL_STRICT_ENUM_CAST 1 // Clang 20+ made it a hard error (CWG1766). Apple Clang versions differ, so the warning is probed.
+#  endif
 #endif
 
 // Checks nameof_type compiler compatibility.
@@ -184,6 +191,13 @@ inline constexpr bool is_nameof_enum_supported = false;
 #  if __has_builtin(__builtin_bit_cast)
 #    define NAMEOF_DETAIL_HAS_BIT_CAST 1
 #  endif
+#endif
+
+// Clang 16+ rejects out-of-range static_casts to unfixed enums in constant expressions (https://reviews.llvm.org/D130058, D131307).
+#if defined(NAMEOF_DETAIL_HAS_BIT_CAST)
+#  define NAMEOF_DETAIL_ENUM_CAST(E, V) __builtin_bit_cast(E, V)
+#else
+#  define NAMEOF_DETAIL_ENUM_CAST(E, V) static_cast<E>(V)
 #endif
 
 namespace customize {
@@ -780,12 +794,7 @@ NAMEOF_DETAIL_CONSTEVAL bool nv() noexcept {
 
 template <typename E, typename U>
 NAMEOF_DETAIL_CONSTEVAL E enum_cast(U value) noexcept {
-#if defined(NAMEOF_DETAIL_HAS_BIT_CAST)
-  // Clang 16+ rejects out-of-range static_casts to unfixed enums in constant expressions (https://reviews.llvm.org/D130058, D131307).
-  return __builtin_bit_cast(E, value);
-#else
-  return static_cast<E>(value);
-#endif
+  return NAMEOF_DETAIL_ENUM_CAST(E, value);
 }
 
 // The value at offset i from O. For flags, the range is bit positions, so the value is 1 << (i + O).
@@ -1042,15 +1051,12 @@ template <typename E>
 NAMEOF_DETAIL_CONSTEVAL bool batch_supported() noexcept {
 #if defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(__CUDACC__)
   return false;
-#elif defined(__clang__) && __clang_major__ >= (defined(__apple_build_version__) ? 15 : 16) && __clang_major__ < 20
-  // Clang 16-19 (Apple Clang 15 is LLVM 16) reject out-of-range unfixed enum values in a pack (-Wenum-constexpr-conversion), even from bit_cast.
-  return has_fixed_underlying_v<E>;
 #else
   return is_nameof_enum_supported;
 #endif
 }
 
-#if defined(__clang__) && __clang_major__ >= 20
+#if defined(NAMEOF_DETAIL_STRICT_ENUM_CAST)
 template <typename E, auto V, typename = void>
 inline constexpr bool enum_castable_v = false;
 
@@ -1072,7 +1078,7 @@ NAMEOF_DETAIL_CONSTEVAL U unfixed_max() noexcept {
 
 template <typename E, typename U = std::underlying_type_t<E>>
 NAMEOF_DETAIL_CONSTEVAL bool batch_castable([[maybe_unused]] U value) noexcept {
-#if defined(__clang__) && __clang_major__ >= 20
+#if defined(NAMEOF_DETAIL_STRICT_ENUM_CAST)
   if constexpr (!has_fixed_underlying_v<E>) {
     constexpr U max = unfixed_max<E>();
     if constexpr (std::is_signed_v<U> && enum_castable_v<E, static_cast<U>(-1)>) {
@@ -1097,9 +1103,15 @@ NAMEOF_DETAIL_CONSTEVAL auto block_names(std::index_sequence<K...>) noexcept {
     // MSVC 19.29 calls a non-constexpr array helper for a directly returned empty aggregate in consteval.
     signature_names_t<sizeof...(K)> result;
     return result;
+#if !defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) && (defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(_MSC_VER))
+  } else if constexpr (!IsFlags) {
+#else
+  // Unfixed enums keep batch_value: Clang 20+ needs its filter, and GCC 9/10 static_cast warns with -Wconversion.
   } else if constexpr (!IsFlags && has_fixed_underlying_v<E>) {
+#endif
+    // The cast is spelled in the argument itself: a batch_value call per candidate was measured 2-6% slower.
     using U = std::underlying_type_t<E>;
-    return signature_names<sizeof...(K)>(nb<static_cast<E>(static_cast<U>(static_cast<int>(J + K) + Min))...>());
+    return signature_names<sizeof...(K)>(nb<NAMEOF_DETAIL_ENUM_CAST(E, static_cast<U>(static_cast<int>(J + K) + Min))...>());
   } else {
     return signature_names<sizeof...(K)>(nb<batch_value<E, Min, IsFlags>(J + K)...>());
   }
@@ -1886,9 +1898,13 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #undef NAMEOF_DETAIL_CONSTEVAL
 #undef NAMEOF_DETAIL_USE_STD_REFLECTION
 #undef NAMEOF_DETAIL_HAS_BIT_CAST
+#undef NAMEOF_DETAIL_ENUM_CAST
+#undef NAMEOF_DETAIL_STRICT_ENUM_CAST
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(pop)
+#elif defined(__clang__)
+#  pragma clang diagnostic pop
 #endif
 
 #endif // NEARGYE_NAMEOF_HPP

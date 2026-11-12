@@ -586,6 +586,8 @@ static_assert(nameof::detail::block_names_v<Batched, false, 513, 0, 0>.valid);
 static_assert(nameof::detail::block_names_v<Batched, false, 513, 0, 512>.valid);
 static_assert(nameof::detail::block_names_v<Wide, false, 4097, 0, 512>.valid);
 static_assert(nameof::detail::block_names_v<backend_test::CharHost<'<', L'>'>::E, false, 256, -128, 0>.valid);
+// Candidates outside the value range [0, 7]: Clang 16-19 need -Wenum-constexpr-conversion ignored, Clang 20+ the cast filter.
+static_assert(nameof::detail::block_names_v<Unfixed, false, 256, -128, 0>.valid);
 static_assert(sizeof(nameof::detail::block_offsets_v<Wide, false, 4097, 0, 512>.offsets) == sizeof(std::uint16_t));
 #endif
 static_assert(!nameof::detail::block_names_v<Fallback, false, 513, 0, 0>.valid);
