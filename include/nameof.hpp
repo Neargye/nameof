@@ -48,7 +48,7 @@
 #include <type_traits>
 #include <utility>
 
-#if !defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION) && defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L && defined(__cpp_expansion_statements) && __cpp_expansion_statements >= 202506L
+#if !defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION) && defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L
 #  if __has_include(<meta>)
 #    include <meta>
 #  endif
@@ -64,7 +64,9 @@
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(push)
+#  pragma warning(disable : 4459 6244) // Internal names may shadow globals declared by the caller.
 #  pragma warning(disable : 4514)  // Unreferenced inline function has been removed.
+#  pragma warning(disable : 6262)  // Code analysis counts the stack of compile-time helpers that hold a 512-name block.
 #  pragma warning(disable : 6326)  // Code analysis false positive for constant comparisons in consteval helpers.
 #  pragma warning(disable : 28020) // Code analysis false positive for bounds-checked enum value arrays.
 #endif
@@ -95,14 +97,12 @@
 #  define NAMEOF_ENUM_SUPPORTED_ALIASES 1
 #endif
 
-// Enum value must be greater than or equal to NAMEOF_ENUM_RANGE_MIN. By default, NAMEOF_ENUM_RANGE_MIN = -128.
-// If you need another default minimum for all enum types, redefine the macro NAMEOF_ENUM_RANGE_MIN.
+// Enum value must be greater than or equal to NAMEOF_ENUM_RANGE_MIN (-128 by default). Redefine the macro to change it for all enum types.
 #if !defined(NAMEOF_ENUM_RANGE_MIN)
 #  define NAMEOF_ENUM_RANGE_MIN -128
 #endif
 
-// Enum value must be less than or equal to NAMEOF_ENUM_RANGE_MAX. By default, NAMEOF_ENUM_RANGE_MAX = 127.
-// If you need another default maximum for all enum types, redefine the macro NAMEOF_ENUM_RANGE_MAX.
+// Enum value must be less than or equal to NAMEOF_ENUM_RANGE_MAX (127 by default). Redefine the macro to change it for all enum types.
 #if !defined(NAMEOF_ENUM_RANGE_MAX)
 #  define NAMEOF_ENUM_RANGE_MAX 127
 #endif
@@ -241,16 +241,6 @@ class [[nodiscard]] cstring {
   template <bool Empty = (N == 0), std::enable_if_t<Empty, int> = 0>
   constexpr cstring() noexcept : chars_{} {}
 
-  constexpr cstring(const cstring&) = default;
-
-  constexpr cstring(cstring&&) = default;
-
-  ~cstring() = default;
-
-  cstring& operator=(const cstring&) = default;
-
-  cstring& operator=(cstring&&) = default;
-
   [[nodiscard]] constexpr const_pointer data() const noexcept { return N == 0 ? empty_ : chars_; }
 
   [[nodiscard]] constexpr size_type size() const noexcept { return N; }
@@ -333,6 +323,8 @@ class [[nodiscard]] cstring {
   template <std::uint16_t... J>
   constexpr cstring([[maybe_unused]] string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
 
+ public:
+  // Public on purpose: GCC 13/14 rechecks private access to constexpr view storage in templated lambdas (magic_enum#452).
   static constexpr char empty_[1]{};
   char chars_[static_cast<std::size_t>(N) + 1];
 };
@@ -387,8 +379,7 @@ constexpr std::size_t find_literal_begin(string_view name, std::size_t end) noex
   return std::string_view::npos;
 }
 
-// Find the start of trailing groups and preceding spaces, or npos if unbalanced: " (a)(b)" in "f<int> (a)(b)" for '(' and ')'.
-// One backward pass: suffix_depth counts open/close groups, nested_depth counts other brackets inside them.
+// Find the start of trailing open/close groups and preceding spaces, or npos if unbalanced: " (a)(b)" in "f<int> (a)(b)" for '(' and ')'.
 constexpr std::size_t find_suffix_begin(string_view name, char open, char close) noexcept {
   for (std::size_t i = name.size(), suffix_depth = 0, nested_depth = 0; i > 0; --i) {
     const auto c = name[i - 1];
@@ -437,8 +428,7 @@ constexpr std::size_t find_suffix_begin(string_view name, char open, char close)
   return 0;
 }
 
-// The last identifier of an expression or a qualified name: "ns::S<int>::f<int>(x)" -> "f", or "f<int>" without remove_suffix.
-// Empty for literals, numbers and other expressions without a name.
+// The last identifier of an expression, empty if it has no name: "ns::S<int>::f<int>(x)" -> "f", or "f<int>" without remove_suffix.
 constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
   std::size_t prefix_end = 0;
   while (prefix_end < name.size() && is_name_char(name[prefix_end])) {
@@ -486,8 +476,7 @@ constexpr bool is_operator_keyword(string_view str, std::size_t i) noexcept {
          (i + 8 == str.size() || !is_name_char(str[i + 8]));
 }
 
-// Operators have no name, but pretty_name yields "operator" for "S::operator()", "__conv_op" for GCC conversion operators
-// and the token after the keyword for "S::operator new", Clang "S::operator int" and "operator\"\"_x".
+// Operators have no name, but pretty_name yields "operator" ("S::operator()"), GCC "__conv_op" or the token after the keyword ("S::operator new", "operator\"\"_x").
 constexpr string_view pretty_member_name(string_view signature) noexcept {
   const auto name = pretty_name(signature);
   if (name.empty() || name.compare("operator") == 0 || name.compare("__conv_op") == 0) {
@@ -529,8 +518,7 @@ constexpr std::size_t skip_template_arguments(string_view signature, std::size_t
   return depth == 0 ? i : std::string_view::npos;
 }
 
-// MSVC spells function pointers as declarations: p<&void __cdecl f(void)>, p<void __cdecl ns::g<int>(void)>.
-// The name is the first identifier after ' ' or "::" that is followed by its parameters, possibly after template arguments.
+// MSVC spells function pointers as declarations (p<void __cdecl ns::g<int>(void)>): the name is the first identifier after ' ' or "::" followed by its parameters.
 constexpr string_view pretty_function_name(string_view signature) noexcept {
   std::size_t template_begin = 0;
   for (; template_begin < signature.size() && signature[template_begin] != '<'; ++template_begin) {}
@@ -579,8 +567,20 @@ using make_unsigned_t = std::make_unsigned_t<std::conditional_t<std::is_same_v<T
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
+#if defined(__clang__)
+// Clang can leave a class-template enum's enumerators uninstantiated on a numeric-first lookup. Member lookup forces its definition, both outcomes yield R.
+template <typename E, typename R, typename = void>
+struct enum_definition { using type = R; };
+
+template <typename E, typename R>
+struct enum_definition<E, R, std::void_t<decltype(E::nameof_detail_enum_definition)>> { using type = R; };
+
+template <typename T, typename R>
+using enable_if_enum_t = typename enum_definition<remove_cvref_t<T>, std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>>::type;
+#else
 template <typename T, typename R>
 using enable_if_enum_t = std::enable_if_t<std::is_enum_v<remove_cvref_t<T>>, R>;
+#endif
 
 // Enums may overload operator==.
 template <typename E>
@@ -606,14 +606,117 @@ consteval auto enumerators() noexcept {
 template <typename E>
 inline constexpr auto enumerators_v = enumerators<E>();
 
+template <typename U>
+struct entry {
+  U value;
+  string_view name;
+};
+
 template <typename E>
-constexpr auto enum_name([[maybe_unused]] E value) noexcept {
-  template for (constexpr auto enumerator : enumerators_v<E>) {
-    constexpr E candidate = std::meta::extract<E>(enumerator);
-    if (enum_value_equal(candidate, value)) {
-      constexpr auto identifier = std::meta::identifier_of(enumerator);
-      constexpr auto persistent_name = std::define_static_string(identifier);
-      return string_view{persistent_name, identifier.size()};
+consteval auto entries() noexcept {
+  using U = std::underlying_type_t<E>;
+  // Share array instantiations between enums with the same underlying type and size.
+  std::array<entry<U>, enumerators_v<E>.size()> result{};
+  std::size_t i = 0;
+  for (const auto enumerator : enumerators_v<E>) {
+    const auto identifier = std::meta::identifier_of(enumerator);
+    // identifier_of's pointer is not a portable pointer NTTP, so keep define_static_string's storage.
+    result[i++] = {static_cast<U>(std::meta::extract<E>(enumerator)), {std::define_static_string(identifier), identifier.size()}};
+  }
+  return result;
+}
+
+template <typename E>
+inline constexpr auto entries_v = entries<E>();
+
+template <typename E>
+consteval auto flag_mask() noexcept {
+  // Only a rejection filter: composite enumerators may add extra bits.
+  using U = make_unsigned_t<std::underlying_type_t<E>>;
+  U mask{};
+  for (const auto& item : entries_v<E>) {
+    mask = static_cast<U>(mask | static_cast<U>(item.value));
+  }
+  return mask;
+}
+
+template <typename E>
+inline constexpr auto flag_mask_v = flag_mask<E>();
+
+template <typename E>
+consteval bool is_dense() noexcept {
+  using U = make_unsigned_t<std::underlying_type_t<E>>;
+  for (std::size_t i = 1; i < entries_v<E>.size(); ++i) {
+    const auto prev = entries_v<E>[i - 1].value;
+    const auto next = entries_v<E>[i].value;
+    if (next <= prev || static_cast<U>(static_cast<U>(next) - static_cast<U>(prev)) != U{1}) {
+      return false;
+    }
+  }
+  return !entries_v<E>.empty();
+}
+
+// Dense lookup needs only names at runtime, values remain compile-time metadata.
+template <typename E>
+consteval auto names() noexcept {
+  std::array<string_view, enumerators_v<E>.size()> result{};
+  for (std::size_t i = 0; i < result.size(); ++i) {
+    result[i] = entries_v<E>[i].name;
+  }
+  return result;
+}
+
+template <typename E>
+inline constexpr auto names_v = names<E>();
+
+template <typename E, std::size_t... K>
+constexpr auto enum_name([[maybe_unused]] E value, std::index_sequence<K...>) noexcept {
+  string_view result{""};
+  static_cast<void>(((entries_v<E>[K].value == static_cast<std::underlying_type_t<E>>(value)
+                     ? (static_cast<void>(result = entries_v<E>[K].name), true) : false) || ...));
+  return result;
+}
+
+template <typename E>
+constexpr auto enum_name(E value) noexcept {
+  if constexpr (enumerators_v<E>.size() <= 4) {
+#if defined(__cpp_expansion_statements) && __cpp_expansion_statements >= 202506L
+    // Avoid building a tiny table when expansion statements are available.
+    template for (constexpr auto enumerator : enumerators_v<E>) {
+      constexpr auto candidate = std::meta::extract<E>(enumerator);
+      if (enum_value_equal(candidate, value)) {
+        constexpr auto identifier = std::meta::identifier_of(enumerator);
+        constexpr auto name = std::define_static_string(identifier);
+        return string_view{name, identifier.size()};
+      }
+    }
+    return string_view{""};
+#else
+    return enum_name(value, std::make_index_sequence<enumerators_v<E>.size()>{});
+#endif
+  } else if constexpr (is_dense<E>()) {
+    using U = make_unsigned_t<std::underlying_type_t<E>>;
+    constexpr auto first = entries_v<E>.front().value;
+    constexpr auto last = entries_v<E>.back().value;
+    const auto v = static_cast<std::underlying_type_t<E>>(value);
+    if (v >= first && v <= last) {
+      // Signed subtraction may overflow. Cast back to U after promotion of small integer types.
+      return names_v<E>[static_cast<std::size_t>(static_cast<U>(static_cast<U>(v) - static_cast<U>(first)))];
+    }
+  } else {
+    // Preserve the compiler's switch/table optimisation for sparse enums and first aliases.
+    return enum_name(value, std::make_index_sequence<entries_v<E>.size()>{});
+  }
+  return string_view{""};
+}
+
+template <typename E, E V>
+consteval auto enum_name() noexcept {
+  // A constant-value query creates only its selected name, without the runtime table.
+  for (const auto enumerator : enumerators_v<E>) {
+    if (enum_value_equal(std::meta::extract<E>(enumerator), V)) {
+      const auto identifier = std::meta::identifier_of(enumerator);
+      return string_view{std::define_static_string(identifier), identifier.size()};
     }
   }
   return string_view{""};
@@ -623,8 +726,7 @@ constexpr auto enum_name([[maybe_unused]] E value) noexcept {
 
 #endif
 
-// The enumerator is the last identifier, after "::" (V = Color::RED, MSVC nv<Color::RED>), ' ' (V = BLUE),
-// or on MSVC '<' (nv<BLUE>) and ',' (enum_name<enum E,BLUE>). Unnamed values are casts: (Color)5, MSVC (enum Color)0x5.
+// The enumerator is the last identifier after "::" (Color::RED), ' ' (V = BLUE), MSVC '<' (nv<BLUE>) or ',' (enum_name<enum E,BLUE>). Unnamed values are casts: (Color)5.
 NAMEOF_DETAIL_CONSTEVAL bool enum_name_valid(string_view signature) noexcept {
   std::size_t i = signature.size();
   while (i > 0 && is_name_char(signature[i - 1])) {
@@ -642,7 +744,7 @@ template <typename E, E V>
 NAMEOF_DETAIL_CONSTEVAL auto enum_name() noexcept {
   if constexpr (is_nameof_enum_supported) {
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
-    constexpr auto name = reflection::enum_name(V);
+    constexpr auto name = reflection::enum_name<E, V>();
 #else
     constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
     constexpr auto name = enum_name_valid(signature) ? pretty_name(signature) : string_view{};
@@ -679,8 +781,7 @@ NAMEOF_DETAIL_CONSTEVAL bool nv() noexcept {
 template <typename E, typename U>
 NAMEOF_DETAIL_CONSTEVAL E enum_cast(U value) noexcept {
 #if defined(NAMEOF_DETAIL_HAS_BIT_CAST)
-  // Clang 16+ rejects out-of-range static_casts to enums without a fixed underlying type in constant expressions:
-  // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
+  // Clang 16+ rejects out-of-range static_casts to unfixed enums in constant expressions (https://reviews.llvm.org/D130058, D131307).
   return __builtin_bit_cast(E, value);
 #else
   return static_cast<E>(value);
@@ -753,52 +854,342 @@ NAMEOF_DETAIL_CONSTEVAL auto reflected_max() noexcept {
   T(192)T(193)T(194)T(195)T(196)T(197)T(198)T(199)T(200)T(201)T(202)T(203)T(204)T(205)T(206)T(207)T(208)T(209)T(210)T(211)T(212)T(213)T(214)T(215)T(216)T(217)T(218)T(219)T(220)T(221)T(222)T(223) \
   T(224)T(225)T(226)T(227)T(228)T(229)T(230)T(231)T(232)T(233)T(234)T(235)T(236)T(237)T(238)T(239)T(240)T(241)T(242)T(243)T(244)T(245)T(246)T(247)T(248)T(249)T(250)T(251)T(252)T(253)T(254)T(255)
 
+template <auto... V>
+NAMEOF_DETAIL_CONSTEVAL auto nb() noexcept {
+  return NAMEOF_DETAIL_SIGNATURE;
+}
+
+template <std::size_t N>
+struct signature_names_t {
+  std::array<string_view, N> names{};
+  std::size_t count = 0;
+  bool valid = false;
+};
+
+NAMEOF_DETAIL_CONSTEVAL bool same_prefix(const char* str, std::size_t size, std::size_t a, std::size_t b, std::size_t n) noexcept {
+  if (b > size || n > size - b) {
+    return false;
+  }
+#if (defined(__clang__) && __clang_major__ >= 9) || (defined(_MSC_VER) && _MSC_VER >= 1929) || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 13)
+  return __builtin_memcmp(str + a, str + b, n) == 0;
+#else
+  for (std::size_t i = 0; i < n; ++i) {
+    if (str[a + i] != str[b + i]) {
+      return false;
+    }
+  }
+  return true;
+#endif
+}
+
+// Split the top-level commas of GCC's `{...}`, Clang's `<...>` or MSVC's unclosed `nb<...`, e.g. `Host<int, void>::E::A, (E)2`. Any mismatch rejects the entire list.
+template <std::size_t N>
+NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
+  signature_names_t<N> result;
+  const char* const str = signature.data();
+  // The list follows `V = {`, `V = <` or `nb<`, so a found begin is never zero.
+  std::size_t begin = 0, end = signature.size();
+  for (std::size_t i = 0; begin == 0 && i < end; ++i) {
+    if (end - i >= 5 && str[i] == 'V' && str[i + 1] == ' ' && str[i + 2] == '=' && str[i + 3] == ' ' &&
+        (str[i + 4] == '{' || str[i + 4] == '<')) {
+      if (str[end - 1] != (str[i + 4] == '{' ? '}' : '>')) {
+        return signature_names_t<N>{};
+      }
+      begin = i + 5;
+      --end;
+    } else if (end - i >= 3 && str[i] == 'n' && str[i + 1] == 'b' && str[i + 2] == '<') {
+      begin = i + 3;
+    }
+  }
+  if (begin == 0) {
+    return result;
+  }
+  std::size_t item = 0, cast = 0, cast_size = 0;
+  // Each push overwrites its slot and depth resets per item, so the stack is initialised only once.
+  char closes[64]{};
+  while (begin < end) {
+    while (begin < end && str[begin] == ' ') {
+      ++begin;
+    }
+    if (begin == end || item == N) {
+      return signature_names_t<N>{};
+    }
+    // Unnamed values are numeric casts (`(E)-2`, MSVC `(enum E)0x2`) that repeat their type, so a known prefix up to ')' is compared instead of parsed.
+    if (cast_size != 0 && str[begin] == '(' && same_prefix(str, end, cast, begin, cast_size)) {
+      auto pos = begin + cast_size;
+      if (pos < end && str[pos] == '-') {
+        ++pos;
+      }
+      const bool hex = end - pos >= 2 && str[pos] == '0' && str[pos + 1] == 'x';
+      pos += hex ? 2u : 0u;
+      const auto digits = pos;
+      while (pos < end && ((str[pos] >= '0' && str[pos] <= '9') ||
+                           (hex && ((str[pos] >= 'a' && str[pos] <= 'f') || (str[pos] >= 'A' && str[pos] <= 'F'))))) {
+        ++pos;
+      }
+      if (pos > digits) {
+        while (pos < end && str[pos] == ' ') {
+          ++pos;
+        }
+        if (pos == end || str[pos] == ',') {
+          ++item;
+          begin = pos + 1;
+          continue;
+        }
+      }
+    }
+    // Deeper or unfamiliar compiler spellings use the per-value scanner.
+    std::size_t depth = 0, i = begin, name = begin, name_end = begin;
+    for (; i < end; ++i) {
+      const auto c = str[i];
+      if (is_name_char(c)) {
+        const auto word = i;
+        // Consume an identifier once (backward revalidation exceeds constexpr limits on long names), with inline tests (is_name_char costs MSVC 5% time and 27% memory).
+        while (i + 1 < end) {
+          const auto next = str[i + 1];
+          if (!((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') ||
+                (next >= '0' && next <= '9') || next == '_' || static_cast<unsigned char>(next) >= 0x80)) {
+            break;
+          }
+          ++i;
+        }
+        if (depth == 0) {
+          name = word;
+          name_end = i + 1;
+        }
+        continue;
+      }
+      if (c == ',' && depth == 0) {
+        break;
+      }
+      if (c == '`') {
+        while (++i < end && str[i] != '\'') {}
+        if (i == end) {
+          return signature_names_t<N>{};
+        }
+      } else if (c == '"' || c == '\'') {
+        // Compilers print values, so a quote always opens a literal (Clang: L'a', u8'a'), never separates digits.
+        if (c == '"' && i > begin && str[i - 1] == 'R') {
+          return signature_names_t<N>{}; // Raw literals are outside this parser's grammar.
+        }
+        const auto quote = c;
+        bool closed = false;
+        while (++i < end) {
+          if (str[i] == '\\') {
+            if (++i == end) {
+              break;
+            }
+          } else if (str[i] == quote) {
+            closed = true;
+            break;
+          }
+        }
+        if (!closed) {
+          return signature_names_t<N>{};
+        }
+      } else if (c == '(' || c == '[' || c == '{' || c == '<') {
+        if (depth == sizeof(closes)) {
+          return signature_names_t<N>{};
+        }
+        closes[depth++] = c == '(' ? ')' : c == '[' ? ']' : c == '{' ? '}' : '>';
+      } else if (c == ')' || c == ']' || c == '}' || (c == '>' && !(i > begin && str[i - 1] == '-'))) {
+        if (depth == 0 || closes[--depth] != c) {
+          return signature_names_t<N>{};
+        }
+      }
+    }
+    auto stop = i;
+    while (stop > begin && str[stop - 1] == ' ') {
+      --stop;
+    }
+    if (depth != 0 || stop == begin) {
+      return signature_names_t<N>{};
+    }
+    const auto previous = name > begin ? str[name - 1] : '\0';
+    // A top-level '<' or ',' cannot precede the name here, unlike in enum_name_valid.
+    if (name_end == stop && name < stop && is_name_start(str[name]) &&
+        (name == begin || previous == ' ' || (previous == ':' && name - begin >= 2 && str[name - 2] == ':'))) {
+      result.names[item] = {str + name, stop - name};
+      ++result.count;
+    } else {
+      // Anything else must be a cast: remember its prefix for the check above. A prefix already retried is an unrecognised expression.
+      auto number = stop;
+      while (number > begin && (is_name_char(str[number - 1]) || str[number - 1] == '-')) {
+        --number;
+      }
+      if (cast == begin || str[begin] != '(' || str[number - 1] != ')') {
+        return signature_names_t<N>{};
+      }
+      cast = begin;
+      cast_size = number - begin;
+      continue;
+    }
+    ++item;
+    begin = i + 1;
+  }
+  // A trailing comma would be an empty last value.
+  result.valid = item == N && str[end - 1] != ',';
+  return result.valid ? result : signature_names_t<N>{};
+}
+
+template <typename E, typename = void>
+inline constexpr bool has_fixed_underlying_v = false;
+
+template <typename E>
+inline constexpr bool has_fixed_underlying_v<E, std::void_t<decltype(E{0})>> = true;
+
+template <typename E>
+NAMEOF_DETAIL_CONSTEVAL bool batch_supported() noexcept {
+#if defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(__CUDACC__)
+  return false;
+#elif defined(__clang__) && __clang_major__ >= (defined(__apple_build_version__) ? 15 : 16) && __clang_major__ < 20
+  // Clang 16-19 (Apple Clang 15 is LLVM 16) reject out-of-range unfixed enum values in a pack (-Wenum-constexpr-conversion), even from bit_cast.
+  return has_fixed_underlying_v<E>;
+#else
+  return is_nameof_enum_supported;
+#endif
+}
+
+#if defined(__clang__) && __clang_major__ >= 20
+template <typename E, auto V, typename = void>
+inline constexpr bool enum_castable_v = false;
+
+template <typename E, auto V>
+inline constexpr bool enum_castable_v<E, V, std::void_t<std::integral_constant<E, static_cast<E>(V)>>> = true;
+
+// CWG1766: Clang 20+ rejects out-of-domain unfixed values in packs, even after bit_cast.
+template <typename E, int K = 1, typename U = std::underlying_type_t<E>>
+NAMEOF_DETAIL_CONSTEVAL U unfixed_max() noexcept {
+  if constexpr (K == std::numeric_limits<U>::digits) {
+    return enum_castable_v<E, (std::numeric_limits<U>::max)()> ? (std::numeric_limits<U>::max)() : static_cast<U>((U{1} << (K - 1)) - 1);
+  } else if constexpr (enum_castable_v<E, static_cast<U>((U{1} << K) - 1)>) {
+    return unfixed_max<E, K + 1>();
+  } else {
+    return static_cast<U>((U{1} << (K - 1)) - 1);
+  }
+}
+#endif
+
+template <typename E, typename U = std::underlying_type_t<E>>
+NAMEOF_DETAIL_CONSTEVAL bool batch_castable([[maybe_unused]] U value) noexcept {
+#if defined(__clang__) && __clang_major__ >= 20
+  if constexpr (!has_fixed_underlying_v<E>) {
+    constexpr U max = unfixed_max<E>();
+    if constexpr (std::is_signed_v<U> && enum_castable_v<E, static_cast<U>(-1)>) {
+      return !cmp_less(value, -max - 1) && !cmp_less(max, value);
+    } else {
+      return !cmp_less(value, 0) && !cmp_less(max, value);
+    }
+  }
+#endif
+  return true;
+}
+
+template <typename E, int Min, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL E batch_value(std::size_t i) noexcept {
+  const auto value = value_at<E, Min, IsFlags>(i);
+  return batch_castable<E>(value) ? enum_cast<E>(value) : E{};
+}
+
+template <typename E, bool IsFlags, int Min, std::size_t J, std::size_t... K>
+NAMEOF_DETAIL_CONSTEVAL auto block_names(std::index_sequence<K...>) noexcept {
+  if constexpr (!batch_supported<E>()) {
+    // MSVC 19.29 calls a non-constexpr array helper for a directly returned empty aggregate in consteval.
+    signature_names_t<sizeof...(K)> result;
+    return result;
+  } else if constexpr (!IsFlags && has_fixed_underlying_v<E>) {
+    using U = std::underlying_type_t<E>;
+    return signature_names<sizeof...(K)>(nb<static_cast<E>(static_cast<U>(static_cast<int>(J + K) + Min))...>());
+  } else {
+    return signature_names<sizeof...(K)>(nb<batch_value<E, Min, IsFlags>(J + K)...>());
+  }
+}
+
+inline constexpr std::size_t scan_block_size = 512;
+
+// Copy these constants when consuming them: references can make MSVC emit whole signatures and blocks.
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J>
+inline constexpr auto block_names_v = block_names<E, IsFlags, Min, J>(std::make_index_sequence<((Size - J) < scan_block_size ? Size - J : scan_block_size)>{});
+
 template <std::size_t N>
 struct valid_offsets_t {
   std::uint16_t count = 0;
   std::uint16_t offsets[N] = {};
+  string_view names[N] = {};
 
-  constexpr void append(std::size_t i) noexcept {
+  constexpr void append(std::size_t i, string_view name) noexcept {
+    names[count] = name;
     offsets[count++] = static_cast<std::uint16_t>(i);
   }
 };
 
-template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J>
-NAMEOF_DETAIL_CONSTEVAL void valid_offsets(valid_offsets_t<Size>& vc) noexcept {
-#define NAMEOF_ENUM_V(O)                                                  \
-  if constexpr ((J + O) < Size) {                                         \
-    if constexpr (nv<enum_cast<E>(value_at<E, Min, IsFlags>(J + O))>()) { \
-      vc.append(J + O);                                                   \
-    }                                                                     \
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J, std::size_t N>
+NAMEOF_DETAIL_CONSTEVAL void scan_fallback(valid_offsets_t<N>& vc) noexcept {
+#define NAMEOF_ENUM_V(O)                                                                \
+  if constexpr ((J + O) < Size) {                                                       \
+    if constexpr (nv<enum_cast<E>(value_at<E, Min, IsFlags>(J + O))>()) {               \
+      vc.append(J + O, enum_name_v<E, enum_cast<E>(value_at<E, Min, IsFlags>(J + O))>); \
+    }                                                                                   \
   }
 
   NAMEOF_FOR_EACH_256(NAMEOF_ENUM_V)
-
-  if constexpr ((J + 256) < Size) {
-    valid_offsets<E, IsFlags, Size, Min, J + 256>(vc);
-  }
 #undef NAMEOF_ENUM_V
+}
+
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J>
+NAMEOF_DETAIL_CONSTEVAL auto block_offsets() noexcept {
+  constexpr auto block = block_names_v<E, IsFlags, Size, Min, J>;
+  constexpr auto count = block.names.size();
+  constexpr auto capacity = block.valid ? (block.count > 0 ? block.count : 1) : count;
+  valid_offsets_t<capacity> offsets;
+  if constexpr (!block.valid) {
+    scan_fallback<E, IsFlags, Size, Min, J>(offsets);
+    if constexpr (count > 256) {
+      scan_fallback<E, IsFlags, Size, Min, J + 256>(offsets);
+    }
+  } else if constexpr (block.count > 0) {
+    for (std::size_t i = 0; i < count; ++i) {
+      // An inadmissible pack argument was replaced with zero, so never count that synthetic position.
+      if (!block.names[i].empty() && batch_castable<E>(value_at<E, Min, IsFlags>(J + i))) {
+        offsets.append(J + i, block.names[i]);
+      }
+    }
+  }
+  return offsets;
+}
+
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J>
+inline constexpr auto block_offsets_v = block_offsets<E, IsFlags, Size, Min, J>();
+
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J = 0>
+NAMEOF_DETAIL_CONSTEVAL std::size_t valid_count() noexcept {
+  constexpr auto count = block_offsets_v<E, IsFlags, Size, Min, J>.count;
+  if constexpr (J + scan_block_size < Size) {
+    return count + valid_count<E, IsFlags, Size, Min, J + scan_block_size>();
+  } else {
+    return count;
+  }
+}
+
+template <typename E, bool IsFlags, std::size_t Size, int Min, std::size_t J, std::size_t N>
+NAMEOF_DETAIL_CONSTEVAL void append_offsets(valid_offsets_t<N>& offsets) noexcept {
+  constexpr auto block = block_offsets_v<E, IsFlags, Size, Min, J>;
+  if constexpr (block.count > 0) {
+    for (std::size_t i = 0; i < block.count; ++i) {
+      offsets.append(block.offsets[i], block.names[i]);
+    }
+  }
+  if constexpr (J + scan_block_size < Size) {
+    append_offsets<E, IsFlags, Size, Min, J + scan_block_size>(offsets);
+  }
 }
 
 template <typename E, bool IsFlags, std::size_t Size, int Min>
 NAMEOF_DETAIL_CONSTEVAL auto valid_offsets() noexcept {
-  valid_offsets_t<Size> vc;
-  valid_offsets<E, IsFlags, Size, Min, 0>(vc);
-  return vc;
-}
-
-template <typename E, bool IsFlags, std::size_t Size, int Min>
-NAMEOF_DETAIL_CONSTEVAL auto values() noexcept {
-  constexpr auto vc = valid_offsets<E, IsFlags, Size, Min>();
-  if constexpr (vc.count > 0) {
-    std::array<E, vc.count> values = {};
-    for (std::size_t i = 0; i < vc.count; ++i) {
-      values[i] = static_cast<E>(value_at<E, Min, IsFlags>(vc.offsets[i]));
-    }
-    return values;
-  } else {
-    return std::array<E, 0>{};
-  }
+  constexpr auto count = valid_count<E, IsFlags, Size, Min>();
+  valid_offsets_t<(count > 0 ? count : 1)> offsets;
+  append_offsets<E, IsFlags, Size, Min, 0>(offsets);
+  return offsets;
 }
 
 template <typename E, bool IsFlags>
@@ -815,20 +1206,36 @@ struct reflected_range {
 };
 
 template <typename E, bool IsFlags>
-NAMEOF_DETAIL_CONSTEVAL auto values() noexcept {
+NAMEOF_DETAIL_CONSTEVAL auto enum_offsets() noexcept {
   using R = reflected_range<E, IsFlags>;
   static_assert(R::valid_order, "nameof::customize::enum_range must contain at least one value.");
   if constexpr (R::empty) {
-    return std::array<E, 0>{};
+    return valid_offsets_t<1>{};
   } else if constexpr (!R::valid_bounds) {
     static_assert(R::valid_bounds, "nameof::customize::enum_range bounds must fit in int.");
-    return std::array<E, 0>{};
+    return valid_offsets_t<1>{};
   } else if constexpr (!R::valid_size) {
     static_assert(R::valid_size, "nameof::customize::enum_range must contain fewer than UINT16_MAX values.");
-    return std::array<E, 0>{};
+    return valid_offsets_t<1>{};
   } else {
-    return values<E, IsFlags, R::span + 1, static_cast<int>(R::min)>();
+    return valid_offsets<E, IsFlags, R::span + 1, static_cast<int>(R::min)>();
   }
+}
+
+template <typename E, bool IsFlags>
+inline constexpr auto offsets_v = enum_offsets<E, IsFlags>();
+
+template <typename E, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL auto values() noexcept {
+  constexpr auto offsets = offsets_v<E, IsFlags>;
+  std::array<E, offsets.count> result{};
+  if constexpr (offsets.count > 0) {
+    constexpr auto min = static_cast<int>(reflected_range<E, IsFlags>::min);
+    for (std::size_t i = 0; i < offsets.count; ++i) {
+      result[i] = static_cast<E>(value_at<E, min, IsFlags>(offsets.offsets[i]));
+    }
+  }
+  return result;
 }
 
 template <typename E, bool IsFlags = false>
@@ -843,13 +1250,67 @@ inline constexpr auto min_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_
 template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
 inline constexpr auto max_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_v<E, IsFlags>.back()) : U{0};
 
-template <typename E, bool IsFlags, std::size_t... J>
-NAMEOF_DETAIL_CONSTEVAL auto names(std::index_sequence<J...>) noexcept {
-  return std::array<string_view, sizeof...(J)>{{enum_name_v<E, values_v<E, IsFlags>[J]>...}};
+template <typename E, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL bool valid_name_lengths() noexcept {
+  constexpr auto offsets = offsets_v<E, IsFlags>;
+  for (std::size_t i = 0; i < offsets.count; ++i) {
+    if (offsets.names[i].size() > (std::numeric_limits<std::uint16_t>::max)()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename E, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL std::size_t name_chars_size() noexcept {
+  static_assert(valid_name_lengths<E, IsFlags>(), "nameof::cstring supports names of at most UINT16_MAX characters.");
+  constexpr auto offsets = offsets_v<E, IsFlags>;
+  std::size_t result = 0;
+  for (std::size_t i = 0; i < offsets.count; ++i) {
+    result += offsets.names[i].size() + 1;
+  }
+  return result;
+}
+
+template <typename E, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL auto name_chars() noexcept {
+  constexpr auto offsets = offsets_v<E, IsFlags>;
+  std::array<char, name_chars_size<E, IsFlags>()> result{};
+  if constexpr (offsets.count > 0) {
+    std::size_t pos = 0;
+    auto* const data = result.data();
+    for (std::size_t i = 0; i < offsets.count; ++i) {
+      const auto name = offsets.names[i];
+      const auto* const text = name.data();
+      const auto size = name.size();
+      for (std::size_t j = 0; j < size; ++j) {
+        data[pos++] = text[j];
+      }
+      ++pos; // The zero-initialised byte terminates this name.
+    }
+  }
+  return result;
+}
+
+template <typename E, bool IsFlags>
+inline constexpr auto name_chars_v = name_chars<E, IsFlags>();
+
+template <typename E, bool IsFlags>
+NAMEOF_DETAIL_CONSTEVAL auto names() noexcept {
+  constexpr auto offsets = offsets_v<E, IsFlags>;
+  std::array<string_view, offsets.count> result{};
+  if constexpr (offsets.count > 0) {
+    std::size_t pos = 0;
+    for (std::size_t i = 0; i < offsets.count; ++i) {
+      result[i] = {name_chars_v<E, IsFlags>.data() + pos, offsets.names[i].size()};
+      pos += offsets.names[i].size() + 1;
+    }
+  }
+  return result;
 }
 
 template <typename E, bool IsFlags = false>
-inline constexpr auto names_v = names<E, IsFlags>(std::make_index_sequence<count_v<E, IsFlags>>{});
+inline constexpr auto names_v = names<E, IsFlags>();
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 NAMEOF_DETAIL_CONSTEVAL bool is_sparse() noexcept {
@@ -893,6 +1354,13 @@ constexpr string_view enum_name(E value) noexcept {
   }
 
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+  if constexpr (IsFlags) {
+    using U = make_unsigned_t<std::underlying_type_t<E>>;
+    // This path receives single bits. Custom names were checked before the automatic mask.
+    if ((static_cast<U>(value) & reflection::flag_mask_v<E>) == U{0}) {
+      return string_view{""};
+    }
+  }
   return reflection::enum_name(value);
 #else
   if constexpr (count_v<E, IsFlags> > 0) {
@@ -1233,7 +1701,15 @@ template <typename E>
 
   string name;
   auto bits = static_cast<U>(value);
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+  // The early zero return helps only reflection: the scanner is faster with its while loop.
+  if (bits == U{0}) {
+    return name;
+  }
+  do {
+#else
   while (bits != U{0}) {
+#endif
     const auto flag = static_cast<U>(bits & static_cast<U>(U{0} - bits));
     const auto flag_name = detail::enum_name<D, true>(static_cast<D>(flag));
     if (flag_name.empty()) {
@@ -1244,12 +1720,15 @@ template <typename E>
     }
     name.append(flag_name.data(), flag_name.size());
     bits = static_cast<U>(bits ^ flag);
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+  } while (bits != U{0});
+#else
   }
+#endif
   return name;
 }
 
-// Obtains name of enum value known at compile time.
-// This version has a lower compile-time cost and is not restricted by the enum_range limitation.
+// Obtains name of enum value known at compile time. Lower compile-time cost, not restricted by the enum_range limitation.
 template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
 [[nodiscard]] constexpr const auto& nameof_enum() noexcept {
   using D = decltype(V);
@@ -1308,8 +1787,8 @@ template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>,
 template <std::uint16_t N>
 struct std::formatter<nameof::cstring<N>, char> : std::formatter<std::string_view, char> {
   template <typename FormatContext>
-  auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
-    return std::formatter<std::string_view, char>::format(std::string_view{value.data(), value.size()}, ctx);
+  auto format(const nameof::cstring<N>& str, FormatContext& ctx) const {
+    return std::formatter<std::string_view, char>::format(std::string_view{str.data(), str.size()}, ctx);
   }
 };
 #  endif
@@ -1328,8 +1807,8 @@ struct fmt::is_range<nameof::cstring<N>, char> : std::false_type {};
 template <std::uint16_t N>
 struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
   template <typename FormatContext>
-  auto format(const nameof::cstring<N>& value, FormatContext& ctx) const {
-    return fmt::formatter<fmt::string_view>::format(fmt::string_view{value.data(), value.size()}, ctx);
+  auto format(const nameof::cstring<N>& str, FormatContext& ctx) const {
+    return fmt::formatter<fmt::string_view>::format(fmt::string_view{str.data(), str.size()}, ctx);
   }
 };
 #endif
@@ -1361,8 +1840,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 // Obtains name of enum value or default value if no name is available.
 #define NAMEOF_ENUM_OR(...) ::nameof::nameof_enum_or(__VA_ARGS__)
 
-// Obtains name of enum value known at compile time.
-// This version has a lower compile-time cost and is not restricted by the enum_range limitation.
+// Obtains name of enum value known at compile time. Lower compile-time cost, not restricted by the enum_range limitation.
 #define NAMEOF_ENUM_CONST(...) ::nameof::nameof_enum<__VA_ARGS__>()
 
 // Obtains name of enum flag value.
@@ -1403,6 +1881,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 
 #undef NAMEOF_FOR_EACH_256
 #undef NAMEOF_DETAIL_CDECL
+#undef NAMEOF_DETAIL_TEST_FALLBACK
 #undef NAMEOF_DETAIL_SIGNATURE
 #undef NAMEOF_DETAIL_CONSTEVAL
 #undef NAMEOF_DETAIL_USE_STD_REFLECTION

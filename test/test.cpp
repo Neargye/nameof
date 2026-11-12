@@ -354,6 +354,13 @@ static_assert(std::is_nothrow_move_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_copy_assignable_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_move_assignable_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_destructible_v<::nameof::cstring<3>>);
+static_assert(std::is_trivially_copyable_v<::nameof::cstring<3>>);
+static_assert(std::is_trivially_destructible_v<::nameof::cstring<3>>);
+static_assert([] {
+  auto a = ::nameof::cstring<3>{"abc"};
+  a = ::nameof::cstring<3>{"xyz"};
+  return a == "xyz";
+}());
 static_assert(noexcept(cstring_abc.compare(std::declval<::nameof::string_view>())));
 static_assert(!noexcept(cstring_abc.str()));
 static_assert(!noexcept(static_cast<::nameof::string>(cstring_abc)));
@@ -2219,6 +2226,8 @@ TEST_CASE("short names of unnamed types") {
   // No aliases here: MSVC names an unnamed type after the first alias that refers to it.
   static_assert(nameof::detail::pretty_type_name(NAMEOF_TYPE_EXPR(unnamed_struct_object), true, false).empty());
   static_assert(nameof::detail::pretty_type_name(NAMEOF_TYPE_EXPR(unnamed_enum_value), true, false).empty());
+  static_assert(nameof::nameof_enum(unnamed_enum_value) == "unnamed_enum_value");
+  static_assert(nameof::nameof_enum<unnamed_enum_value>() == "unnamed_enum_value");
   REQUIRE(unnamed_struct_object.value == 0);
 }
 

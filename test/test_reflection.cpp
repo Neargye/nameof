@@ -236,3 +236,31 @@ TEST_CASE_TEMPLATE("signed flag sign bit", T, std::int8_t, std::int16_t, std::in
   CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<T>(static_cast<U>(E::High) | U{1}))) == "Low|High");
   CHECK(nameof::nameof_enum_flag(static_cast<E>(static_cast<T>(static_cast<U>(E::High) | U{2}))).empty());
 }
+
+#if defined(__cpp_lib_is_constant_evaluated)
+enum class TracedFlags : unsigned { First = 1, Second = 2 };
+unsigned flag_trace = 0;
+
+template <>
+constexpr nameof::string_view nameof::customize::enum_name<TracedFlags>(TracedFlags value) noexcept {
+  if (!std::is_constant_evaluated()) {
+    flag_trace = flag_trace * 10u + static_cast<unsigned>(value);
+  }
+  return static_cast<unsigned>(value) == 4u ? nameof::string_view{"Synthetic"} : nameof::string_view{};
+}
+
+TEST_CASE("flag customization order and early exit") {
+  flag_trace = 0;
+  CHECK(nameof::nameof_enum_flag(static_cast<TracedFlags>(0)).empty());
+  CHECK(flag_trace == 0u);
+  flag_trace = 0;
+  CHECK(nameof::nameof_enum_flag(static_cast<TracedFlags>(7), ':') == "First:Second:Synthetic");
+  CHECK(flag_trace == 124u);
+  flag_trace = 0;
+  CHECK(nameof::nameof_enum_flag(static_cast<TracedFlags>(15)).empty());
+  CHECK(flag_trace == 1248u);
+  flag_trace = 0;
+  CHECK(nameof::nameof_enum_flag(static_cast<TracedFlags>(9)).empty());
+  CHECK(flag_trace == 18u);
+}
+#endif

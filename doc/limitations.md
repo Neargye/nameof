@@ -83,3 +83,5 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 * Standard reflection requires complete enums for runtime lookup.
 
 * Visual Studio IntelliSense may have problems analyzing some `nameof` expressions.
+
+* `cstring` storage members are public to work around GCC access-checking bugs in templated lambdas. They remain implementation details; use `data()` and the string interface.

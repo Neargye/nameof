@@ -2,9 +2,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2018 - 2026 Daniil Goncharov <neargye@gmail.com>.
 
+// User globals with common names must not trigger -Wshadow (GCC/Clang) or C4459 (MSVC) inside the header.
+int count = 0;
+int result = 0;
+int size = 0;
+int first = 0;
+int last = 0;
+int prefix = 0;
+
 #include <nameof.hpp>
 
-#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST)
+#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK)
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 
@@ -42,6 +50,7 @@ enum UnfixedEnum { unfixed_first = 1, unfixed_second = 2 };
 #if defined(NAMEOF_ENUM_SUPPORTED)
 static_assert(nameof::nameof_enum(unfixed_second) == "unfixed_second");
 static_assert(nameof::nameof_enum(static_cast<UnfixedEnum>(3)).empty());
+static_assert(nameof::nameof_enum<unfixed_first>() == "unfixed_first");
 #endif
 
 struct StandaloneMembers {
@@ -80,6 +89,11 @@ struct StandaloneRttiDerived : StandaloneRttiBase {};
 int __cdecl main() {
 #else
 int main() {
+#endif
+#if defined(NAMEOF_ENUM_SUPPORTED)
+  if (nameof::nameof_enum_flag(static_cast<UnfixedEnum>(3)) != "unfixed_first|unfixed_second") {
+    return 2;
+  }
 #endif
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   StandaloneRttiDerived derived;

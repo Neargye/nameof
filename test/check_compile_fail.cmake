@@ -23,8 +23,7 @@ if(build_result EQUAL 0)
     )
 endif()
 
-# GCC and Clang echo the failing source line, which may contain the static_assert message itself.
-# Match the text only on a static_assert error line (GCC, Clang, MSVC C2338).
+# Match the text only on a static_assert error line (GCC, Clang, MSVC C2338): GCC and Clang also echo the source line with the message.
 string(REGEX REPLACE "([][+.*?()^$|\\{}])" "\\\\\\1" expected_regex "${EXPECTED_TEXT}")
 string(REGEX MATCH "error( ?: static.assert| C2338:)[^\n]*${expected_regex}" diagnostic_match "${build_output}")
 if(diagnostic_match STREQUAL "")

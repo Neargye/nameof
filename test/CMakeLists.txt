@@ -38,9 +38,12 @@ if(NAMEOF_HAS_CPP26_FLAG)
     # Probe the header itself, so the tests follow its backend selection.
     set(NAMEOF_STD_REFLECTION_PROBE [[
         #include <nameof.hpp>
-        enum class reflected_enum { value };
-        static_assert(nameof::detail::reflection::enumerators_v<reflected_enum>.size() == 1);
-        static_assert(nameof::nameof_enum(reflected_enum::value) == "value");
+        enum class reflected_enum { first = 900, alias = 900 };
+        static_assert(nameof::detail::reflection::enumerators_v<reflected_enum>.size() == 2);
+        static_assert(nameof::nameof_enum(reflected_enum::alias) == "first");
+        static_assert(nameof::nameof_enum<reflected_enum::alias>() == "first");
+        template <const char*> struct name_pointer {};
+        name_pointer<nameof::nameof_enum(reflected_enum::alias).data()> pointer_check;
         int main() {}
     ]])
     set(NAMEOF_SAVED_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
@@ -150,6 +153,18 @@ make_test(test_range.cpp test-range-cpp17 17)
 make_test(test_range_negative.cpp test-range-negative-cpp17 17)
 make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp17 17 DOCTEST)
 make_test(test_standalone.cpp test-standalone-cpp17 17)
+if(NAMEOF_TEST_FLAG_PREFIX STREQUAL "-std=")
+    # test_standalone.cpp declares globals with common names before the header.
+    target_compile_options(test-standalone-cpp17 PRIVATE -Wshadow)
+endif()
+# test_shared_config.cpp is a second translation unit using the same enums and customizations.
+make_test("test_backend.cpp;test_shared_config.cpp" test-backend-cpp17 17)
+make_test("test_backend.cpp;test_shared_config.cpp" test-backend-fallback-cpp17 17)
+target_compile_definitions(test-backend-fallback-cpp17 PRIVATE NAMEOF_DETAIL_TEST_FALLBACK=1)
+make_test(test_aliases.cpp test-aliases-fallback-cpp17 17 DOCTEST)
+target_compile_definitions(test-aliases-fallback-cpp17 PRIVATE NAMEOF_DETAIL_TEST_FALLBACK=1)
+make_test(test_reflection.cpp test-semantics-fallback-cpp17 17 DOCTEST)
+target_compile_definitions(test-semantics-fallback-cpp17 PRIVATE NAMEOF_DETAIL_TEST_FALLBACK=1)
 
 if(NAMEOF_NO_RTTI_OPTION)
     make_test(test_standalone.cpp test-standalone-no-rtti-cpp17 17)
@@ -198,6 +213,7 @@ foreach(std IN ITEMS 20 23 26)
     if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
         make_test(test.cpp test-cpp${std} ${std} DOCTEST)
         make_test(test_aliases.cpp test_aliases-cpp${std} ${std} DOCTEST)
+        make_test("test_backend.cpp;test_shared_config.cpp" test-backend-cpp${std} ${std})
         if(std EQUAL 20 AND NAMEOF_NO_RTTI_OPTION)
             make_test(test_standalone.cpp test-standalone-no-rtti-cpp20 20)
             target_compile_options(test-standalone-no-rtti-cpp20 PRIVATE ${NAMEOF_NO_RTTI_OPTION})
@@ -211,28 +227,31 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
     make_test(test_aliases.cpp test_aliases-reflection-cpp26 "" DOCTEST)
     make_test(test_reflection.cpp test-reflection-semantics-cpp26 "" DOCTEST)
 
-    foreach(target IN ITEMS test-reflection-cpp26 test_aliases-reflection-cpp26 test-reflection-semantics-cpp26)
+    make_test("test_backend.cpp;test_shared_config.cpp" test-backend-reflection-cpp26 "")
+    # The tiny-enum lookup must also work without expansion statements.
+    make_test("test_backend.cpp;test_shared_config.cpp" test-backend-no-expansion-cpp26 "")
+    if(NAMEOF_TEST_FLAG_PREFIX STREQUAL "/std:")
+        target_compile_options(test-backend-no-expansion-cpp26 PRIVATE /U__cpp_expansion_statements)
+    else()
+        target_compile_options(test-backend-no-expansion-cpp26 PRIVATE -U__cpp_expansion_statements)
+    endif()
+
+    # Checks that NAMEOF_DETAIL_USE_STD_REFLECTION does not leak.
+    make_test(test_standalone.cpp test-standalone-reflection-cpp26 "")
+
+    make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp26 "" DOCTEST)
+    target_compile_definitions(test-reflection-force-compiler-specific-cpp26 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
+
+    set(reflection_targets test-reflection-cpp26 test_aliases-reflection-cpp26 test-reflection-semantics-cpp26 test-backend-reflection-cpp26 test-backend-no-expansion-cpp26 test-standalone-reflection-cpp26)
+    foreach(target IN LISTS reflection_targets)
+        target_compile_definitions(${target} PRIVATE NAMEOF_TEST_STD_REFLECTION=1)
+    endforeach()
+    foreach(target IN LISTS reflection_targets ITEMS test-reflection-force-compiler-specific-cpp26)
         target_compile_options(${target} PRIVATE
             "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
             ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
         )
-        target_compile_definitions(${target} PRIVATE NAMEOF_TEST_STD_REFLECTION=1)
     endforeach()
-
-    make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp26 "" DOCTEST)
-    target_compile_options(test-reflection-force-compiler-specific-cpp26 PRIVATE
-        "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
-        ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
-    )
-    target_compile_definitions(test-reflection-force-compiler-specific-cpp26 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
-
-    # Checks that NAMEOF_DETAIL_USE_STD_REFLECTION does not leak.
-    make_test(test_standalone.cpp test-standalone-reflection-cpp26 "")
-    target_compile_options(test-standalone-reflection-cpp26 PRIVATE
-        "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
-        ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}
-    )
-    target_compile_definitions(test-standalone-reflection-cpp26 PRIVATE NAMEOF_TEST_STD_REFLECTION=1)
 
     make_compile_fail_test(
         incomplete-enum

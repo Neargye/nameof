@@ -14,8 +14,7 @@
 #  include <fmt/format.h>
 #endif
 
-// Aliases are expected to have the std::string and std::string_view interfaces.
-// These types define only the members nameof uses, so a new requirement shows up here.
+// Aliases need the std::string and std::string_view interfaces. Only the members nameof uses are defined, so a new requirement shows up here.
 struct MyString {
   struct ConstructionError {};
   static inline bool throw_on_construction = false;
@@ -45,6 +44,8 @@ struct MyStringView {
   constexpr MyStringView(const char* s, std::size_t size) noexcept : str{s, size} {}
   constexpr MyStringView(const MyStringView&) noexcept = default;
   constexpr MyStringView& operator=(const MyStringView&) noexcept = default;
+  // Internal sequencing must not invoke a user-defined comma operator.
+  friend bool operator,(const MyStringView&, bool) = delete;
   constexpr bool empty() const noexcept { return str.empty(); }
   constexpr std::size_t size() const noexcept { return str.size(); }
   constexpr const char* data() const noexcept { return str.data(); }
@@ -84,6 +85,15 @@ int AliasStruct::static_member = 0;
 template <>
 constexpr nameof::string_view nameof::customize::pointer_name<static_cast<AliasStruct*>(nullptr)>() noexcept {
   return "custom_null";
+}
+
+TEST_CASE("flag lookup with string aliases") {
+  enum class Uniform : unsigned { B0 = 1, B1 = 2, B2 = 4, B3 = 8, B4 = 16, B5 = 32 };
+  enum class Varied : unsigned { A = 1, BB = 2, CCC = 4, DDDD = 8, EEEEE = 16, FFFFFF = 32 };
+  REQUIRE(nameof::nameof_enum_flag(static_cast<Uniform>(63)).compare("B0|B1|B2|B3|B4|B5") == 0);
+  REQUIRE(nameof::nameof_enum_flag(static_cast<Varied>(63)).compare("A|BB|CCC|DDDD|EEEEE|FFFFFF") == 0);
+  REQUIRE(nameof::nameof_enum_flag(static_cast<Uniform>(64)).empty());
+  REQUIRE(nameof::nameof_enum_flag(static_cast<Varied>(64)).empty());
 }
 
 TEST_CASE("string") {
