@@ -40,7 +40,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iosfwd>
-#include <iterator>
 #include <limits>
 #include <string>
 #include <string_view>
@@ -85,11 +84,6 @@ static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together
 #  define NAMEOF_DETAIL_ASSERT(...) assert((__VA_ARGS__))
 #endif
 
-#if __has_include(<cxxabi.h>)
-#  include <cxxabi.h>
-#  include <cstdlib>
-#endif
-
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(push)
 #  pragma warning(disable : 4459 6244) // Internal names may shadow globals declared by the caller.
@@ -118,6 +112,11 @@ static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together
 
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED) || defined(NAMEOF_TYPE_NO_CHECK_SUPPORT)
 #  include <typeinfo>
+#  if __has_include(<cxxabi.h>)
+#    include <cxxabi.h>
+#    include <cstdlib>
+#    define NAMEOF_DETAIL_DEMANGLE 1
+#  endif
 #endif
 
 // Checks nameof_member and nameof_pointer compiler compatibility.
@@ -126,10 +125,9 @@ static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together
 #  define NAMEOF_POINTER_SUPPORTED 1
 #endif
 
-// Checks nameof_enum and enum aliases compiler compatibility.
+// Checks nameof_enum compiler compatibility.
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  define NAMEOF_ENUM_SUPPORTED 1
-#  define NAMEOF_ENUM_SUPPORTED_ALIASES 1
 #endif
 
 // Enum value must be greater than or equal to NAMEOF_ENUM_RANGE_MIN (-128 by default). Redefine the macro to change it for all enum types.
@@ -278,7 +276,7 @@ class [[nodiscard]] cstring {
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  constexpr explicit cstring(string_view str) noexcept : cstring{check_size(str), std::make_integer_sequence<std::uint16_t, N>{}} {}
+  constexpr explicit cstring(string_view str) noexcept : cstring{check_size(str).data(), std::make_integer_sequence<std::uint16_t, N>{}} {}
 
   template <bool Empty = (N == 0), std::enable_if_t<Empty, int> = 0>
   constexpr cstring() noexcept : chars_{} {}
@@ -363,10 +361,11 @@ class [[nodiscard]] cstring {
   [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return NAMEOF_DETAIL_ASSERT(str.size() == N), str; }
 
   template <std::uint16_t... J>
-  constexpr cstring([[maybe_unused]] string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
+  constexpr cstring([[maybe_unused]] const char* str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
 
  public:
   // Public on purpose: GCC 13/14 rechecks private access to constexpr view storage in templated lambdas (magic_enum#452).
+  // Empty strings point here, so pointers from a cstring<0> temporary stay valid after the full expression.
   static constexpr char empty_[1]{};
   char chars_[static_cast<std::size_t>(N) + 1];
 };
@@ -1538,7 +1537,7 @@ string qualified_type_name(string name) {
 struct demangled_name {
   explicit demangled_name(const char* tn) noexcept : name{tn != nullptr ? tn : ""} {
     NAMEOF_DETAIL_ASSERT(tn != nullptr);
-#if __has_include(<cxxabi.h>)
+#if defined(NAMEOF_DETAIL_DEMANGLE)
     int status = 0;
     buffer = tn != nullptr ? abi::__cxa_demangle(tn, nullptr, nullptr, &status) : nullptr;
     if (status == 0 && buffer != nullptr) {
@@ -1550,13 +1549,13 @@ struct demangled_name {
   demangled_name(const demangled_name&) = delete;
   demangled_name& operator=(const demangled_name&) = delete;
 
-#if __has_include(<cxxabi.h>)
+#if defined(NAMEOF_DETAIL_DEMANGLE)
   // Avoid expanding free macros.
   ~demangled_name() { (std::free)(buffer); }
 #endif
 
   string_view name;
-#if __has_include(<cxxabi.h>)
+#if defined(NAMEOF_DETAIL_DEMANGLE)
   char* buffer = nullptr;
 #endif
 };
@@ -1922,6 +1921,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 
 #undef NAMEOF_FOR_EACH_256
 #undef NAMEOF_DETAIL_ASSERT
+#undef NAMEOF_DETAIL_DEMANGLE
 #undef NAMEOF_DETAIL_CDECL
 #undef NAMEOF_DETAIL_TEST_FALLBACK
 #undef NAMEOF_DETAIL_SIGNATURE
