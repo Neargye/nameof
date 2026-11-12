@@ -119,8 +119,8 @@ static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together
 #  endif
 #endif
 
-// Checks nameof_member and nameof_pointer compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSVC_LANG >= 202002L
+// Checks nameof_member and nameof_pointer compiler compatibility. MSVC < 19.44 needs C++20 for its data member fallback.
+#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && (_MSC_VER >= 1944 || _MSVC_LANG >= 202002L)
 #  define NAMEOF_MEMBER_SUPPORTED 1
 #  define NAMEOF_POINTER_SUPPORTED 1
 #endif
@@ -842,7 +842,8 @@ NAMEOF_DETAIL_CONSTEVAL auto value_at([[maybe_unused]] std::size_t i) noexcept {
 // std::cmp_less is C++20 and rejects bool.
 template <typename L, typename R>
 NAMEOF_DETAIL_CONSTEVAL bool cmp_less(L lhs, R rhs) noexcept {
-  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::detail::cmp_less requires integral types.");
+  // Only enum_range bounds can be non-integral here.
+  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::customize::enum_range min and max must be integral.");
 
   if constexpr (std::is_same_v<L, bool>) {
     return cmp_less(static_cast<int>(lhs), rhs);
@@ -1503,7 +1504,7 @@ NAMEOF_DETAIL_CONSTEVAL auto short_type_name() noexcept {
   constexpr auto custom_name = customize::type_name<U>();
   constexpr auto name = custom_name.empty() ? pretty_type_name(type_name_v<T>, std::is_class_v<U> || std::is_union_v<U> || std::is_enum_v<U>, std::is_null_pointer_v<U>)
                                             : pretty_name(custom_name);
-  static_assert(!name.empty(), "Type does not have a short name.");
+  static_assert(!name.empty(), "nameof::nameof_short_type requires a type with a short name.");
   return to_cstring<name.size()>(name);
 }
 
@@ -1603,7 +1604,7 @@ NAMEOF_DETAIL_CONSTEVAL auto n() noexcept {
   } else if constexpr (is_nameof_member_supported) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_member_name(NAMEOF_DETAIL_SIGNATURE);
-#elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+#elif defined(NAMEOF_MEMBER_SUPPORTED)
     constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
     // In the MSVC < 19.44 fallback, U is Store{...} and the name ends before its '}'.
     constexpr auto suffix = std::is_same_v<decltype(V), decltype(U)> ? 0 : sizeof("}") - 1;
@@ -1681,7 +1682,7 @@ NAMEOF_DETAIL_CONSTEVAL auto p() noexcept {
     // GCC spells pointers to variables as "(& name)".
     constexpr auto suffix = signature[signature.size() - 1] == ')' ? sizeof(")") - 1 : 0;
     constexpr auto name = pretty_member_name({signature.data(), signature.size() - suffix});
-#elif defined(_MSC_VER) && defined(_MSVC_LANG) && _MSVC_LANG >= 202002L
+#elif defined(NAMEOF_POINTER_SUPPORTED)
     constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
     constexpr auto name = std::is_function_v<std::remove_pointer_t<decltype(V)>> ? pretty_function_name(signature) : pretty_name(signature);
 #else
@@ -1857,21 +1858,20 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #define NAMEOF(...) []() constexpr noexcept {                                             \
   ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
   constexpr auto nameof_detail_name = ::nameof::detail::pretty_name(#__VA_ARGS__);        \
-  static_assert(!nameof_detail_name.empty(), "Expression does not have a name.");         \
+  static_assert(!nameof_detail_name.empty(), "NAMEOF requires a named expression.");      \
   return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains full name of variable, function, macro.
 #define NAMEOF_FULL(...) []() constexpr noexcept {                                        \
   ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
   constexpr auto nameof_detail_name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(!nameof_detail_name.empty(), "Expression does not have a name.");         \
+  static_assert(!nameof_detail_name.empty(), "NAMEOF_FULL requires a named expression."); \
   return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains raw expression text.
 #define NAMEOF_RAW(...) []() constexpr noexcept {                                         \
   ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
   constexpr auto nameof_detail_name = ::nameof::string_view{#__VA_ARGS__};                \
-  static_assert(!nameof_detail_name.empty(), "Expression does not have a name.");         \
   return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains name of enum value.

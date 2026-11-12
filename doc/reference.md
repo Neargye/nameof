@@ -99,7 +99,7 @@ nameof requires C++17 or newer and supports:
 * GCC >= 9
 * Visual Studio >= 2019
 
-`NAMEOF_TYPE_RTTI`, `NAMEOF_FULL_TYPE_RTTI`, and `NAMEOF_SHORT_TYPE_RTTI` require RTTI to be enabled, so they are unavailable with `-fno-rtti` or `/GR-`. `NAMEOF_MEMBER` and `NAMEOF_POINTER` require C++20 on MSVC and C++17 on Clang or GCC.
+`NAMEOF_TYPE_RTTI`, `NAMEOF_FULL_TYPE_RTTI`, and `NAMEOF_SHORT_TYPE_RTTI` require RTTI to be enabled, so they are unavailable with `-fno-rtti` or `/GR-`. `NAMEOF_MEMBER` and `NAMEOF_POINTER` require C++20 on Visual Studio before 2022 17.14.
 
 ## `NAMEOF`
 
@@ -107,7 +107,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
-* If argument has no name, compilation fails: `"Expression does not have a name."`
+* If argument has no name, compilation fails: `"NAMEOF requires a named expression."`
 
 * Examples
 
@@ -135,7 +135,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
-* If argument has no name, compilation fails: `"Expression does not have a name."`
+* If argument has no name, compilation fails: `"NAMEOF_FULL requires a named expression."`
 
 * Examples
 
@@ -217,7 +217,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns `string`.
 
-* Joins custom or reflected names of individual set bits. Composite enumerator names are ignored.
+* Joins custom or reflected names of individual set bits with `sep` (`'|'` by default). Composite enumerator names are ignored.
 
 * If value is zero or contains unnamed bit, returns empty `string`.
 
@@ -277,7 +277,7 @@ nameof requires C++17 or newer and supports:
 
 * Array, pointer, member pointer, and function types are not supported.
 
-* If type has no short name, compilation fails: `"Type does not have a short name."`
+* If type has no short name, compilation fails: `"nameof::nameof_short_type requires a type with a short name."`
 
 * Examples
 
@@ -329,7 +329,7 @@ nameof requires C++17 or newer and supports:
 
 * Array, pointer, member pointer, and function types are not supported.
 
-* If type has no short name, compilation fails: `"Type does not have a short name."`
+* If type has no short name, compilation fails: `"nameof::nameof_short_type requires a type with a short name."`
 
 * Examples
 

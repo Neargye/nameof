@@ -78,6 +78,8 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * `nameof_enum(E)` returns custom names without copying. Their storage must outlive the result and provide null termination if needed. `nameof_enum<V>()` copies them into a null-terminated `cstring`.
 
+* With standard reflection, `nameof_enum(E).data()` can be a pointer template argument. With compiler-specific reflection, names point into a shared buffer, which is not portable as a template argument (GCC rejects it).
+
 * With compiler-specific reflection, a non-empty scan range must contain an enumerator for `nameof_enum(E)`. `nameof_enum_flag` requires a single-bit enumerator. A custom name in the scan range also satisfies these checks.
 
 * Standard reflection requires complete enums for runtime lookup.

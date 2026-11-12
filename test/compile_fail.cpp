@@ -160,6 +160,20 @@ int main() {
 
 int main() {}
 
+#elif NAMEOF_COMPILE_FAIL_CASE == 18
+
+enum class FloatingRange { value = 0 };
+
+template <>
+struct nameof::customize::enum_range<FloatingRange> {
+  static constexpr double min = 0;
+  static constexpr double max = 10;
+};
+
+constexpr auto floating_range_name = nameof::nameof_enum(FloatingRange::value);
+
+int main() {}
+
 #else
 
 #  error Unknown NAMEOF_COMPILE_FAIL_CASE.
