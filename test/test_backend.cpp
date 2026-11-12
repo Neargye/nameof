@@ -281,6 +281,43 @@ static_assert(nameof::nameof_enum(static_cast<Pages>(100000)) == "synthetic");
 static_assert(nameof::nameof_enum(static_cast<Pages>(767)).empty());
 static_assert(nameof::nameof_enum<Pages::V256>() == "V256");
 
+// Sparse tables of 16 and 17 values with negative values: linear and binary search paths of the scanner.
+enum class Sparse16 : int {
+  M60 = -60, M52 = -52, M44 = -44, M36 = -36, M28 = -28, M20 = -20, M12 = -12, M04 = -4,
+  P04 = 4, P12 = 12, P20 = 20, P28 = 28, P36 = 36, P44 = 44, P52 = 52, P60 = 60
+};
+
+enum class Sparse17 : int {
+  M64 = -64, M56 = -56, M48 = -48, M40 = -40, M32 = -32, M24 = -24, M16 = -16, M08 = -8, Z00 = 0,
+  P08 = 8, P16 = 16, P24 = 24, P32 = 32, P40 = 40, P48 = 48, P56 = 56, P64 = 64
+};
+
+static_assert(nameof::nameof_enum(Sparse17::M64) == "M64");
+static_assert(nameof::nameof_enum(Sparse17::Z00) == "Z00");
+static_assert(nameof::nameof_enum(Sparse17::P64) == "P64");
+static_assert(nameof::nameof_enum(static_cast<Sparse17>(-63)).empty());
+static_assert(nameof::nameof_enum(static_cast<Sparse17>(65)).empty());
+
+template <typename E>
+bool check_sparse(int first, int last) {
+  for (int value = first - 8; value <= last + 8; ++value) {
+    const auto name = nameof::nameof_enum(static_cast<E>(value));
+    if (value < first || value > last || (value - first) % 8 != 0) {
+      if (!name.empty()) {
+        return false;
+      }
+      continue;
+    }
+    const auto mag = value < 0 ? -value : value;
+    const char expected[] = {value < 0 ? 'M' : value > 0 ? 'P' : 'Z', static_cast<char>('0' + mag / 10),
+                             static_cast<char>('0' + mag % 10)};
+    if (name != nameof::string_view{expected, 3}) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename T>
 struct WidthFlags {
   enum class E : T {
@@ -374,6 +411,9 @@ int lookup_check() {
   }
   if (nameof::nameof_enum_flag(static_cast<SignedBits>(INT64_MIN + 127), ':') != "B0:B1:short:B3:B4:B5:B6:Sign") {
     return 7;
+  }
+  if (!check_sparse<Sparse16>(-60, 60) || !check_sparse<Sparse17>(-64, 64)) {
+    return 11;
   }
   return 0;
 }

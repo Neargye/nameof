@@ -1385,6 +1385,24 @@ NAMEOF_DETAIL_CONSTEVAL bool has_names() noexcept {
 template <typename E, bool IsFlags = false>
 inline constexpr bool has_names_v = has_names<E, IsFlags>();
 
+// Binary search in sorted values_v, count_v<E> if not found. Inlined into enum_name(E), it slowed GCC dense lookups.
+template <typename E>
+constexpr std::size_t sparse_index(E value) noexcept {
+  using U = std::underlying_type_t<E>;
+  const auto v = static_cast<U>(value);
+  std::size_t lo = 0;
+  std::size_t hi = count_v<E>;
+  while (lo < hi) {
+    const auto mid = lo + (hi - lo) / 2;
+    if (static_cast<U>(values_v<E>[mid]) < v) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo < count_v<E> && static_cast<U>(values_v<E>[lo]) == v ? lo : count_v<E>;
+}
+
 #endif
 
 template <typename E, bool IsFlags = false>
@@ -1404,7 +1422,12 @@ constexpr string_view enum_name(E value) noexcept {
   return reflection::enum_name(value);
 #else
   if constexpr (count_v<E, IsFlags> > 0) {
-    if constexpr (is_sparse_v<E, IsFlags>) {
+    // Binary search pays off above 16 values. Flag tables are sorted by bit, not by signed value.
+    if constexpr (is_sparse_v<E, IsFlags> && !IsFlags && count_v<E, IsFlags> > 16) {
+      if (const auto i = sparse_index(value); i < count_v<E>) {
+        return names_v<E>[i];
+      }
+    } else if constexpr (is_sparse_v<E, IsFlags>) {
       for (std::size_t i = 0; i < count_v<E, IsFlags>; ++i) {
         if (enum_value_equal(values_v<E, IsFlags>[i], value)) {
           return names_v<E, IsFlags>[i];
