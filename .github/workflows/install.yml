@@ -15,14 +15,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
-    timeout-minutes: 30
     name: CMake package
+    timeout-minutes: 30
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Install nameof
       run: |
@@ -55,18 +61,32 @@ jobs:
         cmake --build build-consumer --parallel "$(nproc)"
         ctest --test-dir build-consumer --parallel "$(nproc)" --output-on-failure --no-tests=error
 
-    - name: Test CPack archive
+    - name: Test CPack packages
       run: |
-        cpack --config build-install/CPackConfig.cmake \
-          -G TGZ \
-          -B package
-        archive="$(find package -maxdepth 1 -name 'nameof-*.tar.gz' -print -quit)"
-        test -n "${archive}"
-        tar -tzf "${archive}" > package-contents.txt
-        grep -Eq '(^|/)include/nameof\.hpp$' package-contents.txt
-        grep -Eq '(^|/)lib/cmake/nameof/nameofConfig\.cmake$' package-contents.txt
-        grep -Eq '(^|/)lib/pkgconfig/nameof\.pc$' package-contents.txt
-        grep -Eq '(^|/)share/nameof/LICENSE$' package-contents.txt
+        sudo apt-get update
+        sudo apt-get install -y rpm
+        cpack --config build-install/CPackConfig.cmake -G "TGZ;DEB;RPM" -B package
+        version="$(sed -n 's/^set(CPACK_PACKAGE_VERSION "\(.*\)")$/\1/p' build-install/CPackConfig.cmake)"
+
+        tar -tzf "package/nameof-${version}-Linux.tar.gz" > tgz-contents.txt
+        grep -Eq '(^|/)include/nameof\.hpp$' tgz-contents.txt
+        grep -Eq '(^|/)lib/cmake/nameof/nameofConfig\.cmake$' tgz-contents.txt
+        grep -Eq '(^|/)lib/pkgconfig/nameof\.pc$' tgz-contents.txt
+        grep -Eq '(^|/)share/nameof/LICENSE$' tgz-contents.txt
+
+        deb="package/libnameof-dev_${version}_all.deb"
+        test "$(dpkg-deb -f "${deb}" Architecture)" = "all"
+        test "$(dpkg-deb -f "${deb}" Section)" = "libdevel"
+        dpkg-deb -f "${deb}" Maintainer | grep -Eq '^.+ <.+@.+>$'
+        dpkg-deb -c "${deb}" > deb-contents.txt
+        grep -Eq '/lib/pkgconfig/nameof\.pc$' deb-contents.txt
+        grep -Eq '/share/nameof/LICENSE$' deb-contents.txt
+
+        rpm="package/libnameof-devel-${version}-1.noarch.rpm"
+        test "$(rpm -qp --queryformat '%{LICENSE}' "${rpm}")" = "MIT"
+        rpm -qpl "${rpm}" > rpm-contents.txt
+        grep -Eq '/lib/pkgconfig/nameof\.pc$' rpm-contents.txt
+        grep -Eq '/share/nameof/LICENSE$' rpm-contents.txt
 
     - name: Test DESTDIR package
       run: |

@@ -15,35 +15,39 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
+    name: "${{ matrix.config.os }} / ${{ matrix.config.build_type }}"
     timeout-minutes: 30
+    runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - macos-15 # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md#xcode (Apple Silicon)
-        - macos-26 # https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md#xcode (Apple Silicon)
-
-    name: "${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
+        # Apple Silicon images. Xcode versions:
+        # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md#xcode
+        # https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md#xcode
+        config:
+        - { os: macos-15, build_type: Release }
+        - { os: macos-26, build_type: Release }
+        - { os: macos-26, build_type: Debug }
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
-    - name: Compiler version
+    - name: Configure
       run: |
-        compiler="$(c++ --version | head -n 1), $(xcodebuild -version | head -n 1)"
-        echo "$compiler"
-        echo "::notice title=Compiler::$compiler"
-        echo "**Compiler:** $compiler" >> "$GITHUB_STEP_SUMMARY"
+        c++ --version
+        xcodebuild -version
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
 
-    - name: Build and test
-      run: |
-        for build_type in Release Debug; do
-          echo "::group::$build_type"
-          cmake -S . -B "build-$build_type" -DCMAKE_BUILD_TYPE="$build_type"
-          cmake --build "build-$build_type" --parallel "$(sysctl -n hw.logicalcpu)"
-          ctest --test-dir "build-$build_type" --parallel "$(sysctl -n hw.logicalcpu)" --output-on-failure --no-tests=error
-          echo "::endgroup::"
-        done
+    - name: Build
+      run: cmake --build build --parallel "$(sysctl -n hw.logicalcpu)"
+
+    - name: Test
+      run: ctest --test-dir build --parallel "$(sysctl -n hw.logicalcpu)" --output-on-failure --no-tests=error

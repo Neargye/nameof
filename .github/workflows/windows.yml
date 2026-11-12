@@ -15,32 +15,37 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   build:
+    name: "${{ matrix.config.compiler }} (${{ matrix.config.os }})"
     timeout-minutes: 30
     runs-on: ${{ matrix.config.os }}
-    defaults:
-      run:
-        shell: pwsh
     strategy:
       fail-fast: false
       matrix:
+        # windows-2022 has VS 2022 and the v142 toolset. windows-2025 and windows-11-arm have VS 2026.
         config:
-        - { os: windows-2022, compiler: "msvc-2022", toolset: "", build_types: [Release, Debug] }
-        - { os: windows-2025, compiler: "msvc-2026", toolset: "", build_types: [Release, Debug] }
-        - { os: windows-2022, compiler: "msvc-v142", toolset: v142, build_types: [Release] }
-        - { os: windows-2025, compiler: "clang-cl", toolset: ClangCL, build_types: [Release] }
+        - { os: windows-2022,   compiler: "msvc-2022", toolset: "",      platforms: "x64 Win32", build_types: "Release Debug" }
+        - { os: windows-2025,   compiler: "msvc-2026", toolset: "",      platforms: "x64 Win32", build_types: "Release Debug" }
+        - { os: windows-2022,   compiler: "msvc-v142", toolset: v142,    platforms: "x64 Win32", build_types: "Release" }
+        - { os: windows-2025,   compiler: "clang-cl",  toolset: ClangCL, platforms: "x64 Win32", build_types: "Release" }
+        - { os: windows-11-arm, compiler: "msvc-2026", toolset: "",      platforms: "ARM64",     build_types: "Release" }
 
-    name: "${{ matrix.config.compiler }} (${{ matrix.config.os }})"
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Build and test
       run: |
         $PSNativeCommandUseErrorActionPreference = $true # Stop on the first failing command.
-        foreach ($platform in 'x64', 'Win32') {
+        foreach ($platform in "${{ matrix.config.platforms }}" -split ' ') {
           cmake -S . -B "build-$platform" -A $platform -T "${{ matrix.config.toolset }}"
-          foreach ($buildType in "${{ join(matrix.config.build_types, ' ') }}" -split ' ') {
+          foreach ($buildType in "${{ matrix.config.build_types }}" -split ' ') {
             Write-Output "::group::$platform / $buildType"
             cmake --build "build-$platform" --parallel --config $buildType
             ctest --test-dir "build-$platform" --parallel $env:NUMBER_OF_PROCESSORS --output-on-failure --no-tests=error -C $buildType
@@ -48,10 +53,22 @@ jobs:
           }
         }
 
+  analyze:
+    name: MSVC code analysis
+    timeout-minutes: 30
+    runs-on: windows-2025
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Configure
+      # Setting CMAKE_CXX_FLAGS replaces the default flags, so repeat them.
+      # MSBuild sets INCLUDE to the STL and Windows SDK directories. Analyze our code, not them.
+      run: >-
+        cmake -S . -B build -A x64
+        "-DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc /analyze /external:env:INCLUDE /external:W0 /analyze:external-"
+
     - name: Code analysis
-      if: ${{ matrix.config.compiler == 'msvc-2026' }}
-      run: |
-        $PSNativeCommandUseErrorActionPreference = $true
-        # Setting CMAKE_CXX_FLAGS replaces the default flags, so repeat them.
-        cmake -S . -B build-analyze -A x64 "-DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc /analyze"
-        cmake --build build-analyze --parallel --config Release
+      run: cmake --build build --parallel --config Release

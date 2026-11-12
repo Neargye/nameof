@@ -19,7 +19,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang
         list(APPEND OPTIONS /permissive-)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(OPTIONS -Wall -Wextra -pedantic-errors -Werror)
+    set(OPTIONS -Wall -Wextra -pedantic-errors -Werror ${NAMEOF_STRICT_WARNINGS})
     set(NAMEOF_TEST_FLAG_PREFIX -std=)
     set(NAMEOF_CPP26_STANDARD_FLAG c++26)
     set(NAMEOF_NO_RTTI_OPTION -fno-rtti)

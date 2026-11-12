@@ -7,7 +7,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang
         set(OPTIONS ${OPTIONS} /permissive-)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(OPTIONS -Wall -Wextra -pedantic-errors -Werror)
+    set(OPTIONS -Wall -Wextra -pedantic-errors -Werror ${NAMEOF_STRICT_WARNINGS})
 endif()
 
 function(make_example target)

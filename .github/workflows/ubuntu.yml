@@ -15,144 +15,111 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  ubuntu:
+  build:
+    name: "${{ matrix.config.compiler }} / ${{ matrix.config.build_type }}"
     timeout-minutes: 30
+    runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
-        compiler:
-        - { cc: "gcc-9",    cxx: "g++-9",      os: "ubuntu-22.04", strict: "c++17" }
-        - { cc: "gcc-10",   cxx: "g++-10",     os: "ubuntu-22.04" }
-        - { cc: "gcc-11",   cxx: "g++-11",     os: "ubuntu-22.04" }
-        - { cc: "gcc-12",   cxx: "g++-12",     os: "ubuntu-22.04" }
-        - { cc: "gcc-13",   cxx: "g++-13",     os: "ubuntu-24.04" }
-        - { cc: "gcc-14",   cxx: "g++-14",     os: "ubuntu-24.04" }
-        - { cc: "gcc-15",   cxx: "g++-15",     os: "ubuntu-24.04" }
-        - { cc: "gcc-16",   cxx: "g++-16",     os: "ubuntu-26.04", sanitize: true, strict: "c++17 c++20 c++23" }
-        - { cc: "clang-13", cxx: "clang++-13", os: "ubuntu-22.04" }
-        - { cc: "clang-14", cxx: "clang++-14", os: "ubuntu-22.04" }
-        - { cc: "clang-15", cxx: "clang++-15", os: "ubuntu-22.04" }
-        - { cc: "clang-16", cxx: "clang++-16", os: "ubuntu-22.04" }
-        - { cc: "clang-17", cxx: "clang++-17", os: "ubuntu-24.04" }
-        - { cc: "clang-18", cxx: "clang++-18", os: "ubuntu-24.04" }
-        - { cc: "clang-19", cxx: "clang++-19", os: "ubuntu-24.04" }
-        - { cc: "clang-20", cxx: "clang++-20", os: "ubuntu-24.04" }
-        - { cc: "clang-21", cxx: "clang++-21", os: "ubuntu-24.04" }
-        - { cc: "clang-22", cxx: "clang++-22", os: "ubuntu-24.04" }
-        - { cc: "clang-23", cxx: "clang++-23", os: "ubuntu-24.04", sanitize: true, strict: "c++17 c++20 c++23" }
-
-    name: "${{ matrix.compiler.cc }}"
-    runs-on: ${{ matrix.compiler.os }}
-    env:
-      CC: ${{ matrix.compiler.cc }}
-      CXX: ${{ matrix.compiler.cxx }}
-    steps:
-    - uses: actions/checkout@v7
-
-    - name: Install clang
-      if: ${{ startsWith(matrix.compiler.cc, 'clang') }}
-      run: |
-        if command -v "$CXX" > /dev/null 2>&1; then
-          exit 0
-        fi
-
-        wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/llvm-archive-keyring.gpg > /dev/null
-
-        clang_version="${{ matrix.compiler.cc }}"
-        clang_version="${clang_version#clang-}"
-        ubuntu_codename="$(lsb_release -cs)"
-
-        echo "deb [signed-by=/etc/apt/keyrings/llvm-archive-keyring.gpg] https://apt.llvm.org/${ubuntu_codename}/ llvm-toolchain-${ubuntu_codename}-${clang_version} main" | sudo tee /etc/apt/sources.list.d/llvm.list
-        sudo apt-get update
-        sudo apt-get install -y ${{ matrix.compiler.cc }}
-
-    - name: Install gcc
-      if: ${{ startsWith(matrix.compiler.cc, 'gcc') }}
-      run: |
-        if command -v "$CXX" > /dev/null 2>&1; then
-          exit 0
-        fi
-
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-        sudo apt-get update
-        sudo apt-get install -y ${{ matrix.compiler.cxx }}
-
-    - name: Compiler version
-      run: |
-        compiler="$("$CXX" --version | head -n 1)"
-        echo "$compiler"
-        echo "::notice title=Compiler::$compiler"
-        echo "**Compiler:** $compiler" >> "$GITHUB_STEP_SUMMARY"
-
-    - name: Strict warnings
-      if: ${{ matrix.compiler.strict }}
-      run: |
-        # Users compile the header with their own flags, so keep it clean under strict warnings.
+        # Users compile the header with their own flags, so strict rows keep it clean under strict warnings.
         # gcc-9 covers the static_cast enum scanning used before GCC 11.
-        flags=(-Wall -Wextra -pedantic-errors -Werror -Wconversion -Wsign-conversion -Wold-style-cast -Wundef -Wcast-qual -Wnon-virtual-dtor -Wnull-dereference -Wimplicit-fallthrough)
-        case "$CXX" in
-          g++*) flags+=(-Wshadow -Wuseless-cast -Wduplicated-branches -Wduplicated-cond -Wlogical-op) ;;
-          *) flags+=(-Wshadow-all -Wextra-semi -Wcomma -Wunreachable-code) ;;
-        esac
-        sources=(
-          example/example.cpp
-          example/example_custom_name.cpp
-          test/test_standalone.cpp
-          test/test.cpp
-          test/test_aliases.cpp
-          test/test_range.cpp
-          test/test_range_negative.cpp
-          test/test_reflection.cpp
-        )
-        check() {
-          echo "$CXX $*"
-          "$CXX" -fsyntax-only "${flags[@]}" -DDOCTEST_CONFIG_USE_STD_HEADERS -Iinclude -Itest/3rdparty "$@"
-        }
-        for std in ${{ matrix.compiler.strict }}; do
-          for src in "${sources[@]}"; do
-            check -std="$std" "$src"
-          done
-        done
-        # Cover the C++26 standard reflection backend.
-        if [ "$CXX" = "g++-16" ]; then
-          for src in test/test.cpp test/test_aliases.cpp test/test_reflection.cpp; do
-            check -std=c++26 -freflection -DNAMEOF_TEST_STD_REFLECTION=1 "$src"
-          done
-        fi
+        config:
+        - { os: ubuntu-22.04, compiler: "gcc-9",    build_type: Release, strict: true }
+        - { os: ubuntu-22.04, compiler: "gcc-9",    build_type: Debug }
+        - { os: ubuntu-22.04, compiler: "gcc-10",   build_type: Release }
+        - { os: ubuntu-22.04, compiler: "gcc-11",   build_type: Release }
+        - { os: ubuntu-22.04, compiler: "gcc-12",   build_type: Release }
+        - { os: ubuntu-24.04, compiler: "gcc-13",   build_type: Release }
+        - { os: ubuntu-24.04, compiler: "gcc-14",   build_type: Release }
+        - { os: ubuntu-26.04, compiler: "gcc-15",   build_type: Release }
+        - { os: ubuntu-26.04, compiler: "gcc-16",   build_type: Release, strict: true }
+        - { os: ubuntu-22.04, compiler: "clang-13", build_type: Release }
+        - { os: ubuntu-22.04, compiler: "clang-13", build_type: Debug }
+        - { os: ubuntu-22.04, compiler: "clang-14", build_type: Release }
+        - { os: ubuntu-22.04, compiler: "clang-15", build_type: Release }
+        - { os: ubuntu-22.04, compiler: "clang-16", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-17", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-18", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-19", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-20", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-21", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-22", build_type: Release }
+        - { os: ubuntu-24.04, compiler: "clang-23", build_type: Release, strict: true }
 
-    - name: Build and test
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - uses: ./.github/actions/setup-linux-compiler
+      with:
+        compiler: ${{ matrix.config.compiler }}
+
+    - name: Configure
       run: |
-        for build_type in Release Debug; do
-          echo "::group::$build_type"
-          cmake -S . -B "build-$build_type" -DCMAKE_BUILD_TYPE="$build_type"
-          cmake --build "build-$build_type" --parallel "$(nproc)"
-          ctest --test-dir "build-$build_type" --parallel "$(nproc)" --output-on-failure --no-tests=error
-          echo "::endgroup::"
-        done
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+          -DNAMEOF_TEST_STRICT_WARNINGS=${{ matrix.config.strict && 'ON' || 'OFF' }}
+
+    - name: Build
+      run: cmake --build build --parallel "$(nproc)"
+
+    - name: Test
+      run: ctest --test-dir build --parallel "$(nproc)" --output-on-failure --no-tests=error
 
     - name: Require standard reflection tests
-      if: ${{ matrix.compiler.cc == 'gcc-16' }}
+      if: ${{ matrix.config.compiler == 'gcc-16' }}
       run: |
         # The tests already ran above. Only check that CMake registered them.
-        ctest --test-dir build-Release -N -R "^test-reflection-semantics-cpp26$" | grep -q "Total Tests: 1"
+        ctest --test-dir build -N -R "^test-reflection-semantics-cpp26$" | grep "Total Tests: 1"
 
-    - name: Sanitizers (ASan + UBSan)
-      if: ${{ matrix.compiler.sanitize }}
+  sanitize:
+    name: "${{ matrix.config.compiler }} / sanitizers"
+    timeout-minutes: 30
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - { os: ubuntu-26.04, compiler: "gcc-16" }
+        - { os: ubuntu-24.04, compiler: "clang-23" }
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - uses: ./.github/actions/setup-linux-compiler
+      with:
+        compiler: ${{ matrix.config.compiler }}
+
+    - name: Configure
       env:
         CXXFLAGS: -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer
         LDFLAGS: -fsanitize=address,undefined
-        ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
-        UBSAN_OPTIONS: print_stacktrace=1
       run: |
         # Newer runner kernels use more ASLR entropy than older sanitizer runtimes support.
         sudo sysctl vm.mmap_rnd_bits=28
-        cmake -S . -B build-sanitize -DCMAKE_BUILD_TYPE=Debug
-        cmake --build build-sanitize --parallel "$(nproc)"
-        ctest --test-dir build-sanitize --parallel "$(nproc)" --output-on-failure --no-tests=error
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Build
+      run: cmake --build build --parallel "$(nproc)"
+
+    - name: Test
+      env:
+        ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1
+        UBSAN_OPTIONS: print_stacktrace=1
+      run: ctest --test-dir build --parallel "$(nproc)" --output-on-failure --no-tests=error
 
   fmt:
+    name: "fmt (${{ matrix.os }})"
     timeout-minutes: 30
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -160,11 +127,10 @@ jobs:
         - ubuntu-24.04 # fmt 9
         - ubuntu-26.04 # fmt 10
 
-    name: "fmt (${{ matrix.os }})"
-    runs-on: ${{ matrix.os }}
-
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Install fmt
       run: |
@@ -172,13 +138,9 @@ jobs:
         sudo apt-get install -y libfmt-dev
 
     - name: Configure
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNAMEOF_TEST_REQUIRE_FMT=ON
+
+    - name: Build and test
       run: |
-        cmake -S . -B build \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DNAMEOF_TEST_REQUIRE_FMT=ON
-
-    - name: Build
-      run: cmake --build build --parallel "$(nproc)" --target test-cpp17 test_aliases-cpp17
-
-    - name: Test
-      run: ctest --test-dir build --parallel "$(nproc)" --output-on-failure --no-tests=error -R "^test(_aliases)?-cpp17$"
+        cmake --build build --parallel "$(nproc)" --target test-cpp17 test_aliases-cpp17
+        ctest --test-dir build --parallel "$(nproc)" --output-on-failure --no-tests=error -R "^test(_aliases)?-cpp17$"

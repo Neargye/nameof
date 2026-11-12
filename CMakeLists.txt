@@ -27,6 +27,18 @@ target_include_directories(${PROJECT_NAME}
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
+# CI sets this so the header stays clean under the strict warnings users may enable.
+set(NAMEOF_STRICT_WARNINGS)
+if(NAMEOF_TEST_STRICT_WARNINGS)
+    set(NAMEOF_STRICT_WARNINGS
+        -Wconversion -Wsign-conversion -Wold-style-cast -Wundef -Wcast-qual -Wnon-virtual-dtor -Wimplicit-fallthrough)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        list(APPEND NAMEOF_STRICT_WARNINGS -Wshadow -Wuseless-cast -Wduplicated-branches -Wduplicated-cond -Wlogical-op)
+    else()
+        list(APPEND NAMEOF_STRICT_WARNINGS -Wshadow-all -Wextra-semi -Wcomma -Wunreachable-code -Wnull-dereference)
+    endif()
+endif()
+
 if(NAMEOF_OPT_BUILD_EXAMPLES)
     add_subdirectory(example)
 endif()
