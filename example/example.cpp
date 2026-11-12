@@ -108,14 +108,10 @@ int main() {
   static_assert("structvar"sv == name);
 
   name_to_chars(name.c_str()); // 'structvar'
-  // or name_to_chars(name.data());
-  // Note: c_str() returns a null-terminated C string without allocation.
+  // Note: c_str() and data() return a null-terminated C string without allocation.
 
   name_to_string(name.str()); // 'structvar'
-  // Note: str() creates a std::string copy.
-  // or name_to_string(std::string{name});
-  // or name_to_string(static_cast<std::string>(name));
-  // Note: Casting to std::string creates a copy.
+  // Note: str(), std::string{name} and static_cast<std::string>(name) create a std::string copy.
 
   name_to_string_view(name); // 'structvar'
   // Note: Implicit conversion to std::string_view does not allocate.

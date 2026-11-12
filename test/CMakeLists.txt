@@ -157,6 +157,10 @@ if(NAMEOF_TEST_FLAG_PREFIX STREQUAL "-std=")
     # test_standalone.cpp declares globals with common names before the header.
     target_compile_options(test-standalone-cpp17 PRIVATE -Wshadow)
 endif()
+# test_config.hpp forces the scanner and installs a counting NAMEOF_ASSERT.
+set(NAMEOF_TEST_CONFIG_FILE "NAMEOF_CONFIG_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/test_config.hpp\"")
+make_test(test_standalone.cpp test-standalone-config-cpp17 17)
+target_compile_definitions(test-standalone-config-cpp17 PRIVATE ${NAMEOF_TEST_CONFIG_FILE})
 # test_shared_config.cpp is a second translation unit using the same enums and customizations.
 make_test("test_backend.cpp;test_shared_config.cpp" test-backend-cpp17 17)
 make_test("test_backend.cpp;test_shared_config.cpp" test-backend-fallback-cpp17 17)
@@ -208,6 +212,9 @@ make_compile_fail_test(forward-declared-enum 11 "nameof::nameof_enum requires a 
 make_compile_fail_test(empty-enum 12 "nameof::nameof_enum requires a defined enum")
 make_compile_fail_test(enum-out-of-range 13 "nameof::nameof_enum requires a defined enum")
 make_compile_fail_test(enum-flag-without-bits 14 "nameof::nameof_enum_flag requires a defined enum")
+make_compile_fail_test(require-and-force-reflection 15 "NAMEOF_REQUIRE_STD_REFLECTION and NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION cannot be used together")
+make_compile_fail_test(require-std-reflection 16 "NAMEOF_REQUIRE_STD_REFLECTION requires C++26 standard reflection support")
+make_compile_fail_test(no-assert-and-assert 17 "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together")
 
 foreach(std IN ITEMS 20 23 26)
     if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
@@ -218,6 +225,11 @@ foreach(std IN ITEMS 20 23 26)
             make_test(test_standalone.cpp test-standalone-no-rtti-cpp20 20)
             target_compile_options(test-standalone-no-rtti-cpp20 PRIVATE ${NAMEOF_NO_RTTI_OPTION})
             target_compile_definitions(test-standalone-no-rtti-cpp20 PRIVATE NAMEOF_TEST_NO_RTTI=1)
+        endif()
+        if(std EQUAL 20)
+            # <format> exists only in C++20 and later.
+            make_test(test_standalone.cpp test-standalone-no-assert-no-format-cpp20 20)
+            target_compile_definitions(test-standalone-no-assert-no-format-cpp20 PRIVATE NAMEOF_NO_ASSERT NAMEOF_NO_STD_FORMAT)
         endif()
     endif()
 endforeach()
@@ -242,11 +254,15 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
     make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp26 "" DOCTEST)
     target_compile_definitions(test-reflection-force-compiler-specific-cpp26 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)
 
+    # The config file must be read before the backend is selected.
+    make_test(test_standalone.cpp test-standalone-config-cpp26 "")
+    target_compile_definitions(test-standalone-config-cpp26 PRIVATE ${NAMEOF_TEST_CONFIG_FILE})
+
     set(reflection_targets test-reflection-cpp26 test_aliases-reflection-cpp26 test-reflection-semantics-cpp26 test-backend-reflection-cpp26 test-backend-no-expansion-cpp26 test-standalone-reflection-cpp26)
     foreach(target IN LISTS reflection_targets)
-        target_compile_definitions(${target} PRIVATE NAMEOF_TEST_STD_REFLECTION=1)
+        target_compile_definitions(${target} PRIVATE NAMEOF_TEST_STD_REFLECTION=1 NAMEOF_REQUIRE_STD_REFLECTION)
     endforeach()
-    foreach(target IN LISTS reflection_targets ITEMS test-reflection-force-compiler-specific-cpp26)
+    foreach(target IN LISTS reflection_targets ITEMS test-reflection-force-compiler-specific-cpp26 test-standalone-config-cpp26)
         target_compile_options(${target} PRIVATE
             "${NAMEOF_TEST_FLAG_PREFIX}${NAMEOF_CPP26_STANDARD_FLAG}"
             ${NAMEOF_STD_REFLECTION_COMPILE_OPTIONS}

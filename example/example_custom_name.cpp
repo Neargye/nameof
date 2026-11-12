@@ -28,8 +28,7 @@ enum class Color { RED = -10, BLUE = 0, GREEN = 10 };
 enum class Numbers { One, Two, Three };
 
 #if defined(NAMEOF_ENUM_SUPPORTED)
-// Сustom definitions of names for enum.
-// Specialization of `enum_name` must be injected in `namespace nameof::customize`.
+// Custom enum names: specialize `enum_name` in `namespace nameof::customize`.
 template <>
 constexpr std::string_view nameof::customize::enum_name<Color>(Color value) noexcept {
   switch (value) {
@@ -43,8 +42,7 @@ constexpr std::string_view nameof::customize::enum_name<Color>(Color value) noex
   return {}; // Empty string for unknown value.
 }
 
-// Сustom definitions of names for enum.
-// Specialization of `enum_name` must be injected in `namespace nameof::customize`.
+// Custom enum names: specialize `enum_name` in `namespace nameof::customize`.
 template <>
 constexpr std::string_view nameof::customize::enum_name<Numbers>(Numbers value) noexcept {
   switch (value) {
@@ -56,8 +54,7 @@ constexpr std::string_view nameof::customize::enum_name<Numbers>(Numbers value) 
 }
 #endif
 
-// Сustom definitions of names for type.
-// Specialization of `type_name` must be injected in `namespace nameof::customize`.
+// Custom type names: specialize `type_name` in `namespace nameof::customize`.
 template <>
 constexpr std::string_view nameof::customize::type_name<Color>() noexcept {
   return "The Color";
@@ -66,8 +63,7 @@ constexpr std::string_view nameof::customize::type_name<Color>() noexcept {
 class a1_test {};
 class a2_test {};
 
-// Сustom definitions of names for type.
-// Specialization of `type_name` must be injected in `namespace nameof::customize`.
+// Custom type names: specialize `type_name` in `namespace nameof::customize`.
 template <>
 constexpr std::string_view nameof::customize::type_name<a1_test>() noexcept {
   return "Animal";

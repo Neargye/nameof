@@ -14,7 +14,7 @@ Standard reflection is selected automatically for enum APIs when available.
 
 * `customize::enum_name(E)` overrides reflection for declared or synthetic values.
 
-To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` in every translation unit. Mixing reflection backends violates the ODR.
+To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` in every translation unit. Mixing reflection backends violates the ODR. To fail compilation when standard reflection is unavailable, define `NAMEOF_REQUIRE_STD_REFLECTION` instead.
 
 ## Nameof
 
@@ -84,4 +84,4 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * Visual Studio IntelliSense may have problems analyzing some `nameof` expressions.
 
-* `cstring` storage members are public to work around GCC access-checking bugs in templated lambdas. They remain implementation details; use `data()` and the string interface.
+* `cstring` storage members are public to work around GCC access-checking bugs in templated lambdas. They remain implementation details, so use `data()` and the string interface.

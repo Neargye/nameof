@@ -12,7 +12,7 @@ int prefix = 0;
 
 #include <nameof.hpp>
 
-#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_ENUM_CAST) || defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK)
+#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_ASSERT) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_ENUM_CAST) || defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK)
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 
@@ -23,6 +23,18 @@ static_assert(NAMEOF_VERSION_MAJOR == NAMEOF_TEST_VERSION_MAJOR && NAMEOF_VERSIO
 
 #if defined(NAMEOF_TEST_NO_RTTI)
 static_assert(!nameof::is_nameof_type_rtti_supported);
+#endif
+
+#if defined(NAMEOF_CONFIG_FILE) && !defined(NAMEOF_TEST_CONFIG_FILE)
+#  error "NAMEOF_CONFIG_FILE was not included."
+#endif
+
+#if defined(NAMEOF_NO_STD_FORMAT) && __has_include(<format>) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+#  include <format>
+// C++23 range formatting accepts cstring as a sequence of characters.
+#  if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L && !defined(__cpp_lib_format_ranges)
+static_assert(!std::is_default_constructible_v<std::formatter<nameof::cstring<1>, char>>, "NAMEOF_NO_STD_FORMAT must not define the formatter.");
+#  endif
 #endif
 
 enum class DefaultRangeBoundary {
@@ -89,6 +101,18 @@ struct StandaloneRttiDerived : StandaloneRttiBase {};
 int __cdecl main() {
 #else
 int main() {
+#endif
+#if defined(NAMEOF_TEST_CONFIG_FILE) || defined(NAMEOF_NO_ASSERT)
+  // The index of the terminator is inside the buffer but fails the bounds check, which must not abort here.
+  auto name = NAMEOF(standalone_function);
+  if (name[name.size()] != '\0') {
+    return 3;
+  }
+#  if defined(NAMEOF_TEST_CONFIG_FILE)
+  if (nameof_test_assert_failures != 1) {
+    return 4;
+  }
+#  endif
 #endif
 #if defined(NAMEOF_ENUM_SUPPORTED)
   if (nameof::nameof_enum_flag(static_cast<UnfixedEnum>(3)) != "unfixed_first|unfixed_second") {

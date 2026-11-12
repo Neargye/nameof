@@ -2,6 +2,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2018 - 2026 Daniil Goncharov <neargye@gmail.com>.
 
+// Options that the header rejects while it is included.
+#if NAMEOF_COMPILE_FAIL_CASE == 15
+#  define NAMEOF_REQUIRE_STD_REFLECTION
+#elif NAMEOF_COMPILE_FAIL_CASE == 16
+#  undef NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
+#  define NAMEOF_REQUIRE_STD_REFLECTION
+#elif NAMEOF_COMPILE_FAIL_CASE == 17
+#  define NAMEOF_NO_ASSERT
+#  define NAMEOF_ASSERT(...) static_cast<void>(0)
+#endif
+
 #include <nameof.hpp>
 
 #include <limits>
@@ -144,6 +155,10 @@ enum class CompositeOnlyFlags : unsigned { Composite = 3 };
 int main() {
   return static_cast<int>(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).size());
 }
+
+#elif NAMEOF_COMPILE_FAIL_CASE >= 15 && NAMEOF_COMPILE_FAIL_CASE <= 17
+
+int main() {}
 
 #else
 

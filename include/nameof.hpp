@@ -37,7 +37,6 @@
 #define NAMEOF_VERSION_PATCH 0
 
 #include <array>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <iosfwd>
@@ -48,6 +47,11 @@
 #include <type_traits>
 #include <utility>
 
+// Define NAMEOF_CONFIG_FILE to include a header with nameof options. It is included before any option is read.
+#if defined(NAMEOF_CONFIG_FILE)
+#  include NAMEOF_CONFIG_FILE
+#endif
+
 #if !defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION) && defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L
 #  if __has_include(<meta>)
 #    include <meta>
@@ -55,6 +59,30 @@
 #  if defined(__cpp_lib_reflection) && __cpp_lib_reflection >= 202506L && defined(__cpp_lib_define_static) && __cpp_lib_define_static >= 202506L
 #    define NAMEOF_DETAIL_USE_STD_REFLECTION 1
 #  endif
+#endif
+
+// Define NAMEOF_REQUIRE_STD_REFLECTION to fail compilation when standard reflection is unavailable.
+#if defined(NAMEOF_REQUIRE_STD_REFLECTION)
+#  if defined(NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION)
+static_assert(false, "NAMEOF_REQUIRE_STD_REFLECTION and NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION cannot be used together.");
+#  elif !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
+static_assert(false, "NAMEOF_REQUIRE_STD_REFLECTION requires C++26 standard reflection support.");
+#  endif
+#endif
+
+// NAMEOF_ASSERT checks preconditions and defaults to assert. Define your own NAMEOF_ASSERT(...) or disable checks with NAMEOF_NO_ASSERT.
+#if defined(NAMEOF_NO_ASSERT) && defined(NAMEOF_ASSERT)
+static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together.");
+#endif
+
+// The cast keeps a custom NAMEOF_ASSERT an expression and ignores its result, including an overloaded comma operator.
+#if defined(NAMEOF_NO_ASSERT)
+#  define NAMEOF_DETAIL_ASSERT(...) static_cast<void>(0)
+#elif defined(NAMEOF_ASSERT)
+#  define NAMEOF_DETAIL_ASSERT(...) static_cast<void>(NAMEOF_ASSERT(__VA_ARGS__))
+#else
+#  include <cassert>
+#  define NAMEOF_DETAIL_ASSERT(...) assert((__VA_ARGS__))
 #endif
 
 #if __has_include(<cxxabi.h>)
@@ -275,7 +303,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return assert(i < size()), data()[i]; }
+  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return NAMEOF_DETAIL_ASSERT(i < size()), data()[i]; }
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return data()[0]; }
 
@@ -332,7 +360,7 @@ class [[nodiscard]] cstring {
   [[nodiscard]] friend constexpr bool operator>=(string_view lhs, const cstring& rhs) noexcept { return lhs.compare(rhs) >= 0; }
 
  private:
-  [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return assert(str.size() == N), str; }
+  [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return NAMEOF_DETAIL_ASSERT(str.size() == N), str; }
 
   template <std::uint16_t... J>
   constexpr cstring([[maybe_unused]] string_view str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
@@ -1509,7 +1537,7 @@ string qualified_type_name(string name) {
 // typeid name, demangled if possible. Frees the buffer itself, so the header does not need <memory>.
 struct demangled_name {
   explicit demangled_name(const char* tn) noexcept : name{tn != nullptr ? tn : ""} {
-    assert(tn != nullptr);
+    NAMEOF_DETAIL_ASSERT(tn != nullptr);
 #if __has_include(<cxxabi.h>)
     int status = 0;
     buffer = tn != nullptr ? abi::__cxa_demangle(tn, nullptr, nullptr, &status) : nullptr;
@@ -1537,7 +1565,7 @@ template <typename T>
 [[nodiscard]] string nameof_type_rtti(const char* tn) {
   static_assert(supported_v<is_nameof_type_rtti_supported, T>, "NAMEOF_TYPE_RTTI is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   const demangled_name demangled{tn};
-  assert(!demangled.name.empty() && "Type does not have a name.");
+  NAMEOF_DETAIL_ASSERT(!demangled.name.empty() && "Type does not have a name.");
   return {demangled.name.data(), demangled.name.size()};
 }
 
@@ -1548,7 +1576,7 @@ template <typename T, enable_if_has_short_name_t<T, int> = 0>
   const demangled_name demangled{tn};
   // The dynamic type of a polymorphic object is a class, so only static arithmetic types keep the whole name.
   const auto name = pretty_type_name(demangled.name, !std::is_arithmetic_v<U>, std::is_null_pointer_v<U>);
-  assert(!name.empty() && "Type does not have a short name.");
+  NAMEOF_DETAIL_ASSERT(!name.empty() && "Type does not have a short name.");
   return {name.data(), name.size()};
 }
 
@@ -1793,7 +1821,8 @@ template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>,
 } // namespace nameof
 
 // Included here, so std::format works regardless of include order. MSVC STL warns when <format> is included before C++20.
-#if __has_include(<format>) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
+// NAMEOF_NO_STD_FORMAT skips <format> and the formatter, which saves its parsing in every translation unit.
+#if !defined(NAMEOF_NO_STD_FORMAT) && __has_include(<format>) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
 #  include <format>
 #  if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
 template <std::uint16_t N>
@@ -1892,6 +1921,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #define NAMEOF_POINTER(...) ::nameof::nameof_pointer<__VA_ARGS__>()
 
 #undef NAMEOF_FOR_EACH_256
+#undef NAMEOF_DETAIL_ASSERT
 #undef NAMEOF_DETAIL_CDECL
 #undef NAMEOF_DETAIL_TEST_FALLBACK
 #undef NAMEOF_DETAIL_SIGNATURE

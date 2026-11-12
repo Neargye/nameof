@@ -62,7 +62,7 @@
   }
   ```
 
-* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep range-based reflection.
+* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep range-based reflection, or `NAMEOF_REQUIRE_STD_REFLECTION` to fail compilation without standard reflection. Do not define both.
 
 * To change the string types, use these macros:
 
@@ -76,7 +76,18 @@
 
   Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `cstring` supports `std::format` when available. For `fmt`, include `<fmt/format.h>` before `<nameof.hpp>`.
+* `cstring` supports `std::format` when available. Define `NAMEOF_NO_STD_FORMAT` to skip `<format>` and this support. C++23 then formats `cstring` as a range of characters, so pass a `string_view` instead. For `fmt`, include `<fmt/format.h>` before `<nameof.hpp>`.
+
+* `NAMEOF_ASSERT` checks preconditions, such as the index passed to `cstring::operator[]`. It defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` or disable checks with `NAMEOF_NO_ASSERT`, but not both. A custom macro must expand to an expression that is valid in a `constexpr` function, like `assert`.
+
+* Use `NAMEOF_CONFIG_FILE` to keep options in one header. It is included before any option is read:
+
+  ```cpp
+  #define NAMEOF_CONFIG_FILE "my_nameof_config.hpp"
+  #include <nameof.hpp>
+  ```
+
+  Use the same options in every translation unit to avoid ODR violations.
 
 * `NAMEOF`, `NAMEOF_FULL`, `NAMEOF_RAW`, and `*_TYPE_EXPR` do not evaluate their arguments. RTTI APIs follow `typeid` rules and evaluate polymorphic glvalues to obtain the dynamic type.
 
