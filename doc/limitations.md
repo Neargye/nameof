@@ -88,4 +88,12 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * Visual Studio IntelliSense may have problems analyzing some `nameof` expressions.
 
+* ReSharper C++ and CLion Nova evaluate enum names from version 2025.3.
+
 * `cstring` storage members are public to work around GCC access-checking bugs in templated lambdas. They remain implementation details, so use `data()` and the string interface.
+
+## NVCC and NVC++
+
+* Enum names are empty for enums declared inside functions.
+
+* Unnamed types are spelled `<unnamed>` at compile time. Under nvcc, results computed at run time come from the host compiler.

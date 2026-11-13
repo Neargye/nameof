@@ -135,8 +135,12 @@ static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a mac
 #  define NAMEOF_POINTER_SUPPORTED 1
 #endif
 
+#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION) && defined(__RESHARPER__) && __RESHARPER__ >= 20250300
+#  define NAMEOF_DETAIL_RESHARPER 1
+#endif
+
 // Checks nameof_enum compiler compatibility.
-#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_RESHARPER) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  define NAMEOF_ENUM_SUPPORTED 1
 #endif
 
@@ -580,6 +584,14 @@ constexpr string_view pretty_function_name(string_view signature) noexcept {
   if (template_begin == signature.size()) {
     return {};
   }
+#if defined(NAMEOF_DETAIL_NVCC)
+  // EDG (nvcc) spells function pointers as p<&ns::g> on the host and p<ns::g> on the device.
+  std::size_t parameters = template_begin;
+  for (; parameters < signature.size() && signature[parameters] != '('; ++parameters) {}
+  if (signature[template_begin + 1] == '&' || parameters == signature.size()) {
+    return pretty_member_name(signature);
+  }
+#endif
   for (std::size_t i = template_begin + 1; i + 2 < signature.size(); ++i) {
     if (signature[i] != ' ' && (signature[i] != ':' || signature[i + 1] != ':')) {
       continue;
@@ -796,11 +808,49 @@ NAMEOF_DETAIL_CONSTEVAL bool enum_name_valid(string_view signature) noexcept {
   return c == ' ' || c == '<' || c == ',' || (c == ':' && i >= 2 && signature[i - 2] == ':');
 }
 
+#if defined(NAMEOF_DETAIL_RESHARPER)
+// nullptr for an unnamed value, the name may be qualified ("ns::E::A").
+NAMEOF_DETAIL_CONSTEVAL string_view resharper_name(const char* name) noexcept {
+  if (name == nullptr) {
+    return {};
+  }
+  std::size_t size = 0;
+  while (name[size] != '\0') {
+    ++size;
+  }
+  std::size_t i = size;
+  while (i > 0 && name[i - 1] != ':') {
+    --i;
+  }
+  return string_view{name + i, size - i};
+}
+#endif
+
+#if defined(NAMEOF_DETAIL_NVCC)
+template <typename E>
+constexpr auto unaliased() noexcept {
+  return E{};
+}
+
+template <auto V>
+NAMEOF_DETAIL_CONSTEVAL auto nvcc_enum_name() noexcept {
+  constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
+  return enum_name_valid(signature) ? pretty_name(signature) : string_view{};
+}
+
+// EDG prints a value as a cast unless the cast to the unaliased type is spelled in the template argument.
+#  define NAMEOF_DETAIL_NVCC_NAME(E, V) nvcc_enum_name<static_cast<decltype(unaliased<E>())>(static_cast<std::underlying_type_t<E>>(V))>()
+#endif
+
 template <typename E, E V>
 NAMEOF_DETAIL_CONSTEVAL auto enum_name() noexcept {
   if constexpr (is_nameof_enum_supported) {
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
     constexpr auto name = reflection::enum_name<E, V>();
+#elif defined(NAMEOF_DETAIL_RESHARPER)
+    constexpr auto name = resharper_name(__rscpp_enumerator_name(V));
+#elif defined(NAMEOF_DETAIL_NVCC)
+    constexpr auto name = NAMEOF_DETAIL_NVCC_NAME(E, V);
 #else
     constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
     constexpr auto name = enum_name_valid(signature) ? pretty_name(signature) : string_view{};
@@ -828,7 +878,11 @@ inline constexpr auto custom_enum_name_v = custom_enum_name<E, V>();
 template <auto V>
 NAMEOF_DETAIL_CONSTEVAL bool nv() noexcept {
   if constexpr (is_nameof_enum_supported) {
+#if defined(NAMEOF_DETAIL_NVCC)
+    return !NAMEOF_DETAIL_NVCC_NAME(decltype(V), V).empty();
+#else
     return enum_name_valid(NAMEOF_DETAIL_SIGNATURE);
+#endif
   } else {
     return false;
   }
@@ -1143,6 +1197,15 @@ NAMEOF_DETAIL_CONSTEVAL E batch_value(std::size_t i) noexcept {
 
 template <typename E, bool IsFlags, int Min, std::size_t J, std::size_t... K>
 NAMEOF_DETAIL_CONSTEVAL auto block_names(std::index_sequence<K...>) noexcept {
+#if defined(NAMEOF_DETAIL_RESHARPER)
+  signature_names_t<sizeof...(K)> result;
+  result.valid = true;
+  for (std::size_t i = 0; i < sizeof...(K); ++i) {
+    result.names[i] = resharper_name(__rscpp_enumerator_name(batch_value<E, Min, IsFlags>(J + i)));
+    result.count += static_cast<std::size_t>(!result.names[i].empty());
+  }
+  return result;
+#else
   if constexpr (!batch_supported<E>()) {
     // MSVC 19.29 calls a non-constexpr array helper for a directly returned empty aggregate in consteval.
     signature_names_t<sizeof...(K)> result;
@@ -1159,6 +1222,7 @@ NAMEOF_DETAIL_CONSTEVAL auto block_names(std::index_sequence<K...>) noexcept {
   } else {
     return signature_names<sizeof...(K)>(nb<batch_value<E, Min, IsFlags>(J + K)...>());
   }
+#endif
 }
 
 inline constexpr std::size_t scan_block_size = 512;
@@ -1265,16 +1329,14 @@ template <typename E, bool IsFlags>
 NAMEOF_DETAIL_CONSTEVAL auto enum_offsets() noexcept {
   using R = reflected_range<E, IsFlags>;
   static_assert(R::valid_order, "nameof::customize::enum_range min must not be greater than max.");
-  if constexpr (R::empty) {
-    return valid_offsets_t<1>{};
-  } else if constexpr (!R::valid_bounds) {
-    static_assert(R::valid_bounds, "nameof::customize::enum_range bounds must fit in int.");
-    return valid_offsets_t<1>{};
-  } else if constexpr (!R::valid_size) {
-    static_assert(R::valid_size, "nameof::customize::enum_range must contain fewer than UINT16_MAX values.");
-    return valid_offsets_t<1>{};
-  } else {
+  if constexpr (!R::empty && R::valid_bounds && R::valid_size) {
     return valid_offsets<E, IsFlags, R::span + 1, static_cast<int>(R::min)>();
+  } else {
+    static_assert(R::empty || R::valid_bounds, "nameof::customize::enum_range bounds must fit in int.");
+    static_assert(R::empty || !R::valid_bounds || R::valid_size, "nameof::customize::enum_range must contain fewer than UINT16_MAX values.");
+    // MSVC 19.29 (C++20) cannot return valid_offsets_t<1>{} directly.
+    valid_offsets_t<1> result;
+    return result;
   }
 }
 
@@ -1482,11 +1544,31 @@ using remove_identity_t = T;
 template <typename T, typename R, typename U = remove_cvref_t<T>>
 using enable_if_has_short_name_t = std::enable_if_t<!std::is_array_v<U> && !std::is_pointer_v<U> && !std::is_member_pointer_v<U> && !std::is_function_v<U>, R>;
 
+#if defined(NAMEOF_DETAIL_NVCC)
+// Dependent on T: the nvcc device pass evaluates non-dependent calls with the unsubstituted signature.
+template <typename...>
+NAMEOF_DETAIL_CONSTEVAL std::size_t nvcc_find(string_view signature, char c) noexcept {
+  std::size_t i = 0;
+  while (signature[i] != c) {
+    ++i;
+  }
+  return i;
+}
+#endif
+
 template <typename... T>
 NAMEOF_DETAIL_CONSTEVAL auto NAMEOF_DETAIL_CDECL n() noexcept {
   if constexpr (is_nameof_type_supported) {
     constexpr auto signature = NAMEOF_DETAIL_SIGNATURE;
-#if defined(__clang__)
+#if defined(NAMEOF_DETAIL_NVCC) && defined(_MSC_VER)
+    // EDG (nvcc, nvc++) drops consteval and repeats __cdecl.
+    constexpr auto prefix = nvcc_find<T...>(signature, '<') + sizeof("<struct nameof::detail::identity<") - 1;
+    constexpr auto suffix = signature[signature.size() - 2] == ' ' ? sizeof(" >") - 1 : sizeof(">") - 1;
+#elif defined(NAMEOF_DETAIL_NVCC)
+    // EDG drops consteval and puts no braces around a pack.
+    constexpr auto suffix = static_cast<std::size_t>(signature[signature.size() - 1] == '}');
+    constexpr auto prefix = nvcc_find<T...>(signature, '[') + sizeof("[with T = ") - 1 + suffix;
+#elif defined(__clang__)
     constexpr auto prefix = sizeof("auto nameof::detail::n() [T = <") - 1;
     constexpr auto suffix = sizeof(">") - 1;
 #elif defined(__GNUC__)
@@ -1530,8 +1612,8 @@ constexpr string_view pretty_type_name(string_view name, bool is_qualified, bool
     return name;
   }
   name = pretty_name(name);
-#if defined(_MSC_VER)
-  // MSVC spells unnamed types as "struct <unnamed-type-x>", which leaves only the class-key.
+#if defined(_MSC_VER) || defined(NAMEOF_DETAIL_NVCC)
+  // MSVC "struct <unnamed-type-x>" and EDG "struct <unnamed>" leave only the class-key.
   if (name.size() <= 6 && (name.compare("struct") == 0 || name.compare("class") == 0 || name.compare("union") == 0 || name.compare("enum") == 0)) {
     return {};
   }
@@ -1972,6 +2054,8 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #undef NAMEOF_DETAIL_ENUM_CAST
 #undef NAMEOF_DETAIL_STRICT_ENUM_CAST
 #undef NAMEOF_DETAIL_NVCC
+#undef NAMEOF_DETAIL_NVCC_NAME
+#undef NAMEOF_DETAIL_RESHARPER
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(pop)

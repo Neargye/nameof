@@ -12,7 +12,7 @@ int prefix = 0;
 
 #include <nameof.hpp>
 
-#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_ASSERT) || defined(NAMEOF_DETAIL_DEMANGLE) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_ENUM_CAST) || defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(NAMEOF_DETAIL_NVCC)
+#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_ASSERT) || defined(NAMEOF_DETAIL_DEMANGLE) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_ENUM_CAST) || defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(NAMEOF_DETAIL_NVCC) || defined(NAMEOF_DETAIL_NVCC_NAME) || defined(NAMEOF_DETAIL_RESHARPER)
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 
