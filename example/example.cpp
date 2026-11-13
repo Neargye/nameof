@@ -208,21 +208,21 @@ int main() {
 
   /* Remarks */
 #if 0
-  // These expressions have no names.
-  std::cout << NAMEOF(ptrvar[0]) << std::endl; // ''
-  std::cout << NAMEOF(42.0) << std::endl; // ''
-  std::cout << NAMEOF(42) << std::endl; // ''
-  std::cout << NAMEOF(42.0_deg) << std::endl; // ''
-  std::cout << NAMEOF((structvar)) << std::endl; // ''
-  std::cout << NAMEOF((SomeMethod4<int, float>)(1.0f)) << std::endl; // ''
-  std::cout << NAMEOF(42, 42, 42) << std::endl; // ''
-  std::cout << NAMEOF(42 + 42) << std::endl; // ''
-  std::cout << NAMEOF("Bad case"_string) << std::endl; // ''
-  std::cout << NAMEOF("Bad case") << std::endl; // ''
-  std::cout << NAMEOF("somevar.somefield") << std::endl; // ''
-  std::cout << NAMEOF(42.f) << std::endl; // ''
-  std::cout << NAMEOF(structvar.somefield++) << std::endl; // ''
-  std::cout << NAMEOF(std::string{"test"}) << std::endl; // ''
+  // These expressions have no names, so NAMEOF does not compile. Use NAMEOF_RAW for their text.
+  std::cout << NAMEOF(ptrvar[0]) << std::endl;
+  std::cout << NAMEOF(42.0) << std::endl;
+  std::cout << NAMEOF(42) << std::endl;
+  std::cout << NAMEOF(42.0_deg) << std::endl;
+  std::cout << NAMEOF((structvar)) << std::endl;
+  std::cout << NAMEOF((SomeMethod4<int, float>)(1.0f)) << std::endl;
+  std::cout << NAMEOF(42, 42, 42) << std::endl;
+  std::cout << NAMEOF(42 + 42) << std::endl;
+  std::cout << NAMEOF("Bad case"_string) << std::endl;
+  std::cout << NAMEOF("Bad case") << std::endl;
+  std::cout << NAMEOF("somevar.somefield") << std::endl;
+  std::cout << NAMEOF(42.f) << std::endl;
+  std::cout << NAMEOF(structvar.somefield++) << std::endl;
+  std::cout << NAMEOF(std::string{"test"}) << std::endl;
 #endif
 
   return 0;

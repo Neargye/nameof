@@ -309,8 +309,7 @@ bool check_sparse(int first, int last) {
       continue;
     }
     const auto mag = value < 0 ? -value : value;
-    const char expected[] = {value < 0 ? 'M' : value > 0 ? 'P' : 'Z', static_cast<char>('0' + mag / 10),
-                             static_cast<char>('0' + mag % 10)};
+    const char expected[] = {value < 0 ? 'M' : value > 0 ? 'P' : 'Z', static_cast<char>('0' + mag / 10), static_cast<char>('0' + mag % 10)};
     if (name != nameof::string_view{expected, 3}) {
       return false;
     }
@@ -574,6 +573,34 @@ static_assert(literal_casts.valid && literal_casts.count == 1 && literal_casts.n
 static_assert(signature_names<1>("auto nb() [V = <f()->T::E::A>").valid);
 static_assert(signature_names<1>("auto __cdecl nb<-::E::A").names[0] == "A");
 static_assert(signature_names<1>("auto __cdecl nb<A").names[0] == "A");
+
+// `auto nb() [V = <T<T<...>>::E::A>`: the delimiter stack holds 64 levels, one more rejects the block instead of overflowing.
+template <std::size_t Depth>
+constexpr auto nested_signature() {
+  constexpr nameof::string_view head = "auto nb() [V = <", tail = "::E::A>";
+  constexpr std::size_t open = head.size() + 2 * Depth, close = open + Depth;
+  std::array<char, close + tail.size()> text{};
+  // Indexed by i alone, so MSVC /analyze can bound every write (C28020).
+  for (std::size_t i = 0; i < text.size(); ++i) {
+    if (i < head.size()) {
+      text[i] = head[i];
+    } else if (i < open) {
+      text[i] = (i - head.size()) % 2 == 0 ? 'T' : '<';
+    } else if (i < close) {
+      text[i] = '>';
+    } else {
+      text[i] = tail[i - close];
+    }
+  }
+  return text;
+}
+
+template <std::size_t Depth>
+inline constexpr auto nested_signature_v = nested_signature<Depth>();
+
+constexpr auto deepest = signature_names<1>({nested_signature_v<64>.data(), nested_signature_v<64>.size()});
+static_assert(deepest.valid && deepest.names[0] == "A");
+static_assert(!signature_names<1>({nested_signature_v<65>.data(), nested_signature_v<65>.size()}).valid);
 
 #if defined(__cpp_consteval)
 consteval

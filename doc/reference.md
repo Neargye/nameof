@@ -37,7 +37,7 @@
 
 * `nameof::cstring<N>` is a constexpr null-terminated string of `N` characters (`N <= UINT16_MAX`). Use `data()` or `c_str()` for the buffer, `size()` for its length, and `.str()` for an owning string. Comparisons with `cstring` and `string_view` and stream output are supported.
 
-* `string_view` conversion requires an lvalue `cstring` that outlives the view. Save `NAMEOF`, `NAMEOF_FULL`, or `NAMEOF_RAW` results first. APIs returning a reference to `cstring` use static storage.
+* `string_view` conversion requires an lvalue `cstring` that outlives the view. Save `NAMEOF`, `NAMEOF_FULL`, or `NAMEOF_RAW` results first. The same applies to pointers from `data()` and `c_str()`. APIs returning a reference to `cstring` use static storage.
 
 * Type names are compiler-specific unless customized.
 
