@@ -32,6 +32,8 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * `nameof_member` and `nameof_pointer` return an empty name for operators.
 
+* `nameof_pointer` names complete objects and functions. For a pointer to an array element or a subobject, the result is compiler-specific.
+
 * With MSVC, `nameof_member` returns an empty name for virtual member functions and for member functions of local classes declared inside an operator.
 
 * With MSVC, same-type union members at the same offset may resolve to the first member's name.
@@ -78,11 +80,11 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * `nameof_enum(E)` returns custom names without copying. Their storage must outlive the result and provide null termination if needed. `nameof_enum<V>()` copies them into a null-terminated `cstring`.
 
-* With standard reflection, `nameof_enum(E).data()` can be a pointer template argument. With compiler-specific reflection, names point into a shared buffer, which is not portable as a template argument (GCC rejects it).
+* With standard reflection, `nameof_enum(E).data()` can be a pointer template argument. With compiler-specific reflection, use `nameof_enum<V>().data()` instead (C++20 and newer).
 
 * With compiler-specific reflection, a non-empty scan range must contain an enumerator for `nameof_enum(E)`. `nameof_enum_flag` requires a single-bit enumerator. A custom name in the scan range also satisfies these checks.
 
-* Standard reflection requires complete enums for runtime lookup.
+* Standard reflection requires complete enums.
 
 * Visual Studio IntelliSense may have problems analyzing some `nameof` expressions.
 

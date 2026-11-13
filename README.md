@@ -130,6 +130,8 @@ A header-only C++17 library for obtaining names of variables, types, functions, 
   target_link_libraries(your_target PRIVATE nameof::nameof)
   ```
 
+  `add_subdirectory` and `FetchContent` provide the same target. Tests, examples, and install rules are built only for a top-level project (see `NAMEOF_OPT_BUILD_TESTS`, `NAMEOF_OPT_BUILD_EXAMPLES`, `NAMEOF_OPT_INSTALL`).
+
 * **pkg-config:** use `pkg-config --cflags nameof` after installation.
 
 * **vcpkg:** install the [nameof package](https://github.com/microsoft/vcpkg/tree/master/ports/nameof) with `vcpkg install nameof`.

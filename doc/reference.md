@@ -343,6 +343,8 @@ nameof requires C++17 or newer and supports:
 
 * Obtains type name using RTTI. Reference and cv-qualifiers are ignored.
 
+* Takes an expression, not a type.
+
 * Returns `string`.
 
 * Examples
@@ -356,6 +358,8 @@ nameof requires C++17 or newer and supports:
 ## `NAMEOF_FULL_TYPE_RTTI`
 
 * Obtains type name using RTTI and preserves reference and cv-qualifiers.
+
+* Takes an expression, not a type.
 
 * Pointer, array, function, and member pointer types use compile-time names.
 
@@ -372,6 +376,8 @@ nameof requires C++17 or newer and supports:
 ## `NAMEOF_SHORT_TYPE_RTTI`
 
 * Obtains short type name using RTTI. Namespace qualification, template arguments, references, and cv-qualifiers are omitted.
+
+* Takes an expression, not a type.
 
 * Returns `string`.
 

@@ -135,7 +135,7 @@ int main() {
   std::cout << NAMEOF(structvar.somefield) << std::endl; // 'somefield'
   std::cout << NAMEOF((&structvar)->somefield) << std::endl; // 'somefield'
   std::cout << NAMEOF(othervar.ll.field) << std::endl; // 'field'
-  std::cout << NAMEOF(ptrvar) << std::endl; // 'ptrvar
+  std::cout << NAMEOF(ptrvar) << std::endl; // 'ptrvar'
 
   // Nameof function.
   std::cout << NAMEOF(&SomeStruct::SomeMethod1) << std::endl; // 'SomeMethod1'
@@ -149,7 +149,7 @@ int main() {
   std::cout << NAMEOF_FULL(SomeMethod4<int, float>) << std::endl; // 'SomeMethod4<int, float>'
   std::cout << NAMEOF_FULL(&SomeClass<int>::SomeMethod6<long int>) << std::endl; // 'SomeMethod6<long int>'
 
-  // Nameof type.
+  // Nameof type. Type names are compiler-specific, the comments show Clang output.
   std::cout << nameof::nameof_type<const Long::LL&>() << std::endl; // 'Long::LL'
   std::cout << NAMEOF_TYPE(const Long::LL&) << std::endl; // 'Long::LL'
   std::cout << nameof::nameof_full_type<const Long::LL&>() << std::endl; // 'const Long::LL &'
@@ -181,10 +181,10 @@ int main() {
   std::cout << NAMEOF_RAW(&SomeStruct::SomeMethod1) << std::endl; // '&SomeStruct::SomeMethod1'
 
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
-  // Nameof type using RTTI.
+  // Nameof type using RTTI. The comments show GCC and Clang output.
   Derived derived;
   Base* ptr = &derived;
-  std::cout << NAMEOF_TYPE_RTTI(ptr) << std::endl; // 'Base *'
+  std::cout << NAMEOF_TYPE_RTTI(ptr) << std::endl; // 'Base*'
   std::cout << NAMEOF_TYPE_RTTI(*ptr) << std::endl; // 'Derived'
 #endif
 
