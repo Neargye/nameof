@@ -158,13 +158,18 @@ static_assert(std::is_same_v<decltype(nameof::nameof_enum_or(Aliases::High, "?")
 static_assert(std::is_same_v<decltype(nameof::nameof_enum_flag(Aliases::High)), nameof::string>);
 static_assert(noexcept(nameof::nameof_enum(Aliases::High)) && noexcept(nameof::nameof_enum<Aliases::High>()));
 static_assert(!noexcept(nameof::nameof_enum_or(Aliases::High, "?")) && !noexcept(nameof::nameof_enum_flag(Aliases::High)));
+template <const char* P>
+struct PointerArg { static constexpr const char* value = P; };
 #if defined(NAMEOF_TEST_STD_REFLECTION)
 static_assert(nameof::nameof_enum(Aliases::Alias) == "First");
-template <const char* P>
-struct ReflectedPointer { static constexpr const char* value = P; };
-static_assert(ReflectedPointer<nameof::nameof_enum(Aliases::High).data()>::value[0] == 'H');
+static_assert(PointerArg<nameof::nameof_enum(Aliases::High).data()>::value[0] == 'H');
 #else
 static_assert(nameof::nameof_enum(Aliases::Alias) == nameof::nameof_enum(Aliases::First));
+#endif
+// Clang 18+ accepts subobject pointers but reports __cpp_nontype_template_args as 201411. Apple Clang numbers differ.
+#if (defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L) || (defined(__clang__) && !defined(__apple_build_version__) && __clang_major__ >= 18 && __cplusplus >= 202002L)
+// The documented pointer template argument for both backends.
+static_assert(PointerArg<nameof::nameof_enum<Aliases::High>().data()>::value[0] == 'H');
 #endif
 
 static_assert(nameof::nameof_enum(backend_test::Embedded::Value).data() == backend_test::custom_chars);

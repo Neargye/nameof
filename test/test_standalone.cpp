@@ -12,7 +12,7 @@ int prefix = 0;
 
 #include <nameof.hpp>
 
-#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_ASSERT) || defined(NAMEOF_DETAIL_DEMANGLE) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_ENUM_CAST) || defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK)
+#if defined(NAMEOF_FOR_EACH_256) || defined(NAMEOF_DETAIL_ASSERT) || defined(NAMEOF_DETAIL_DEMANGLE) || defined(NAMEOF_DETAIL_CDECL) || defined(NAMEOF_DETAIL_SIGNATURE) || defined(NAMEOF_DETAIL_CONSTEVAL) || defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_HAS_BIT_CAST) || defined(NAMEOF_DETAIL_ENUM_CAST) || defined(NAMEOF_DETAIL_STRICT_ENUM_CAST) || defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(NAMEOF_DETAIL_NVCC)
 #  error "nameof internal implementation macro leaked from the public header."
 #endif
 
@@ -117,6 +117,11 @@ int main() {
 #if defined(NAMEOF_ENUM_SUPPORTED)
   if (nameof::nameof_enum_flag(static_cast<UnfixedEnum>(3)) != "unfixed_first|unfixed_second") {
     return 2;
+  }
+#endif
+#if defined(NAMEOF_NO_STD_FORMAT) && defined(__cpp_lib_format_ranges) && defined(NAMEOF_TYPE_SUPPORTED)
+  if (std::format("{}", NAMEOF_TYPE(int)) != "['i', 'n', 't']") {
+    return 5;
   }
 #endif
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)

@@ -11,6 +11,8 @@
 #elif NAMEOF_COMPILE_FAIL_CASE == 17
 #  define NAMEOF_NO_ASSERT
 #  define NAMEOF_ASSERT(...) static_cast<void>(0)
+#elif NAMEOF_COMPILE_FAIL_CASE == 22
+#  define __PRETTY_FUNCTION__ __func__
 #endif
 
 #include <nameof.hpp>
@@ -156,7 +158,7 @@ int main() {
   return static_cast<int>(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).size());
 }
 
-#elif NAMEOF_COMPILE_FAIL_CASE >= 15 && NAMEOF_COMPILE_FAIL_CASE <= 17
+#elif (NAMEOF_COMPILE_FAIL_CASE >= 15 && NAMEOF_COMPILE_FAIL_CASE <= 17) || NAMEOF_COMPILE_FAIL_CASE == 22
 
 int main() {}
 
@@ -181,6 +183,12 @@ struct nameof::customize::enum_range<FloatingRange> {
 };
 
 constexpr auto floating_range_name = nameof::nameof_enum(FloatingRange::value);
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 21
+
+constexpr auto invalid_full_name = NAMEOF_FULL(1 + 2);
 
 int main() {}
 

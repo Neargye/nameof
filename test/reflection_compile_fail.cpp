@@ -14,6 +14,12 @@ enum class ForwardDeclared : unsigned;
 
 constexpr auto incomplete_name = nameof::nameof_enum(ForwardDeclared{0});
 
+#elif NAMEOF_REFLECTION_COMPILE_FAIL_CASE == 2
+
+enum class ForwardDeclared : unsigned;
+
+constexpr auto incomplete_constant_name = nameof::nameof_enum<ForwardDeclared{1}>();
+
 #else
 
 #  error Unknown NAMEOF_REFLECTION_COMPILE_FAIL_CASE.

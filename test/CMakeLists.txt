@@ -162,8 +162,9 @@ set(NAMEOF_TEST_CONFIG_FILE "NAMEOF_CONFIG_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/te
 make_test(test_standalone.cpp test-standalone-config-cpp17 17)
 target_compile_definitions(test-standalone-config-cpp17 PRIVATE ${NAMEOF_TEST_CONFIG_FILE})
 # test_shared_config.cpp is a second translation unit using the same enums and customizations.
-make_test("test_backend.cpp;test_shared_config.cpp" test-backend-cpp17 17)
-make_test("test_backend.cpp;test_shared_config.cpp" test-backend-fallback-cpp17 17)
+set(backend_sources test_backend.cpp test_shared_config.cpp)
+make_test("${backend_sources}" test-backend-cpp17 17)
+make_test("${backend_sources}" test-backend-fallback-cpp17 17)
 target_compile_definitions(test-backend-fallback-cpp17 PRIVATE NAMEOF_DETAIL_TEST_FALLBACK=1)
 make_test(test_aliases.cpp test-aliases-fallback-cpp17 17 DOCTEST)
 target_compile_definitions(test-aliases-fallback-cpp17 PRIVATE NAMEOF_DETAIL_TEST_FALLBACK=1)
@@ -220,21 +221,29 @@ make_compile_fail_test(no-assert-and-assert 17 "NAMEOF_NO_ASSERT and NAMEOF_ASSE
 make_compile_fail_test(range-not-integral 18 "nameof::customize::enum_range min must be integral" UNEXPECTED_TEXT "cmp_less")
 make_compile_fail_test(range-not-integral-unsigned 19 "nameof::customize::enum_range min must be integral" UNEXPECTED_TEXT "cmp_less")
 make_compile_fail_test(range-max-not-integral 20 "nameof::customize::enum_range max must be integral" UNEXPECTED_TEXT "cmp_less")
+make_compile_fail_test(full-expression-no-name 21 "NAMEOF_FULL requires a named expression")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    make_compile_fail_test(pretty-function-macro 22 "nameof requires the builtin __PRETTY_FUNCTION__, not a macro")
+endif()
 
 foreach(std IN ITEMS 20 23 26)
     if("cxx_std_${std}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
         make_test(test.cpp test-cpp${std} ${std} DOCTEST)
         make_test(test_aliases.cpp test_aliases-cpp${std} ${std} DOCTEST)
-        make_test("test_backend.cpp;test_shared_config.cpp" test-backend-cpp${std} ${std})
+        make_test("${backend_sources}" test-backend-cpp${std} ${std})
         if(std EQUAL 20 AND NAMEOF_NO_RTTI_OPTION)
             make_test(test_standalone.cpp test-standalone-no-rtti-cpp20 20)
             target_compile_options(test-standalone-no-rtti-cpp20 PRIVATE ${NAMEOF_NO_RTTI_OPTION})
             target_compile_definitions(test-standalone-no-rtti-cpp20 PRIVATE NAMEOF_TEST_NO_RTTI=1)
         endif()
         if(std EQUAL 20)
-            # <format> exists only in C++20 and later.
-            make_test(test_standalone.cpp test-standalone-no-assert-no-format-cpp20 20)
-            target_compile_definitions(test-standalone-no-assert-no-format-cpp20 PRIVATE NAMEOF_NO_ASSERT NAMEOF_NO_STD_FORMAT)
+            # The traced flag customization test in test_reflection.cpp needs std::is_constant_evaluated.
+            make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp20 20 DOCTEST)
+        endif()
+        if(std EQUAL 20 OR std EQUAL 23)
+            # <format> exists only in C++20 and later, C++23 formats cstring as a character range.
+            make_test(test_standalone.cpp test-standalone-no-assert-no-format-cpp${std} ${std})
+            target_compile_definitions(test-standalone-no-assert-no-format-cpp${std} PRIVATE NAMEOF_NO_ASSERT NAMEOF_NO_STD_FORMAT)
         endif()
     endif()
 endforeach()
@@ -244,9 +253,9 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
     make_test(test_aliases.cpp test_aliases-reflection-cpp26 "" DOCTEST)
     make_test(test_reflection.cpp test-reflection-semantics-cpp26 "" DOCTEST)
 
-    make_test("test_backend.cpp;test_shared_config.cpp" test-backend-reflection-cpp26 "")
+    make_test("${backend_sources}" test-backend-reflection-cpp26 "")
     # The tiny-enum lookup must also work without expansion statements.
-    make_test("test_backend.cpp;test_shared_config.cpp" test-backend-no-expansion-cpp26 "")
+    make_test("${backend_sources}" test-backend-no-expansion-cpp26 "")
     if(NAMEOF_TEST_FLAG_PREFIX STREQUAL "/std:")
         target_compile_options(test-backend-no-expansion-cpp26 PRIVATE /U__cpp_expansion_statements)
     else()
@@ -277,7 +286,13 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
     make_compile_fail_test(
         incomplete-enum
         1
-        "nameof requires a complete enum definition"
+        "nameof::nameof_enum requires a complete enum definition"
+        REFLECTION
+    )
+    make_compile_fail_test(
+        incomplete-enum-constant
+        2
+        "nameof::nameof_enum requires a complete enum definition"
         REFLECTION
     )
 endif()
