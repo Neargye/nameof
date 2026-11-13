@@ -160,14 +160,24 @@ int main() {
 
 int main() {}
 
-#elif NAMEOF_COMPILE_FAIL_CASE == 18
+#elif NAMEOF_COMPILE_FAIL_CASE >= 18 && NAMEOF_COMPILE_FAIL_CASE <= 20
 
+#if NAMEOF_COMPILE_FAIL_CASE == 19
+enum class FloatingRange : unsigned { value = 0 };
+#else
 enum class FloatingRange { value = 0 };
+#endif
 
 template <>
 struct nameof::customize::enum_range<FloatingRange> {
-  static constexpr double min = 0;
+#if NAMEOF_COMPILE_FAIL_CASE == 20
+  static constexpr int min = 0;
   static constexpr double max = 10;
+#else
+  // Empty after clamping to unsigned in case 19.
+  static constexpr double min = -2.5;
+  static constexpr int max = -1;
+#endif
 };
 
 constexpr auto floating_range_name = nameof::nameof_enum(FloatingRange::value);

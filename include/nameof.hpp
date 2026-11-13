@@ -841,11 +841,10 @@ NAMEOF_DETAIL_CONSTEVAL auto value_at([[maybe_unused]] std::size_t i) noexcept {
 
 // std::cmp_less is C++20 and rejects bool.
 template <typename L, typename R>
-NAMEOF_DETAIL_CONSTEVAL bool cmp_less(L lhs, R rhs) noexcept {
-  // Only enum_range bounds can be non-integral here.
-  static_assert(std::is_integral_v<L> && std::is_integral_v<R>, "nameof::customize::enum_range min and max must be integral.");
-
-  if constexpr (std::is_same_v<L, bool>) {
+NAMEOF_DETAIL_CONSTEVAL bool cmp_less([[maybe_unused]] L lhs, [[maybe_unused]] R rhs) noexcept {
+  if constexpr (!std::is_integral_v<L> || !std::is_integral_v<R>) {
+    return false; // Rejected by reflected_min and reflected_max.
+  } else if constexpr (std::is_same_v<L, bool>) {
     return cmp_less(static_cast<int>(lhs), rhs);
   } else if constexpr (std::is_same_v<R, bool>) {
     return cmp_less(lhs, static_cast<int>(rhs));
@@ -861,6 +860,7 @@ NAMEOF_DETAIL_CONSTEVAL bool cmp_less(L lhs, R rhs) noexcept {
 // Preserve bounds until checked for narrowing to int.
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 NAMEOF_DETAIL_CONSTEVAL auto reflected_min() noexcept {
+  static_assert(std::is_integral_v<decltype(customize::enum_range<E>::min)>, "nameof::customize::enum_range min must be integral.");
   if constexpr (IsFlags) {
     return 0;
   } else if constexpr (cmp_less((std::numeric_limits<U>::min)(), customize::enum_range<E>::min)) {
@@ -872,6 +872,7 @@ NAMEOF_DETAIL_CONSTEVAL auto reflected_min() noexcept {
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
 NAMEOF_DETAIL_CONSTEVAL auto reflected_max() noexcept {
+  static_assert(std::is_integral_v<decltype(customize::enum_range<E>::max)>, "nameof::customize::enum_range max must be integral.");
   if constexpr (IsFlags) {
     return std::is_same_v<U, bool> ? 0 : std::numeric_limits<make_unsigned_t<U>>::digits - 1;
   } else if constexpr (cmp_less(customize::enum_range<E>::max, (std::numeric_limits<U>::max)())) {
@@ -1248,7 +1249,7 @@ struct reflected_range {
 template <typename E, bool IsFlags>
 NAMEOF_DETAIL_CONSTEVAL auto enum_offsets() noexcept {
   using R = reflected_range<E, IsFlags>;
-  static_assert(R::valid_order, "nameof::customize::enum_range must contain at least one value.");
+  static_assert(R::valid_order, "nameof::customize::enum_range min must not be greater than max.");
   if constexpr (R::empty) {
     return valid_offsets_t<1>{};
   } else if constexpr (!R::valid_bounds) {
