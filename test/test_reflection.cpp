@@ -114,11 +114,11 @@ TEST_CASE("runtime enum backend") {
   static_assert(nameof::detail::reflection::enumerators_v<Dense>.size() == 5);
 #else
   static_assert(nameof::detail::values_v<Dense>.size() == 5);
-  static_assert(nameof::detail::values_v<Dense>[0] == Dense::A);
-  static_assert(nameof::detail::values_v<Dense>[1] == Dense::B);
-  static_assert(nameof::detail::values_v<Dense>[2] == Dense::C);
-  static_assert(nameof::detail::values_v<Dense>[3] == Dense::D);
-  static_assert(nameof::detail::values_v<Dense>[4] == Dense::E);
+  static_assert(static_cast<Dense>(nameof::detail::values_v<Dense>[0]) == Dense::A);
+  static_assert(static_cast<Dense>(nameof::detail::values_v<Dense>[1]) == Dense::B);
+  static_assert(static_cast<Dense>(nameof::detail::values_v<Dense>[2]) == Dense::C);
+  static_assert(static_cast<Dense>(nameof::detail::values_v<Dense>[3]) == Dense::D);
+  static_assert(static_cast<Dense>(nameof::detail::values_v<Dense>[4]) == Dense::E);
 #endif
   static_assert(nameof::nameof_enum(Unordered::A) == "A");
   static_assert(nameof::nameof_enum(Unordered::B) == "B");
@@ -155,7 +155,7 @@ TEST_CASE("runtime enum backend") {
   static_assert(unicode_static_name.data()[unicode_static_name.size()] == '\0');
 #else
   static_assert(nameof::detail::values_v<Sparse>.size() == 1);
-  static_assert(nameof::detail::values_v<Sparse>[0] == Sparse::InRange);
+  static_assert(static_cast<Sparse>(nameof::detail::values_v<Sparse>[0]) == Sparse::InRange);
   static_assert(nameof::nameof_enum(Sparse::FarLow).empty());
   static_assert(nameof::nameof_enum(Sparse::FarHigh).empty());
 #endif
@@ -164,9 +164,9 @@ TEST_CASE("runtime enum backend") {
 TEST_CASE("flag backend") {
 #if !defined(NAMEOF_TEST_STD_REFLECTION)
   static_assert(nameof::detail::values_v<WideFlags, true>.size() == 3);
-  static_assert(nameof::detail::values_v<WideFlags, true>[0] == WideFlags::A);
-  static_assert(nameof::detail::values_v<WideFlags, true>[1] == WideFlags::B);
-  static_assert(nameof::detail::values_v<WideFlags, true>[2] == WideFlags::High);
+  static_assert(static_cast<WideFlags>(nameof::detail::values_v<WideFlags, true>[0]) == WideFlags::A);
+  static_assert(static_cast<WideFlags>(nameof::detail::values_v<WideFlags, true>[1]) == WideFlags::B);
+  static_assert(static_cast<WideFlags>(nameof::detail::values_v<WideFlags, true>[2]) == WideFlags::High);
   static_assert(nameof::detail::values_v<BoolFlags, true>.size() == 1);
 #endif
   CHECK(nameof::nameof_enum_flag(WideFlags::AB) == "A|B");

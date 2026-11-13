@@ -675,8 +675,9 @@ consteval auto flag_mask() noexcept {
   // Only a rejection filter: composite enumerators may add extra bits.
   using U = make_unsigned_t<std::underlying_type_t<E>>;
   U mask{};
-  for (const auto& item : entries_v<E>) {
-    mask = static_cast<U>(mask | static_cast<U>(item.value));
+  // Reads enumerators_v, not entries_v, so tiny enums do not build their name table.
+  for (const auto enumerator : enumerators_v<E>) {
+    mask = static_cast<U>(mask | static_cast<U>(std::meta::extract<E>(enumerator)));
   }
   return mask;
 }
@@ -1269,11 +1270,12 @@ inline constexpr auto offsets_v = enum_offsets<E, IsFlags>();
 template <typename E, bool IsFlags>
 NAMEOF_DETAIL_CONSTEVAL auto values() noexcept {
   constexpr auto offsets = offsets_v<E, IsFlags>;
-  std::array<E, offsets.count> result{};
+  // Underlying values share array instantiations between enums of the same type and size.
+  std::array<std::underlying_type_t<E>, offsets.count> result{};
   if constexpr (offsets.count > 0) {
     constexpr auto min = static_cast<int>(reflected_range<E, IsFlags>::min);
     for (std::size_t i = 0; i < offsets.count; ++i) {
-      result[i] = static_cast<E>(value_at<E, min, IsFlags>(offsets.offsets[i]));
+      result[i] = value_at<E, min, IsFlags>(offsets.offsets[i]);
     }
   }
   return result;
@@ -1286,10 +1288,10 @@ template <typename E, bool IsFlags = false>
 inline constexpr auto count_v = values_v<E, IsFlags>.size();
 
 template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
-inline constexpr auto min_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_v<E, IsFlags>.front()) : U{0};
+inline constexpr auto min_v = (count_v<E, IsFlags> > 0) ? values_v<E, IsFlags>.front() : U{0};
 
 template <typename E, bool IsFlags = false, typename U = std::underlying_type_t<E>>
-inline constexpr auto max_v = (count_v<E, IsFlags> > 0) ? static_cast<U>(values_v<E, IsFlags>.back()) : U{0};
+inline constexpr auto max_v = (count_v<E, IsFlags> > 0) ? values_v<E, IsFlags>.back() : U{0};
 
 template <typename E, bool IsFlags>
 NAMEOF_DETAIL_CONSTEVAL bool valid_name_lengths() noexcept {
@@ -1395,13 +1397,13 @@ constexpr std::size_t sparse_index(E value) noexcept {
   std::size_t hi = count_v<E>;
   while (lo < hi) {
     const auto mid = lo + (hi - lo) / 2;
-    if (static_cast<U>(values_v<E>[mid]) < v) {
+    if (values_v<E>[mid] < v) {
       lo = mid + 1;
     } else {
       hi = mid;
     }
   }
-  return lo < count_v<E> && static_cast<U>(values_v<E>[lo]) == v ? lo : count_v<E>;
+  return lo < count_v<E> && values_v<E>[lo] == v ? lo : count_v<E>;
 }
 
 #endif
@@ -1429,8 +1431,9 @@ constexpr string_view enum_name(E value) noexcept {
         return names_v<E>[i];
       }
     } else if constexpr (is_sparse_v<E, IsFlags>) {
+      const auto v = static_cast<std::underlying_type_t<E>>(value);
       for (std::size_t i = 0; i < count_v<E, IsFlags>; ++i) {
-        if (enum_value_equal(values_v<E, IsFlags>[i], value)) {
+        if (values_v<E, IsFlags>[i] == v) {
           return names_v<E, IsFlags>[i];
         }
       }

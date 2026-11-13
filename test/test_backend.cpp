@@ -637,6 +637,8 @@ static_assert(nameof::nameof_enum<Lazy::Value>() == "Value");
 static_assert(nameof::nameof_enum(Wide::Last) == "Last" && nameof::detail::count_v<Wide> == 2);
 static_assert(nameof::detail::block_offsets_v<Wide, false, 4097, 0, 512>.count == 0);
 static_assert(nameof::detail::count_v<Unfixed> == 2);
+// Values are stored as the underlying type, so enums of one underlying type and size share the array.
+static_assert(std::is_same_v<decltype(nameof::detail::values_v<Wide>), decltype(nameof::detail::values_v<Rejected>)>);
 static_assert(nameof::nameof_enum(Zero) == "Zero" && nameof::nameof_enum(Top) == "Top");
 static_assert(nameof::detail::name_chars_v<Unfixed, false>.size() == sizeof("Zero") + sizeof("Top"));
 static_assert(nameof::detail::names_v<Unfixed>[1].data() == nameof::detail::names_v<Unfixed>[0].data() + sizeof("Zero"));
