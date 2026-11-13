@@ -74,6 +74,10 @@ static_assert(false, "NAMEOF_REQUIRE_STD_REFLECTION requires C++26 standard refl
 static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together.");
 #endif
 
+#if (defined(__clang__) || defined(__GNUC__)) && defined(__PRETTY_FUNCTION__)
+static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a macro.");
+#endif
+
 // The cast keeps a custom NAMEOF_ASSERT an expression and ignores its result, including an overloaded comma operator.
 #if defined(NAMEOF_NO_ASSERT)
 #  define NAMEOF_DETAIL_ASSERT(...) static_cast<void>(0)
@@ -93,11 +97,17 @@ static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together
 #  pragma warning(disable : 28020) // Code analysis false positive for bounds-checked enum value arrays.
 #elif defined(__clang__)
 #  pragma clang diagnostic push
+#  if __has_warning("-Wnrvo")
+#    pragma clang diagnostic ignored "-Wnrvo" // Opt-in warning, NRVO does not matter for compile-time helpers.
+#  endif
 #  if __has_warning("-Wenum-constexpr-conversion")
 #    pragma clang diagnostic ignored "-Wenum-constexpr-conversion" // Clang 16-19: scanning casts candidates outside the value range of unfixed enums.
 #  elif __clang_major__ >= 16
 #    define NAMEOF_DETAIL_STRICT_ENUM_CAST 1 // Clang 20+ made it a hard error (CWG1766). Apple Clang versions differ, so the warning is probed.
 #  endif
+#elif defined(__GNUC__) && __GNUC__ >= 14
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wnrvo" // Opt-in warning, NRVO does not matter for compile-time helpers.
 #endif
 
 // Checks nameof_type compiler compatibility.
@@ -128,6 +138,10 @@ static_assert(false, "NAMEOF_NO_ASSERT and NAMEOF_ASSERT cannot be used together
 // Checks nameof_enum compiler compatibility.
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  define NAMEOF_ENUM_SUPPORTED 1
+#endif
+
+#if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION) && (defined(__NVCOMPILER) || defined(__NVCC__))
+#  define NAMEOF_DETAIL_NVCC 1
 #endif
 
 // Enum value must be greater than or equal to NAMEOF_ENUM_RANGE_MIN (-128 by default). Redefine the macro to change it for all enum types.
@@ -608,8 +622,8 @@ using make_unsigned_t = std::make_unsigned_t<std::conditional_t<std::is_same_v<T
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
-#if defined(__clang__)
-// Clang can leave a class-template enum's enumerators uninstantiated on a numeric-first lookup. Member lookup forces its definition, both outcomes yield R.
+#if defined(__clang__) || defined(__NVCOMPILER) || defined(__NVCC__)
+// These compilers can leave a class-template enum's enumerators uninstantiated on a numeric-first lookup. Member lookup forces its definition, both outcomes yield R.
 template <typename E, typename R, typename = void>
 struct enum_definition { using type = R; };
 
@@ -639,7 +653,7 @@ consteval auto enumerators() noexcept {
   if constexpr (std::meta::is_enumerable_type(^^E)) {
     return std::define_static_array(std::meta::enumerators_of(^^E));
   } else {
-    static_assert(supported_v<false, E>, "nameof requires a complete enum definition.");
+    static_assert(supported_v<false, E>, "nameof::nameof_enum requires a complete enum definition.");
     return std::array<std::meta::info, 0>{};
   }
 }
@@ -1079,7 +1093,7 @@ inline constexpr bool has_fixed_underlying_v<E, std::void_t<decltype(E{0})>> = t
 
 template <typename E>
 NAMEOF_DETAIL_CONSTEVAL bool batch_supported() noexcept {
-#if defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(__CUDACC__)
+#if defined(NAMEOF_DETAIL_TEST_FALLBACK) || defined(NAMEOF_DETAIL_NVCC)
   return false;
 #else
   return is_nameof_enum_supported;
@@ -1371,7 +1385,7 @@ inline constexpr bool is_sparse_v = is_sparse<E, IsFlags>();
 template <typename E, bool IsFlags>
 NAMEOF_DETAIL_CONSTEVAL bool has_names() noexcept {
   using R = reflected_range<E, IsFlags>;
-  // Invalid ranges already fail in values() with a clearer message.
+  // Invalid ranges already fail in enum_offsets() with a clearer message.
   if constexpr (count_v<E, IsFlags> > 0 || R::empty || !R::valid_bounds || !R::valid_size) {
     return true;
   } else {
@@ -1957,11 +1971,14 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
 #undef NAMEOF_DETAIL_HAS_BIT_CAST
 #undef NAMEOF_DETAIL_ENUM_CAST
 #undef NAMEOF_DETAIL_STRICT_ENUM_CAST
+#undef NAMEOF_DETAIL_NVCC
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(pop)
 #elif defined(__clang__)
 #  pragma clang diagnostic pop
+#elif defined(__GNUC__) && __GNUC__ >= 14
+#  pragma GCC diagnostic pop
 #endif
 
 #endif // NEARGYE_NAMEOF_HPP
