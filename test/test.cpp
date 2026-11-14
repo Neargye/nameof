@@ -333,10 +333,8 @@ static_assert(has_matching_ends(cstring_abc));
 static_assert(has_matching_ends(::nameof::cstring<0>{}));
 static_assert(::nameof::cstring<0>{}.front() == '\0' && ::nameof::cstring<0>{}.back() == '\0');
 
-// Pointers from empty temporaries must remain valid after the full expression.
+// Pointers from empty temporaries must remain valid after the full expression. data() and c_str() are lifetimebound, so they are checked below.
 constexpr const char* cstring_empty_pointers[] = {
-  ::nameof::cstring<0>{}.data(),
-  ::nameof::cstring<0>{}.c_str(),
   ::nameof::cstring<0>{}.begin(),
   ::nameof::cstring<0>{}.end(),
   &::nameof::cstring<0>{}.front(),
@@ -350,6 +348,7 @@ static_assert([] {
   }
   return true;
 }());
+static_assert(::nameof::cstring<0>{}.data() == cstring_empty_pointers[0] && ::nameof::cstring<0>{}.c_str() == cstring_empty_pointers[0]);
 
 static_assert(std::is_nothrow_copy_constructible_v<::nameof::cstring<3>>);
 static_assert(std::is_nothrow_move_constructible_v<::nameof::cstring<3>>);

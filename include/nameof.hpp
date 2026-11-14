@@ -88,6 +88,18 @@ static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a mac
 #  define NAMEOF_DETAIL_ASSERT(...) assert((__VA_ARGS__))
 #endif
 
+// Warns on a kept pointer into a temporary cstring: Clang -Wdangling, MSVC Core Check C26815. GCC has no such attribute.
+#if defined(__has_cpp_attribute)
+#  if __has_cpp_attribute(clang::lifetimebound)
+#    define NAMEOF_DETAIL_LIFETIMEBOUND [[clang::lifetimebound]]
+#  elif __has_cpp_attribute(msvc::lifetimebound)
+#    define NAMEOF_DETAIL_LIFETIMEBOUND [[msvc::lifetimebound]]
+#  endif
+#endif
+#if !defined(NAMEOF_DETAIL_LIFETIMEBOUND)
+#  define NAMEOF_DETAIL_LIFETIMEBOUND
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 #  pragma warning(push)
 #  pragma warning(disable : 4459 6244) // Internal names may shadow globals declared by the caller.
@@ -348,7 +360,7 @@ class [[nodiscard]] cstring {
   template <bool Empty = (N == 0), std::enable_if_t<Empty, int> = 0>
   constexpr cstring() noexcept : chars_{} {}
 
-  [[nodiscard]] constexpr const_pointer data() const noexcept { return N == 0 ? empty_ : chars_; }
+  [[nodiscard]] constexpr const_pointer data() const noexcept NAMEOF_DETAIL_LIFETIMEBOUND { return N == 0 ? empty_ : chars_; }
 
   [[nodiscard]] constexpr size_type size() const noexcept { return N; }
 
@@ -368,7 +380,10 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return NAMEOF_DETAIL_ASSERT(i < size()), data()[i]; }
+  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept {
+    NAMEOF_DETAIL_ASSERT(i < size());
+    return data()[i];
+  }
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return data()[0]; }
 
@@ -399,7 +414,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr bool ends_with(string_view str) const noexcept { return detail::ends_with(data(), size(), str); }
 
-  [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
+  [[nodiscard]] constexpr const char* c_str() const noexcept NAMEOF_DETAIL_LIFETIMEBOUND { return N == 0 ? empty_ : chars_; }
 
   [[nodiscard]] string str() const { return {data(), size()}; }
 
@@ -447,7 +462,10 @@ class [[nodiscard]] cstring {
   [[nodiscard]] friend constexpr bool operator>=(string_view lhs, const cstring& rhs) noexcept { return lhs.compare(rhs) >= 0; }
 
  private:
-  [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept { return NAMEOF_DETAIL_ASSERT(str.size() == N), str; }
+  [[nodiscard]] static constexpr string_view check_size(string_view str) noexcept {
+    NAMEOF_DETAIL_ASSERT(str.size() == N);
+    return str;
+  }
 
   template <std::uint16_t... J>
   constexpr cstring([[maybe_unused]] const char* str, std::integer_sequence<std::uint16_t, J...>) noexcept : chars_{str[J]..., '\0'} {}
@@ -505,7 +523,10 @@ class [[nodiscard]] name_view {
 
   [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
-  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return NAMEOF_DETAIL_ASSERT(i < size()), data_[i]; }
+  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept {
+    NAMEOF_DETAIL_ASSERT(i < size());
+    return data_[i];
+  }
 
   [[nodiscard]] constexpr const_reference front() const noexcept { return data_[0]; }
 
@@ -2283,6 +2304,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {}
 
 #undef NAMEOF_FOR_EACH_256
 #undef NAMEOF_DETAIL_ASSERT
+#undef NAMEOF_DETAIL_LIFETIMEBOUND
 #undef NAMEOF_DETAIL_DEMANGLE
 #undef NAMEOF_DETAIL_CDECL
 #undef NAMEOF_DETAIL_TEST_FALLBACK
