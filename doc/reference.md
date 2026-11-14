@@ -35,9 +35,18 @@
 
   Unsupported APIs fail to compile when used. Define `NAMEOF_ENUM_NO_CHECK_SUPPORT` to disable enum support checks, or `NAMEOF_TYPE_NO_CHECK_SUPPORT` for the other APIs above.
 
-* `nameof::cstring<N>` is a constexpr null-terminated string of `N` characters (`N <= UINT16_MAX`). Use `data()` or `c_str()` for the buffer, `size()` for its length, and `.str()` for an owning string. Comparisons with `cstring` and `string_view` and stream output are supported.
+* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Other name APIs return `nameof::name_view`, a view of a null-terminated name in static storage. Both have `data()`, `c_str()`, `size()`, `str()`, `find`, `rfind`, `starts_with`, `ends_with`, comparisons and stream output, and convert to `string_view`. `name_view::substr` returns a `string_view`.
 
-* `string_view` conversion requires an lvalue `cstring` that outlives the view. Save `NAMEOF`, `NAMEOF_FULL`, or `NAMEOF_RAW` results first. The same applies to pointers from `data()` and `c_str()`. APIs returning a reference to `cstring` use static storage.
+* A temporary `cstring` does not convert to `string_view` or `name_view`. Save the result first: `constexpr auto name = NAMEOF(x);`.
+
+* In C++20 a `name_view` can be a template argument, see the [limitations](limitations.md#nameof):
+
+  ```cpp
+  template <nameof::name_view Name>
+  struct Tag {};
+
+  Tag<NAMEOF_TYPE(int)> tag;
+  ```
 
 * Type names are compiler-specific unless customized.
 
@@ -76,7 +85,7 @@
 
   Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `cstring` supports `std::format` when available. Define `NAMEOF_NO_STD_FORMAT` to skip `<format>` and this support. C++23 then formats `cstring` as a range of characters, so pass a `string_view` instead. For `fmt`, include `<fmt/format.h>` before `<nameof.hpp>`.
+* `cstring` and `name_view` support `std::format` when available. Define `NAMEOF_NO_STD_FORMAT` to skip `<format>` and this support. C++23 then formats them as a range of characters, so pass a `string_view` instead. For `fmt` older than 10.1, include `<fmt/format.h>` before `<nameof.hpp>`.
 
 * `NAMEOF_ASSERT` checks preconditions, such as the index passed to `cstring::operator[]`. It defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` or disable checks with `NAMEOF_NO_ASSERT`, but not both. A custom macro must expand to an expression that is valid in a `constexpr` function, like `assert`.
 
@@ -198,11 +207,11 @@ nameof requires C++17 or newer and supports:
 
 * Obtains name of enum value known at compile time.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Has a lower compile-time cost than `NAMEOF_ENUM` and ignores [`enum_range`](limitations.md#nameof-enum).
 
-* Returns a custom or reflected name, otherwise an empty `nameof::cstring`.
+* Returns a custom or reflected name, otherwise an empty `nameof::name_view`.
 
 * Examples
 
@@ -245,7 +254,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains type name. Reference and cv-qualifiers are ignored (`NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -259,7 +268,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains full type name with reference and cv-qualifiers.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -273,7 +282,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains short type name.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Array, pointer, member pointer, and function types are not supported.
 
@@ -291,7 +300,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains type name of expression. Reference and cv-qualifiers are ignored.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -306,7 +315,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains the name of `decltype(expr)`, preserving reference and cv-qualifiers.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Examples
 
@@ -325,7 +334,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains short type name of expression.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * Array, pointer, member pointer, and function types are not supported.
 
@@ -395,7 +404,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains name of member.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * If member pointer is null, returns `"nullptr"` by default.
 
@@ -416,7 +425,7 @@ nameof requires C++17 or newer and supports:
 
 * Obtains name of a function, global variable, or static data member.
 
-* Returns a reference to `nameof::cstring`. Marked `constexpr` and `noexcept`.
+* Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * If pointer is null, returns `"nullptr"` by default.
 

@@ -22,9 +22,17 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * `NAMEOF` and `NAMEOF_FULL` do not support raw string literals. Use `NAMEOF_RAW` instead.
 
+* A temporary `cstring` does not convert to `string_view` or `name_view`, because the view would dangle. Save `NAMEOF(x)` in a variable first.
+
+* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 and newer (not Apple Clang). It is identified by the storage of the name, not by its characters, so equal names from different calls (`nameof_type<T>()` and `nameof_short_type<T>()`) can be different arguments. Its mangled names contain nameof internals and are not stable.
+
 ## Nameof Type
 
 * Type-name results are compiler-specific unless customized.
+
+* Fundamental types keep the compiler spelling: `long long` is `long long int` on GCC, `long long` on Clang and `__int64` on MSVC. nameof does not normalize them, because the same types inside other names (`std::vector<long int>`) would keep that spelling, and aliases such as `std::int64_t` are different types on different platforms. Use `customize::type_name` for stable names.
+
+* Names depend on the compiler and nameof version. Do not store them or compare them between builds, use custom names instead.
 
 * Short type name APIs reject array, pointer, member pointer, and function types.
 
@@ -78,7 +86,7 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * `customize::enum_name(E)` takes precedence over either backend, including for values outside the range or reflected sequence. Flags use customization for each set bit.
 
-* `nameof_enum(E)` returns custom names without copying. Their storage must outlive the result and provide null termination if needed. `nameof_enum<V>()` copies them into a null-terminated `cstring`.
+* `nameof_enum(E)` returns custom names without copying. Their storage must outlive the result and provide null termination if needed. `nameof_enum<V>()` copies them into null-terminated static storage.
 
 * With standard reflection, `nameof_enum(E).data()` can be a pointer template argument. With compiler-specific reflection, use `nameof_enum<V>().data()` instead (C++20 and newer).
 
@@ -90,7 +98,7 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 * ReSharper C++ and CLion Nova evaluate enum names from version 2025.3.
 
-* `cstring` storage members are public to work around GCC access-checking bugs in templated lambdas. They remain implementation details, so use `data()` and the string interface.
+* `cstring` and `name_view` data members are public for technical reasons. Use `data()` and the string interface.
 
 ## NVCC and NVC++
 
