@@ -35,20 +35,9 @@
 
   Unsupported APIs fail to compile when used. Define `NAMEOF_ENUM_NO_CHECK_SUPPORT` to disable enum support checks, or `NAMEOF_TYPE_NO_CHECK_SUPPORT` for the other APIs above.
 
-* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Other name APIs return `nameof::name_view`, a view of a null-terminated name in static storage. Both have `data()`, `c_str()`, `size()`, `str()`, `find`, `rfind`, `starts_with`, `ends_with`, comparisons and stream output, and convert to `string_view`. `name_view::substr` returns a `string_view`.
+* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Save it before taking a view or `c_str()`: `constexpr auto name = NAMEOF(x);`. Other APIs return `nameof::name_view`, a view of a static name. Both have a `string_view`-like interface and convert to `string_view`. `name_view::substr` returns a `string_view`, `cstring` has no `substr`.
 
-* A temporary `cstring` does not convert to `string_view` or `name_view`. Save the result first: `constexpr auto name = NAMEOF(x);`.
-
-* In C++20 a `name_view` can be a template argument, see the [limitations](limitations.md#nameof):
-
-  ```cpp
-  template <nameof::name_view Name>
-  struct Tag {};
-
-  Tag<NAMEOF_TYPE(int)> tag;
-  ```
-
-* Type names are compiler-specific unless customized.
+* In C++20 a `name_view` can be a template argument: `template <nameof::name_view Name> struct Tag` and `Tag<NAMEOF_TYPE(int)>`. See the [limitations](limitations.md#nameof).
 
 * Specialize `enum_name`, `type_name`, `member_name`, or `pointer_name` in `nameof::customize` to provide custom names. An empty name selects the default. See the [enum and type example](../example/example_custom_name.cpp).
 
@@ -71,7 +60,7 @@
   }
   ```
 
-* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep range-based reflection, or `NAMEOF_REQUIRE_STD_REFLECTION` to fail compilation without standard reflection. Do not define both.
+* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep range-based reflection, or `NAMEOF_REQUIRE_STD_REFLECTION` to fail compilation without standard reflection.
 
 * To change the string types, use these macros:
 
@@ -85,9 +74,9 @@
 
   Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `cstring` and `name_view` support `std::format` when available. Define `NAMEOF_NO_STD_FORMAT` to skip `<format>` and this support. C++23 then formats them as a range of characters, so pass a `string_view` instead. For `fmt` older than 10.1, include `<fmt/format.h>` before `<nameof.hpp>`.
+* `cstring` and `name_view` support `std::format` and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. For `fmt` older than 10.1, include `<fmt/format.h>` before `<nameof.hpp>`.
 
-* `NAMEOF_ASSERT` checks preconditions, such as the index passed to `cstring::operator[]`. It defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` or disable checks with `NAMEOF_NO_ASSERT`, but not both. A custom macro must expand to an expression that is valid in a `constexpr` function, like `assert`.
+* `NAMEOF_ASSERT` checks preconditions, such as the index of `operator[]`, and defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` (an expression valid in a `constexpr` function) or disable checks with `NAMEOF_NO_ASSERT`.
 
 * Use `NAMEOF_CONFIG_FILE` to keep options in one header. It is included before any option is read:
 

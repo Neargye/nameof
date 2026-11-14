@@ -14,27 +14,25 @@ Standard reflection is selected automatically for enum APIs when available.
 
 * `customize::enum_name(E)` overrides reflection for declared or synthetic values.
 
-To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` in every translation unit. Mixing reflection backends violates the ODR. To fail compilation when standard reflection is unavailable, define `NAMEOF_REQUIRE_STD_REFLECTION` instead.
+`NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` selects range-based reflection. Define it before including `nameof.hpp` in every translation unit or in none, mixing backends violates the ODR.
 
 ## Nameof
 
-* `NAMEOF` and `NAMEOF_FULL` fail to compile if the expression has no name. Use `NAMEOF_RAW` for expression text.
+* `NAMEOF` and `NAMEOF_FULL` fail to compile for expressions without a name, including casts, and do not support raw string literals. Use `NAMEOF_RAW` for them. `NAMEOF(*p)` gives `"p"`.
 
-* `NAMEOF` and `NAMEOF_FULL` do not support raw string literals. Use `NAMEOF_RAW` instead.
+* A temporary `cstring` does not convert to `string_view` or `name_view`, and its `c_str()` and `data()` dangle. Save `NAMEOF(x)` in a variable first.
 
-* A temporary `cstring` does not convert to `string_view` or `name_view`, because the view would dangle. Save `NAMEOF(x)` in a variable first.
+* `cstring` and `name_view` data members are public for technical reasons. Use `data()` and the string interface.
 
-* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 and newer (not Apple Clang). It is identified by the storage of the name, not by its characters, so equal names from different calls (`nameof_type<T>()` and `nameof_short_type<T>()`) can be different arguments. Its mangled names contain nameof internals and are not stable.
+* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 (not Apple Clang). It is compared by address, not by characters, so equal names from different calls can be different arguments. Its mangled names are not stable.
 
 ## Nameof Type
 
-* Type-name results are compiler-specific unless customized.
+* Fundamental types keep the compiler spelling: `long long` is `long long int` on GCC and `__int64` on MSVC. nameof does not normalize them: the same types inside other names would keep that spelling, and `std::int64_t` is a different type on different platforms.
 
-* Fundamental types keep the compiler spelling: `long long` is `long long int` on GCC, `long long` on Clang and `__int64` on MSVC. nameof does not normalize them, because the same types inside other names (`std::vector<long int>`) would keep that spelling, and aliases such as `std::int64_t` are different types on different platforms. Use `customize::type_name` for stable names.
+* On MSVC, type names keep the `class `, `struct ` and `enum ` prefixes (`class std::vector<...>`). Short type names drop them.
 
-* Names depend on the compiler and nameof version. Do not store them or compare them between builds, use custom names instead.
-
-* Short type name APIs reject array, pointer, member pointer, and function types.
+* Type names depend on the compiler and the nameof version. Do not store or compare them between builds, use `customize::type_name` for stable names.
 
 * RTTI-based APIs follow `typeid` rules: the dynamic type is reported only for polymorphic glvalues.
 
@@ -50,7 +48,7 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
 ## Nameof Enum
 
-* With compiler-specific reflection, automatic runtime lookup of ordinary enum values is limited to `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`. Standard reflection ignores the range. `NAMEOF_ENUM_CONST`, `nameof::nameof_enum<V>()`, `NAMEOF_ENUM_FLAG`, and `nameof::nameof_enum_flag()` are not restricted by it.
+* With compiler-specific reflection, `nameof_enum(value)` finds only values in `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`, others get an empty name. `nameof_enum<V>()` and the flag APIs are not limited by it.
 
   * By default, `NAMEOF_ENUM_RANGE_MIN = -128`, `NAMEOF_ENUM_RANGE_MAX = 127`.
 
@@ -82,6 +80,8 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 
   * Enum ranges are limited to fewer than `UINT16_MAX` values.
 
+  * Check large enums: `static_assert(static_cast<int>(E::Max) <= NAMEOF_ENUM_RANGE_MAX);`.
+
 * With compiler-specific reflection, names of aliased enum values are compiler-dependent.
 
 * `customize::enum_name(E)` takes precedence over either backend, including for values outside the range or reflected sequence. Flags use customization for each set bit.
@@ -97,8 +97,6 @@ To use range-based reflection, define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION
 * Visual Studio IntelliSense may have problems analyzing some `nameof` expressions.
 
 * ReSharper C++ and CLion Nova evaluate enum names from version 2025.3.
-
-* `cstring` and `name_view` data members are public for technical reasons. Use `data()` and the string interface.
 
 ## NVCC and NVC++
 
