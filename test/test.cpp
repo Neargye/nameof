@@ -422,6 +422,8 @@ TEST_CASE("cstring equality with different lengths and embedded nulls") {
 
 static_assert(nameof::detail::pretty_name("(").empty());
 static_assert(nameof::detail::pretty_name("<").empty());
+static_assert(nameof::detail::expression_name("static_cast<long>(v)").empty() && nameof::detail::expression_name("dynamic_cast<B&>(*p)", false).empty());
+static_assert(nameof::detail::expression_name("std::any_cast<int>(a)") == "any_cast" && nameof::detail::expression_name("my_const_cast(v)") == "my_const_cast");
 
 TEST_CASE("expression name parsing") {
   using nameof::detail::pretty_name;

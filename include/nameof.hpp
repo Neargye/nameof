@@ -776,6 +776,20 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
   return {};
 }
 
+// A cast has no name, but pretty_name yields its keyword ("static_cast<long>(v)" gives "static_cast"). Kept out of pretty_name, which enum names use.
+constexpr string_view expression_name(string_view expr, bool remove_suffix = true) noexcept {
+  const auto name = pretty_name(expr, remove_suffix);
+  std::size_t size = 0;
+  while (size < name.size() && name[size] != '<') {
+    ++size;
+  }
+  const string_view keyword{name.data(), size};
+  if (keyword.compare("static_cast") == 0 || keyword.compare("dynamic_cast") == 0 || keyword.compare("const_cast") == 0 || keyword.compare("reinterpret_cast") == 0) {
+    return {};
+  }
+  return name;
+}
+
 constexpr bool is_operator_keyword(string_view str, std::size_t i) noexcept {
   return i + 8 <= str.size() && str[i] == 'o' &&
          string_view{str.data() + i, 8}.compare("operator") == 0 &&
@@ -2238,17 +2252,17 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {}
 #endif
 
 // Obtains name of variable, function, macro.
-#define NAMEOF(...) []() constexpr noexcept {                                             \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
-  constexpr auto nameof_detail_name = ::nameof::detail::pretty_name(#__VA_ARGS__);        \
-  static_assert(!nameof_detail_name.empty(), "NAMEOF requires a named expression.");      \
+#define NAMEOF(...) []() constexpr noexcept {                                                 \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                                     \
+  constexpr auto nameof_detail_name = ::nameof::detail::expression_name(#__VA_ARGS__);        \
+  static_assert(!nameof_detail_name.empty(), "NAMEOF requires a named expression.");          \
   return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains full name of variable, function, macro.
-#define NAMEOF_FULL(...) []() constexpr noexcept {                                        \
-  ::std::void_t<decltype(__VA_ARGS__)>();                                                 \
-  constexpr auto nameof_detail_name = ::nameof::detail::pretty_name(#__VA_ARGS__, false); \
-  static_assert(!nameof_detail_name.empty(), "NAMEOF_FULL requires a named expression."); \
+#define NAMEOF_FULL(...) []() constexpr noexcept {                                            \
+  ::std::void_t<decltype(__VA_ARGS__)>();                                                     \
+  constexpr auto nameof_detail_name = ::nameof::detail::expression_name(#__VA_ARGS__, false); \
+  static_assert(!nameof_detail_name.empty(), "NAMEOF_FULL requires a named expression.");     \
   return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
 // Obtains raw expression text.

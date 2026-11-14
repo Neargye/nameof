@@ -192,6 +192,20 @@ constexpr auto invalid_full_name = NAMEOF_FULL(1 + 2);
 
 int main() {}
 
+#elif NAMEOF_COMPILE_FAIL_CASE == 23
+
+constexpr int cast_source = 0;
+constexpr auto cast_name = NAMEOF(static_cast<long>(cast_source));
+
+int main() {}
+
+#elif NAMEOF_COMPILE_FAIL_CASE == 24
+
+constexpr int cast_source = 0;
+constexpr auto cast_full_name = NAMEOF_FULL(reinterpret_cast<const char*>(&cast_source));
+
+int main() {}
+
 #else
 
 #  error Unknown NAMEOF_COMPILE_FAIL_CASE.
