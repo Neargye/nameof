@@ -243,7 +243,8 @@ unsigned flag_trace = 0;
 
 template <>
 constexpr nameof::string_view nameof::customize::enum_name<TracedFlags>(TracedFlags value) noexcept {
-  if (!std::is_constant_evaluated()) {
+  // Not std::is_constant_evaluated: libstdc++ implements it with if consteval in C++23, which Clang 14 evaluates as true at run time here.
+  if (!__builtin_is_constant_evaluated()) {
     flag_trace = flag_trace * 10u + static_cast<unsigned>(value);
   }
   return static_cast<unsigned>(value) == 4u ? nameof::string_view{"Synthetic"} : nameof::string_view{};
