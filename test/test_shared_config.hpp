@@ -11,7 +11,7 @@ enum class Value { Low = 0, High = 500, Renamed = 501 };
 enum class Flags : unsigned { None = 0, Low = 1, High = 128 };
 nameof::string_view from_other(Value value);
 nameof::string flags_from_other(Flags value);
-const nameof::cstring<4>& constant_from_other();
+nameof::name_view constant_from_other();
 } // namespace shared_config
 
 template <>

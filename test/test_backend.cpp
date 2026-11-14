@@ -152,7 +152,7 @@ static_assert(nameof::nameof_enum(backend_test::Deprecated{1}) == "Old");
 static_assert(nameof::nameof_enum<backend_test::Deprecated{1}>() == "Old");
 
 using backend_test::Aliases;
-static_assert(std::is_same_v<decltype(nameof::nameof_enum<Aliases::High>()), const nameof::cstring<4>&>);
+static_assert(std::is_same_v<decltype(nameof::nameof_enum<Aliases::High>()), nameof::name_view>);
 static_assert(std::is_same_v<decltype(nameof::nameof_enum(Aliases::High)), nameof::string_view>);
 static_assert(std::is_same_v<decltype(nameof::nameof_enum_or(Aliases::High, "?")), nameof::string>);
 static_assert(std::is_same_v<decltype(nameof::nameof_enum_flag(Aliases::High)), nameof::string>);
@@ -471,7 +471,7 @@ template <> constexpr auto nameof::detail::reflection::enum_name<Lazy>(Lazy) noe
 
 static_assert(nameof::nameof_enum<Lazy::Alias>() == "First");
 static_assert(nameof::nameof_enum<static_cast<CustomOpaque>(7)>() == "OpaqueCustom");
-static_assert(std::is_same_v<decltype(nameof::nameof_enum<Lazy::Alias>()), const nameof::cstring<5>&>);
+static_assert(std::is_same_v<decltype(nameof::nameof_enum<Lazy::Alias>()), nameof::name_view>);
 static_assert(nameof::detail::reflection::entries_v<Ordered>.size() == 5);
 static_assert(nameof::detail::reflection::entries_v<Ordered>[0].value == static_cast<int>(Ordered::High));
 static_assert(nameof::detail::reflection::entries_v<Ordered>[1].name == "First");

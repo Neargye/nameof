@@ -96,6 +96,35 @@ TEST_CASE("flag lookup with string aliases") {
   REQUIRE(nameof::nameof_enum_flag(static_cast<Varied>(64)).empty());
 }
 
+[[maybe_unused]] static int some_alias_variable = 0;
+
+TEST_CASE("name_view and cstring search") {
+  constexpr auto name = nameof::nameof_enum<Color::GREEN>();
+  static_assert(std::is_same_v<decltype(name.substr()), MyStringView>);
+  static_assert(name.substr(1, 3).compare("REE") == 0);
+  static_assert(name.substr(4).compare("N") == 0);
+  static_assert(name.find('E') == 2);
+  static_assert(name.find("EN") == 3);
+  static_assert(name.find("RED") == std::string_view::npos);
+  static_assert(name.rfind('E') == 3);
+  static_assert(name.rfind("E") == 3);
+  static_assert(name.rfind("E", 2) == 2);
+  static_assert(name.starts_with('G'));
+  static_assert(name.starts_with("GR"));
+  static_assert(!name.starts_with("RE"));
+  static_assert(name.ends_with('N'));
+  static_assert(name.ends_with("EEN"));
+  static_assert(!name.ends_with("EE"));
+  REQUIRE(name.substr().size() == 5);
+  constexpr auto expression = NAMEOF(some_alias_variable);
+  static_assert(expression.find('a', 1) == 5);
+  static_assert(expression.find("alias") == 5);
+  static_assert(expression.rfind('a') == 15);
+  static_assert(expression.rfind("ia", 9) == 7);
+  static_assert(expression.starts_with('s') && expression.starts_with("some"));
+  static_assert(expression.ends_with('e') && expression.ends_with("variable"));
+}
+
 TEST_CASE("string") {
   auto cr = nameof::nameof_enum_flag(Color::RED);
   REQUIRE_FALSE(cr.empty());
@@ -137,6 +166,7 @@ TEST_CASE("RTTI with a throwing string alias") {
 TEST_CASE("fmt with aliases and ranges included after nameof") {
   CHECK(fmt::format("{:>5}", NAMEOF_TYPE(int)) == "  int");
   CHECK(fmt::format("{}", nameof::cstring<0>{}).empty());
+  CHECK(fmt::format("{}", nameof::name_view{}).empty());
   constexpr nameof::cstring<3> embedded_null{nameof::string_view{"a\0b", 3}};
   CHECK(fmt::format("{}", embedded_null) == std::string("a\0b", 3));
 }

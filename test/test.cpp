@@ -14,6 +14,8 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <array>
+#include <variant>
 
 #if __has_include(<fmt/format.h>)
 #  include <fmt/format.h>
@@ -847,8 +849,7 @@ void require_string_contract(const ::nameof::string& value, ::nameof::string_vie
 
 template <typename Name>
 void require_static_cstring_api_contract(const Name& name, ::nameof::string_view expected) {
-  static_assert(std::is_convertible_v<const Name&, ::nameof::string_view>);
-  static_assert(!std::is_convertible_v<Name, ::nameof::string_view>);
+  static_assert(std::is_same_v<Name, ::nameof::name_view>);
   static_assert(std::is_constructible_v<::nameof::string, const Name&>);
   require_cstring_contract(name, expected);
   require_string_contract(::nameof::string{name}, expected);
@@ -1213,14 +1214,257 @@ TEST_CASE("CSTRING stream output") {
   REQUIRE(wide.str() == std::wstring{L"abca\0b", 6});
 }
 
+static_assert(std::is_trivially_copyable_v<::nameof::name_view>);
+static_assert(std::is_nothrow_default_constructible_v<::nameof::name_view>);
+static_assert(std::is_nothrow_constructible_v<::nameof::name_view, const ::nameof::cstring<3>&>);
+// A view of a temporary such as NAMEOF(x) would dangle.
+static_assert(!std::is_constructible_v<::nameof::name_view, ::nameof::cstring<3>>);
+static_assert(std::is_convertible_v<::nameof::name_view, ::nameof::string_view>);
+static_assert(std::is_constructible_v<::nameof::string, ::nameof::name_view>);
+static_assert(!std::is_convertible_v<::nameof::name_view, ::nameof::string>);
+static_assert(!std::is_convertible_v<::nameof::name_view, const char*>);
+
+TEST_CASE("NAME_VIEW") {
+  static constexpr ::nameof::cstring<3> storage{"abc"};
+  static constexpr ::nameof::cstring<3> other{"abd"};
+  constexpr ::nameof::name_view name = storage;
+  constexpr ::nameof::name_view next = other;
+  constexpr ::nameof::name_view empty{};
+
+  SUBCASE("storage") {
+    static_assert(name.data() == storage.data());
+    static_assert(name.size() == 3);
+    static_assert(name.length() == 3);
+    static_assert(!name.empty());
+    static_assert(empty.empty());
+    static_assert(empty.size() == 0);
+    static_assert(empty.front() == '\0');
+    static_assert(empty.back() == '\0');
+    require_cstring_contract(name, "abc");
+    require_cstring_contract(empty, "");
+    REQUIRE(empty.data() == ::nameof::name_view{}.data());
+    REQUIRE(static_cast<const char*>(name) == name.c_str());
+  }
+  SUBCASE("access") {
+    static_assert(name[0] == 'a');
+    static_assert(name.front() == 'a');
+    static_assert(name.back() == 'c');
+    static_assert(name.find_first_of('b') == 1);
+    static_assert(name.find_first_of('a', 1) == std::string_view::npos);
+    static_assert(name.find_first_of('c', 7) == std::string_view::npos);
+    static_assert(empty.find_first_of('a') == std::string_view::npos);
+    static_assert(storage.find_first_of('c') == 2);
+    static_assert(storage.find_first_of('a', 1) == std::string_view::npos);
+    static_assert(::nameof::cstring<0>{}.find_first_of('a') == std::string_view::npos);
+    REQUIRE(::nameof::string{name.begin(), name.end()} == "abc");
+    REQUIRE(::nameof::string{name.cbegin(), name.cend()} == "abc");
+    REQUIRE(::nameof::string{name.rbegin(), name.rend()} == "cba");
+    REQUIRE(::nameof::string{name.crbegin(), name.crend()} == "cba");
+    REQUIRE(empty.begin() == empty.end());
+    REQUIRE(name.str() == "abc");
+    REQUIRE(static_cast<::nameof::string>(name) == "abc");
+  }
+  SUBCASE("compare") {
+    constexpr ::nameof::name_view copy = name;
+    static_assert(copy == name);
+    static_assert(!(copy != name));
+    static_assert(name != next);
+    static_assert(name < next);
+    static_assert(name <= next);
+    static_assert(next > name);
+    static_assert(next >= name);
+    static_assert(name == storage);
+    static_assert(storage == name);
+    static_assert(name != other);
+    static_assert(other != name);
+    static_assert(name < other);
+    static_assert(other > name);
+    static_assert(name <= storage);
+    static_assert(storage <= name);
+    static_assert(name >= storage);
+    static_assert(storage >= name);
+    static_assert(storage < next);
+    static_assert(next > storage);
+    static_assert(name == ::nameof::cstring<3>{"abc"});
+    static_assert(name == "abc");
+    static_assert("abc" == name);
+    static_assert(name != "ab");
+    static_assert("ab" != name);
+    static_assert(name > "ab");
+    static_assert("ab" < name);
+    static_assert(name < "abd");
+    static_assert("abd" > name);
+    static_assert(name >= "abc");
+    static_assert("abc" <= name);
+    static_assert(name <= "abc");
+    static_assert("abc" >= name);
+    static_assert(name == ::nameof::string_view{"abc"});
+    static_assert(::nameof::string_view{"abc"} == name);
+    static_assert(empty == "");
+    static_assert(empty == ::nameof::name_view{});
+    static_assert(empty == ::nameof::cstring<0>{});
+    static_assert(empty < name);
+    static_assert(name.compare("abc") == 0);
+    static_assert(name.compare("abd") < 0);
+    REQUIRE(name == std::string{"abc"});
+    REQUIRE(std::string{"abc"} == name);
+    REQUIRE(name != std::string{"abd"});
+
+    static constexpr ::nameof::cstring<3> embedded_null{::nameof::string_view{"a\0b", 3}};
+    constexpr ::nameof::name_view embedded = embedded_null;
+    static_assert(embedded != "a");
+    static_assert(embedded == ::nameof::string_view{"a\0b", 3});
+  }
+  SUBCASE("substr") {
+    static_assert(std::is_same_v<decltype(name.substr()), ::nameof::string_view>);
+    static_assert(noexcept(name.substr(1, 1)));
+    static_assert(name.substr() == "abc");
+    static_assert(name.substr().data() == name.data());
+    static_assert(name.substr(1) == "bc");
+    static_assert(name.substr(1, 1) == "b");
+    static_assert(name.substr(1, 7) == "bc");
+    static_assert(name.substr(0, 0).empty());
+    static_assert(name.substr(3).empty());
+    static_assert(name.substr(3).data() == name.data() + 3);
+    static_assert(empty.substr().empty());
+    static_assert(empty.substr().data() == empty.data());
+  }
+  SUBCASE("find") {
+    constexpr auto npos = std::string_view::npos;
+    static constexpr ::nameof::cstring<5> repeated_storage{"ababa"};
+    constexpr ::nameof::name_view repeated = repeated_storage;
+    static_assert(name.find('a') == 0);
+    static_assert(name.find('c') == 2);
+    static_assert(name.find('a', 1) == npos);
+    static_assert(name.find('c', 7) == npos);
+    static_assert(name.find("bc") == 1);
+    static_assert(name.find("abc") == 0);
+    static_assert(name.find("abcd") == npos);
+    static_assert(name.find("ab", 1) == npos);
+    static_assert(name.find("") == 0);
+    static_assert(name.find("", 3) == 3);
+    static_assert(name.find("", 4) == npos);
+    static_assert(name.find(::nameof::string_view{"c"}, 2) == 2);
+    static_assert(name.find(name) == 0);
+    static_assert(name.find(storage) == 0);
+    static_assert(name.find(next) == npos);
+    static_assert(::nameof::name_view::npos == npos);
+    static_assert(name.find('d') == name.npos);
+    static_assert(empty.find("") == 0);
+    static_assert(empty.find('a') == npos);
+    static_assert(repeated.find("ab", 1) == 2);
+    static_assert(repeated.rfind('a') == 4);
+    static_assert(repeated.rfind('a', 3) == 2);
+    static_assert(repeated.rfind('b', 0) == npos);
+    static_assert(repeated.rfind("ab") == 2);
+    static_assert(repeated.rfind("ab", 1) == 0);
+    static_assert(repeated.rfind("aba") == 2);
+    static_assert(repeated.rfind("ababab") == npos);
+    static_assert(repeated.rfind("") == 5);
+    static_assert(repeated.rfind("", 2) == 2);
+    static_assert(repeated.rfind(name) == npos);
+    static_assert(empty.rfind("") == 0);
+    static_assert(empty.rfind('a') == npos);
+    // cstring shares the search members.
+    static_assert(::nameof::cstring<5>::npos == npos);
+    static_assert(repeated_storage.find('b', 2) == 3);
+    static_assert(repeated_storage.find("ba") == 1);
+    static_assert(repeated_storage.rfind('b') == 3);
+    static_assert(repeated_storage.rfind("ab", 1) == 0);
+    static_assert(storage.find(next) == npos);
+    static_assert(::nameof::cstring<0>{}.find("") == 0);
+    static_assert(::nameof::cstring<0>{}.rfind('a') == npos);
+    static_assert(NAMEOF(repeated_storage).find("storage") == 9);
+
+    static constexpr ::nameof::cstring<3> embedded_null{::nameof::string_view{"a\0b", 3}};
+    constexpr ::nameof::name_view embedded = embedded_null;
+    static_assert(embedded.find('\0') == 1);
+    static_assert(embedded.rfind(::nameof::string_view{"\0b", 2}) == 1);
+
+    // Every position and count must agree with std::string_view.
+    const std::string_view expected{repeated.data(), repeated.size()};
+    const std::size_t positions[] = {0, 1, 2, 3, 4, 5, 6, 7, npos};
+    for (const auto pos : positions) {
+      for (const std::string_view needle : {"", "a", "b", "c", "ab", "ba", "aba", "bab", "ababa", "ababab"}) {
+        CAPTURE(pos);
+        CAPTURE(needle);
+        REQUIRE(repeated.find(needle, pos) == expected.find(needle, pos));
+        REQUIRE(repeated.rfind(needle, pos) == expected.rfind(needle, pos));
+        REQUIRE(repeated_storage.find(needle, pos) == expected.find(needle, pos));
+        REQUIRE(repeated_storage.rfind(needle, pos) == expected.rfind(needle, pos));
+      }
+      for (const char c : {'a', 'b', 'c'}) {
+        CAPTURE(pos);
+        CAPTURE(c);
+        REQUIRE(repeated.find(c, pos) == expected.find(c, pos));
+        REQUIRE(repeated.rfind(c, pos) == expected.rfind(c, pos));
+        REQUIRE(repeated_storage.find(c, pos) == expected.find(c, pos));
+        REQUIRE(repeated_storage.rfind(c, pos) == expected.rfind(c, pos));
+      }
+      if (pos <= expected.size()) {
+        for (const auto count : positions) {
+          CAPTURE(pos);
+          CAPTURE(count);
+          REQUIRE(repeated.substr(pos, count) == expected.substr(pos, count));
+        }
+      }
+    }
+  }
+  SUBCASE("starts_with and ends_with") {
+    static_assert(name.starts_with('a'));
+    static_assert(!name.starts_with('b'));
+    static_assert(name.starts_with(""));
+    static_assert(name.starts_with("ab"));
+    static_assert(name.starts_with("abc"));
+    static_assert(!name.starts_with("abcd"));
+    static_assert(!name.starts_with("bc"));
+    static_assert(name.starts_with(storage));
+    static_assert(!name.starts_with(next));
+    static_assert(name.ends_with('c'));
+    static_assert(!name.ends_with('b'));
+    static_assert(name.ends_with(""));
+    static_assert(name.ends_with("bc"));
+    static_assert(name.ends_with("abc"));
+    static_assert(!name.ends_with("zabc"));
+    static_assert(!name.ends_with("ab"));
+    static_assert(name.ends_with(::nameof::string_view{"c"}));
+    static_assert(empty.starts_with(""));
+    static_assert(empty.ends_with(""));
+    static_assert(!empty.starts_with('\0'));
+    static_assert(!empty.ends_with('\0'));
+    static_assert(!empty.starts_with("a"));
+    static_assert(!empty.ends_with("a"));
+    static_assert(NAMEOF_ENUM_CONST(Color::BLUE).starts_with("BL"));
+    static_assert(NAMEOF_SHORT_TYPE(SomeStruct).ends_with("Struct"));
+    static_assert(storage.starts_with('a') && storage.starts_with("ab") && !storage.starts_with("abcd"));
+    static_assert(storage.ends_with('c') && storage.ends_with("bc") && !storage.ends_with("zabc"));
+    static_assert(!::nameof::cstring<0>{}.starts_with('\0') && !::nameof::cstring<0>{}.ends_with('\0'));
+    static_assert(::nameof::cstring<0>{}.starts_with("") && ::nameof::cstring<0>{}.ends_with(""));
+    static_assert(NAMEOF(storage).starts_with("st") && NAMEOF(storage).ends_with('e'));
+  }
+  SUBCASE("stream") {
+    std::ostringstream os;
+    os << std::setfill('.') << std::setw(6) << name << '|' << empty;
+    REQUIRE(os.str() == "...abc|");
+    REQUIRE(os.width() == 0);
+
+    std::wostringstream wide;
+    wide << name << empty;
+    REQUIRE(wide.str() == L"abc");
+  }
+}
+
 TEST_CASE("CSTRING_FORMAT") {
 #if defined(NAMEOF_TEST_HAS_STD_FORMAT)
   SUBCASE("std::format") {
-    using short_type_t = std::remove_cv_t<std::remove_reference_t<decltype(NAMEOF_SHORT_TYPE(SomeStruct))>>;
     constexpr auto some_struct = NAMEOF_SHORT_TYPE(SomeStruct);
+    constexpr auto expression = NAMEOF(struct_var);
     constexpr auto empty = ::nameof::cstring<0>{};
-    REQUIRE(std::is_default_constructible_v<std::formatter<short_type_t, char>>);
+    REQUIRE(std::is_default_constructible_v<std::formatter<::nameof::name_view, char>>);
+    REQUIRE(std::is_default_constructible_v<std::formatter<std::remove_const_t<decltype(expression)>, char>>);
     REQUIRE(std::is_default_constructible_v<std::formatter<::nameof::cstring<0>, char>>);
+    REQUIRE(std::format("{:>12}", expression) == "  struct_var");
+    REQUIRE(std::format("{}", ::nameof::name_view{}).empty());
     REQUIRE(std::format("{}", some_struct) == "SomeStruct");
     REQUIRE(std::format("{:^12}", some_struct) == " SomeStruct ");
     REQUIRE(std::format("{:.4}", some_struct) == "Some");
@@ -1232,7 +1476,10 @@ TEST_CASE("CSTRING_FORMAT") {
 #if defined(NAMEOF_TEST_HAS_FMT_FORMAT)
   SUBCASE("fmt::format") {
     constexpr auto some_struct = NAMEOF_SHORT_TYPE(SomeStruct);
+    constexpr auto expression = NAMEOF(struct_var);
     constexpr auto empty = ::nameof::cstring<0>{};
+    REQUIRE(fmt::format("{:>12}", expression) == "  struct_var");
+    REQUIRE(fmt::format("{}", ::nameof::name_view{}).empty());
     REQUIRE(fmt::format("{}", some_struct) == "SomeStruct");
     REQUIRE(fmt::format("{:^12}", some_struct) == " SomeStruct ");
     REQUIRE(fmt::format("{:.4}", some_struct) == "Some");
@@ -1724,24 +1971,84 @@ TEST_CASE("customize") {
 #endif
 }
 
+#if defined(NAMEOF_TYPE_SUPPORTED)
+template <typename T>
+constexpr ::nameof::string_view stored_short_type_name() noexcept {
+  return NAMEOF_SHORT_TYPE(T);
+}
+
+TEST_CASE("names of different lengths have one type") {
+  static_assert(std::is_same_v<decltype(NAMEOF_TYPE(int)), decltype(NAMEOF_TYPE(SomeStruct))>);
+
+  const std::variant<int, SomeStruct> variant{SomeStruct{}};
+  const auto visited = std::visit([](const auto& value) { return NAMEOF_TYPE_EXPR(value); }, variant);
+  REQUIRE(visited == NAMEOF_TYPE(SomeStruct));
+
+  const ::nameof::string_view chosen = variant.index() == 0 ? NAMEOF_TYPE(int) : NAMEOF_TYPE(SomeStruct);
+  require_string_view_contract(chosen, NAMEOF_TYPE(SomeStruct));
+
+  constexpr std::array names{NAMEOF_TYPE(int), NAMEOF_SHORT_TYPE(SomeStruct)};
+  static_assert(names[0] == "int");
+  static_assert(names[1] == "SomeStruct");
+
+  // The name has static storage, so pointers and views taken from a returned name stay valid.
+  constexpr auto name = NAMEOF_SHORT_TYPE(SomeStruct);
+  static constexpr const char* pointer = name.data();
+  REQUIRE(pointer == NAMEOF_SHORT_TYPE(SomeStruct).data());
+  require_string_view_contract(stored_short_type_name<SomeStruct>(), "SomeStruct");
+}
+#endif
+
+// Clang 18+ accepts pointers to subobjects as template arguments, but still reports the C++17 feature-test value.
+#if (defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911L) || \
+    (defined(__clang__) && !defined(__apple_build_version__) && __clang_major__ >= 18 && __cplusplus >= 202002L)
+template <::nameof::name_view Name>
+struct NameTag {
+  static constexpr ::nameof::name_view name = Name;
+};
+
+static_assert(NameTag<::nameof::name_view{}>::name.empty());
+static_assert(std::is_same_v<NameTag<::nameof::name_view{}>, NameTag<::nameof::name_view{}>>);
+#  if defined(NAMEOF_TYPE_SUPPORTED)
+static_assert(NameTag<NAMEOF_TYPE(int)>::name == "int");
+static_assert(NameTag<NAMEOF_FULL_TYPE(const int&)>::name == NAMEOF_FULL_TYPE(const int&));
+static_assert(!std::is_same_v<NameTag<NAMEOF_FULL_TYPE(const int&)>, NameTag<NAMEOF_FULL_TYPE(int)>>);
+static_assert(NameTag<NAMEOF_SHORT_TYPE(SomeStruct)>::name == "SomeStruct");
+static_assert(std::is_same_v<NameTag<NAMEOF_TYPE(SomeStruct)>, NameTag<NAMEOF_TYPE(const SomeStruct&)>>);
+static_assert(!std::is_same_v<NameTag<NAMEOF_TYPE(SomeStruct)>, NameTag<NAMEOF_TYPE(int)>>);
+static_assert(!std::is_same_v<NameTag<NAMEOF_TYPE(int)>, NameTag<::nameof::name_view{}>>);
+#  endif
+#  if defined(NAMEOF_ENUM_SUPPORTED)
+static_assert(NameTag<NAMEOF_ENUM_CONST(Color::BLUE)>::name == "BLUE");
+static_assert(NameTag<NAMEOF_ENUM_CONST(CustomEnum::custom_name)>::name == "custom enum");
+static_assert(!std::is_same_v<NameTag<NAMEOF_ENUM_CONST(Color::BLUE)>, NameTag<NAMEOF_ENUM_CONST(Color::RED)>>);
+#  endif
+#  if defined(NAMEOF_MEMBER_SUPPORTED)
+static_assert(NameTag<NAMEOF_MEMBER(&SomeStruct::somefield)>::name == "somefield");
+#  endif
+#  if defined(NAMEOF_POINTER_SUPPORTED)
+static_assert(NameTag<NAMEOF_POINTER(&someglobalconstvariable)>::name == "someglobalconstvariable");
+#  endif
+#endif
+
 TEST_CASE("static cstring api contract") {
 #if defined(NAMEOF_ENUM_SUPPORTED)
-  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_enum<Color::BLUE>())>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_ENUM_CONST(Color::BLUE))>);
+  static_assert(std::is_same_v<decltype(nameof::nameof_enum<Color::BLUE>()), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_ENUM_CONST(Color::BLUE)), ::nameof::name_view>);
   require_static_cstring_api_contract(nameof::nameof_enum<Color::BLUE>(), "BLUE");
   require_static_cstring_api_contract(NAMEOF_ENUM_CONST(Color::BLUE), "BLUE");
 #endif
 
 #if defined(NAMEOF_TYPE_SUPPORTED)
-  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_type<SomeStruct>())>);
-  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_full_type<SomeStruct&>())>);
-  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_short_type<SomeStruct>())>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_TYPE(SomeStruct))>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_FULL_TYPE(SomeStruct&))>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_SHORT_TYPE(SomeStruct))>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_TYPE_EXPR(struct_var))>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_FULL_TYPE_EXPR(ref_s))>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_SHORT_TYPE_EXPR(struct_var))>);
+  static_assert(std::is_same_v<decltype(nameof::nameof_type<SomeStruct>()), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(nameof::nameof_full_type<SomeStruct&>()), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(nameof::nameof_short_type<SomeStruct>()), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_TYPE(SomeStruct)), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_FULL_TYPE(SomeStruct&)), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_SHORT_TYPE(SomeStruct)), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_TYPE_EXPR(struct_var)), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_FULL_TYPE_EXPR(ref_s)), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_SHORT_TYPE_EXPR(struct_var)), ::nameof::name_view>);
 
   require_static_cstring_api_contract(nameof::nameof_type<SomeStruct>(), NAMEOF_TYPE(SomeStruct));
   require_static_cstring_api_contract(nameof::nameof_full_type<SomeStruct&>(), NAMEOF_FULL_TYPE(SomeStruct&));
@@ -1755,15 +2062,15 @@ TEST_CASE("static cstring api contract") {
 #endif
 
 #if defined(NAMEOF_MEMBER_SUPPORTED)
-  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_member<&SomeStruct::somefield>())>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_MEMBER(&SomeStruct::somefield))>);
+  static_assert(std::is_same_v<decltype(nameof::nameof_member<&SomeStruct::somefield>()), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_MEMBER(&SomeStruct::somefield)), ::nameof::name_view>);
   require_static_cstring_api_contract(nameof::nameof_member<&SomeStruct::somefield>(), "somefield");
   require_static_cstring_api_contract(NAMEOF_MEMBER(&SomeStruct::somefield), "somefield");
 #endif
 
 #if defined(NAMEOF_POINTER_SUPPORTED)
-  static_assert(std::is_lvalue_reference_v<decltype(nameof::nameof_pointer<&someglobalconstvariable>())>);
-  static_assert(std::is_lvalue_reference_v<decltype(NAMEOF_POINTER(&someglobalconstvariable))>);
+  static_assert(std::is_same_v<decltype(nameof::nameof_pointer<&someglobalconstvariable>()), ::nameof::name_view>);
+  static_assert(std::is_same_v<decltype(NAMEOF_POINTER(&someglobalconstvariable)), ::nameof::name_view>);
   require_static_cstring_api_contract(nameof::nameof_pointer<&someglobalconstvariable>(), "someglobalconstvariable");
   require_static_cstring_api_contract(NAMEOF_POINTER(&someglobalconstvariable), "someglobalconstvariable");
 #endif

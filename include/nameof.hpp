@@ -279,6 +279,53 @@ constexpr string_view pointer_name() noexcept {
 
 } // namespace nameof::customize
 
+namespace detail {
+
+// Search in cstring and name_view with std::string_view semantics. Loops, so a string_view alias needs only size(), compare() and the (const char*, size) constructor.
+constexpr std::size_t find(const char* s, std::size_t size, char c, std::size_t pos) noexcept {
+  for (; pos < size; ++pos) {
+    if (s[pos] == c) {
+      return pos;
+    }
+  }
+  return std::string_view::npos;
+}
+
+constexpr std::size_t find(const char* s, std::size_t size, string_view str, std::size_t pos) noexcept {
+  for (; pos <= size && str.size() <= size - pos; ++pos) {
+    if (string_view{s + pos, str.size()}.compare(str) == 0) {
+      return pos;
+    }
+  }
+  return std::string_view::npos;
+}
+
+constexpr std::size_t rfind(const char* s, std::size_t size, char c, std::size_t pos) noexcept {
+  for (pos = pos < size ? pos + 1 : size; pos > 0; --pos) {
+    if (s[pos - 1] == c) {
+      return pos - 1;
+    }
+  }
+  return std::string_view::npos;
+}
+
+constexpr std::size_t rfind(const char* s, std::size_t size, string_view str, std::size_t pos) noexcept {
+  if (str.size() <= size) {
+    for (pos = pos < size - str.size() ? pos + 1 : size - str.size() + 1; pos > 0; --pos) {
+      if (string_view{s + pos - 1, str.size()}.compare(str) == 0) {
+        return pos - 1;
+      }
+    }
+  }
+  return std::string_view::npos;
+}
+
+constexpr bool starts_with(const char* s, std::size_t size, string_view str) noexcept { return str.size() <= size && string_view{s, str.size()}.compare(str) == 0; }
+
+constexpr bool ends_with(const char* s, std::size_t size, string_view str) noexcept { return str.size() <= size && string_view{s + size - str.size(), str.size()}.compare(str) == 0; }
+
+} // namespace nameof::detail
+
 template <std::uint16_t N>
 class [[nodiscard]] cstring {
  public:
@@ -293,6 +340,8 @@ class [[nodiscard]] cstring {
   using const_iterator         = const char*;
   using reverse_iterator       = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  static constexpr size_type npos = std::string_view::npos;
 
   constexpr explicit cstring(string_view str) noexcept : cstring{check_size(str).data(), std::make_integer_sequence<std::uint16_t, N>{}} {}
 
@@ -331,6 +380,25 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{data(), size()}.compare(str); }
 
+  // fmt 11+ and fmt/ranges.h detect a string by this member, whatever the include order.
+  [[nodiscard]] constexpr size_type find_first_of(char c, size_type pos = 0) const noexcept { return detail::find(data(), size(), c, pos); }
+
+  [[nodiscard]] constexpr size_type find(char c, size_type pos = 0) const noexcept { return detail::find(data(), size(), c, pos); }
+
+  [[nodiscard]] constexpr size_type find(string_view str, size_type pos = 0) const noexcept { return detail::find(data(), size(), str, pos); }
+
+  [[nodiscard]] constexpr size_type rfind(char c, size_type pos = npos) const noexcept { return detail::rfind(data(), size(), c, pos); }
+
+  [[nodiscard]] constexpr size_type rfind(string_view str, size_type pos = npos) const noexcept { return detail::rfind(data(), size(), str, pos); }
+
+  [[nodiscard]] constexpr bool starts_with(char c) const noexcept { return !empty() && front() == c; }
+
+  [[nodiscard]] constexpr bool starts_with(string_view str) const noexcept { return detail::starts_with(data(), size(), str); }
+
+  [[nodiscard]] constexpr bool ends_with(char c) const noexcept { return !empty() && back() == c; }
+
+  [[nodiscard]] constexpr bool ends_with(string_view str) const noexcept { return detail::ends_with(data(), size(), str); }
+
   [[nodiscard]] constexpr const char* c_str() const noexcept { return data(); }
 
   [[nodiscard]] string str() const { return {data(), size()}; }
@@ -344,6 +412,9 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
+  // fmt 10.1+ formats through this, whatever the include order.
+  [[nodiscard]] friend constexpr std::string_view format_as(const cstring& str) noexcept { return {str.data(), N}; }
+
   // Without the cstring<M> overloads, comparing two cstrings is ambiguous between the string_view ones.
   template <std::uint16_t M>
   [[nodiscard]] friend constexpr bool operator==(const cstring& lhs, const cstring<M>& rhs) noexcept { return N == M && lhs.compare(rhs) == 0; }
@@ -351,9 +422,9 @@ class [[nodiscard]] cstring {
   [[nodiscard]] friend constexpr bool operator==(string_view lhs, const cstring& rhs) noexcept { return lhs.size() == rhs.size() && lhs.compare(rhs) == 0; }
 
   template <std::uint16_t M>
-  [[nodiscard]] friend constexpr bool operator!=(const cstring& lhs, const cstring<M>& rhs) noexcept { return N != M || lhs.compare(rhs) != 0; }
-  [[nodiscard]] friend constexpr bool operator!=(const cstring& lhs, string_view rhs) noexcept { return lhs.size() != rhs.size() || lhs.compare(rhs) != 0; }
-  [[nodiscard]] friend constexpr bool operator!=(string_view lhs, const cstring& rhs) noexcept { return lhs.size() != rhs.size() || lhs.compare(rhs) != 0; }
+  [[nodiscard]] friend constexpr bool operator!=(const cstring& lhs, const cstring<M>& rhs) noexcept { return !(lhs == rhs); }
+  [[nodiscard]] friend constexpr bool operator!=(const cstring& lhs, string_view rhs) noexcept { return !(lhs == rhs); }
+  [[nodiscard]] friend constexpr bool operator!=(string_view lhs, const cstring& rhs) noexcept { return !(lhs == rhs); }
 
   template <std::uint16_t M>
   [[nodiscard]] friend constexpr bool operator<(const cstring& lhs, const cstring<M>& rhs) noexcept { return lhs.compare(rhs) < 0; }
@@ -388,13 +459,169 @@ class [[nodiscard]] cstring {
   char chars_[static_cast<std::size_t>(N) + 1];
 };
 
-template <typename Char, typename Traits, std::uint16_t N>
-std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& str) {
+// A view of a null-terminated name. It is a structural type, so a name with static storage can be a template argument (C++20).
+class [[nodiscard]] name_view {
+ public:
+  using value_type             = char;
+  using size_type              = std::size_t;
+  using difference_type        = std::ptrdiff_t;
+  using pointer                = const char*;
+  using const_pointer          = const char*;
+  using reference              = const char&;
+  using const_reference        = const char&;
+  using iterator               = const char*;
+  using const_iterator         = const char*;
+  using reverse_iterator       = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  static constexpr size_type npos = std::string_view::npos;
+
+  constexpr name_view() noexcept : data_{cstring<0>::empty_}, size_{0} {}
+
+  template <std::uint16_t N>
+  constexpr name_view(const cstring<N>& str) noexcept : data_{str.data()}, size_{N} {}
+
+  // A view of a temporary such as NAMEOF(x) would dangle.
+  template <std::uint16_t N>
+  name_view(const cstring<N>&&) = delete;
+
+  [[nodiscard]] constexpr const_pointer data() const noexcept { return data_; }
+
+  [[nodiscard]] constexpr size_type size() const noexcept { return size_; }
+
+  [[nodiscard]] constexpr const_iterator begin() const noexcept { return data_; }
+
+  [[nodiscard]] constexpr const_iterator end() const noexcept { return data_ + size_; }
+
+  [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
+
+  [[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
+
+  [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator{end()}; }
+
+  [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator{begin()}; }
+
+  [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+
+  [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
+
+  [[nodiscard]] constexpr const_reference operator[](size_type i) const noexcept { return NAMEOF_DETAIL_ASSERT(i < size()), data_[i]; }
+
+  [[nodiscard]] constexpr const_reference front() const noexcept { return data_[0]; }
+
+  [[nodiscard]] constexpr const_reference back() const noexcept { return data_[size_ == 0 ? 0 : size_ - 1]; }
+
+  [[nodiscard]] constexpr size_type length() const noexcept { return size_; }
+
+  [[nodiscard]] constexpr bool empty() const noexcept { return size_ == 0; }
+
+  [[nodiscard]] constexpr int compare(string_view str) const noexcept { return string_view{data_, size_}.compare(str); }
+
+  // fmt 11+ and fmt/ranges.h detect a string by this member, whatever the include order.
+  [[nodiscard]] constexpr size_type find_first_of(char c, size_type pos = 0) const noexcept { return detail::find(data_, size_, c, pos); }
+
+  // A part of a name is not null-terminated, so it is a string_view.
+  [[nodiscard]] constexpr string_view substr(size_type pos = 0, size_type count = npos) const noexcept {
+    NAMEOF_DETAIL_ASSERT(pos <= size_);
+    pos = pos < size_ ? pos : size_;
+    return {data_ + pos, count < size_ - pos ? count : size_ - pos};
+  }
+
+  [[nodiscard]] constexpr size_type find(char c, size_type pos = 0) const noexcept { return detail::find(data_, size_, c, pos); }
+
+  [[nodiscard]] constexpr size_type find(string_view str, size_type pos = 0) const noexcept { return detail::find(data_, size_, str, pos); }
+
+  [[nodiscard]] constexpr size_type rfind(char c, size_type pos = npos) const noexcept { return detail::rfind(data_, size_, c, pos); }
+
+  [[nodiscard]] constexpr size_type rfind(string_view str, size_type pos = npos) const noexcept { return detail::rfind(data_, size_, str, pos); }
+
+  [[nodiscard]] constexpr bool starts_with(char c) const noexcept { return !empty() && front() == c; }
+
+  [[nodiscard]] constexpr bool starts_with(string_view str) const noexcept { return detail::starts_with(data_, size_, str); }
+
+  [[nodiscard]] constexpr bool ends_with(char c) const noexcept { return !empty() && back() == c; }
+
+  [[nodiscard]] constexpr bool ends_with(string_view str) const noexcept { return detail::ends_with(data_, size_, str); }
+
+  [[nodiscard]] constexpr const char* c_str() const noexcept { return data_; }
+
+  [[nodiscard]] string str() const { return {data_, size_}; }
+
+  [[nodiscard]] constexpr operator string_view() const noexcept { return {data_, size_}; }
+
+  [[nodiscard]] constexpr explicit operator const_pointer() const noexcept { return data_; }
+
+  [[nodiscard]] explicit operator string() const { return {data_, size_}; }
+
+  // fmt 10.1+ formats through this, whatever the include order.
+  [[nodiscard]] friend constexpr std::string_view format_as(name_view name) noexcept { return {name.data_, name.size_}; }
+
+  // Without the name_view and cstring<M> overloads, such comparisons are ambiguous between the string_view ones.
+  [[nodiscard]] friend constexpr bool operator==(name_view lhs, name_view rhs) noexcept { return lhs.size_ == rhs.size_ && lhs.compare(rhs) == 0; }
+  [[nodiscard]] friend constexpr bool operator==(name_view lhs, string_view rhs) noexcept { return lhs.size_ == rhs.size() && lhs.compare(rhs) == 0; }
+  [[nodiscard]] friend constexpr bool operator==(string_view lhs, name_view rhs) noexcept { return lhs.size() == rhs.size_ && rhs.compare(lhs) == 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator==(name_view lhs, const cstring<M>& rhs) noexcept { return lhs.size_ == M && lhs.compare(string_view{rhs.data(), M}) == 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator==(const cstring<M>& lhs, name_view rhs) noexcept { return rhs.size_ == M && rhs.compare(string_view{lhs.data(), M}) == 0; }
+
+  [[nodiscard]] friend constexpr bool operator!=(name_view lhs, name_view rhs) noexcept { return !(lhs == rhs); }
+  [[nodiscard]] friend constexpr bool operator!=(name_view lhs, string_view rhs) noexcept { return !(lhs == rhs); }
+  [[nodiscard]] friend constexpr bool operator!=(string_view lhs, name_view rhs) noexcept { return !(lhs == rhs); }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator!=(name_view lhs, const cstring<M>& rhs) noexcept { return !(lhs == rhs); }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator!=(const cstring<M>& lhs, name_view rhs) noexcept { return !(lhs == rhs); }
+
+  [[nodiscard]] friend constexpr bool operator<(name_view lhs, name_view rhs) noexcept { return lhs.compare(rhs) < 0; }
+  [[nodiscard]] friend constexpr bool operator<(name_view lhs, string_view rhs) noexcept { return lhs.compare(rhs) < 0; }
+  [[nodiscard]] friend constexpr bool operator<(string_view lhs, name_view rhs) noexcept { return rhs.compare(lhs) > 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator<(name_view lhs, const cstring<M>& rhs) noexcept { return lhs.compare(string_view{rhs.data(), M}) < 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator<(const cstring<M>& lhs, name_view rhs) noexcept { return rhs.compare(string_view{lhs.data(), M}) > 0; }
+
+  [[nodiscard]] friend constexpr bool operator<=(name_view lhs, name_view rhs) noexcept { return lhs.compare(rhs) <= 0; }
+  [[nodiscard]] friend constexpr bool operator<=(name_view lhs, string_view rhs) noexcept { return lhs.compare(rhs) <= 0; }
+  [[nodiscard]] friend constexpr bool operator<=(string_view lhs, name_view rhs) noexcept { return rhs.compare(lhs) >= 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator<=(name_view lhs, const cstring<M>& rhs) noexcept { return lhs.compare(string_view{rhs.data(), M}) <= 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator<=(const cstring<M>& lhs, name_view rhs) noexcept { return rhs.compare(string_view{lhs.data(), M}) >= 0; }
+
+  [[nodiscard]] friend constexpr bool operator>(name_view lhs, name_view rhs) noexcept { return lhs.compare(rhs) > 0; }
+  [[nodiscard]] friend constexpr bool operator>(name_view lhs, string_view rhs) noexcept { return lhs.compare(rhs) > 0; }
+  [[nodiscard]] friend constexpr bool operator>(string_view lhs, name_view rhs) noexcept { return rhs.compare(lhs) < 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator>(name_view lhs, const cstring<M>& rhs) noexcept { return lhs.compare(string_view{rhs.data(), M}) > 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator>(const cstring<M>& lhs, name_view rhs) noexcept { return rhs.compare(string_view{lhs.data(), M}) < 0; }
+
+  [[nodiscard]] friend constexpr bool operator>=(name_view lhs, name_view rhs) noexcept { return lhs.compare(rhs) >= 0; }
+  [[nodiscard]] friend constexpr bool operator>=(name_view lhs, string_view rhs) noexcept { return lhs.compare(rhs) >= 0; }
+  [[nodiscard]] friend constexpr bool operator>=(string_view lhs, name_view rhs) noexcept { return rhs.compare(lhs) <= 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator>=(name_view lhs, const cstring<M>& rhs) noexcept { return lhs.compare(string_view{rhs.data(), M}) >= 0; }
+  template <std::uint16_t M>
+  [[nodiscard]] friend constexpr bool operator>=(const cstring<M>& lhs, name_view rhs) noexcept { return rhs.compare(string_view{lhs.data(), M}) <= 0; }
+
+  // Public on purpose: a structural type cannot have private members.
+  const char* data_;
+  std::size_t size_;
+};
+
+template <typename Char, typename Traits>
+std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, name_view str) {
   if constexpr (std::is_same_v<Char, char>) {
     return os << std::basic_string_view<Char, Traits>{str.data(), str.size()};
   } else {
     return os << std::basic_string<Char, Traits>{str.begin(), str.end()};
   }
+}
+
+template <typename Char, typename Traits, std::uint16_t N>
+std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os, const cstring<N>& str) {
+  return os << name_view{str};
 }
 
 namespace detail {
@@ -1893,7 +2120,7 @@ template <typename E>
 
 // Obtains name of enum value known at compile time. Lower compile-time cost, not restricted by the enum_range limitation.
 template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
-[[nodiscard]] constexpr const auto& nameof_enum() noexcept {
+[[nodiscard]] constexpr name_view nameof_enum() noexcept {
   using D = decltype(V);
   static_assert(detail::supported_v<is_nameof_enum_supported, D>, "nameof::nameof_enum is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   if constexpr (customize::enum_name<D>(V).empty()) {
@@ -1905,7 +2132,7 @@ template <auto V, detail::enable_if_enum_t<decltype(V), int> = 0>
 
 // Obtains type name. Reference and cv-qualifiers are ignored.
 template <typename T>
-[[nodiscard]] constexpr const auto& nameof_type() noexcept {
+[[nodiscard]] constexpr name_view nameof_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
   static_assert(detail::supported_v<is_nameof_type_supported, U>, "nameof::nameof_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::type_name_v<U>;
@@ -1913,7 +2140,7 @@ template <typename T>
 
 // Obtains full type name with reference and cv-qualifiers.
 template <typename T>
-[[nodiscard]] constexpr const auto& nameof_full_type() noexcept {
+[[nodiscard]] constexpr name_view nameof_full_type() noexcept {
   using U = detail::identity<T>;
   static_assert(detail::supported_v<is_nameof_type_supported, U>, "nameof::nameof_full_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::type_name_v<U>;
@@ -1921,7 +2148,7 @@ template <typename T>
 
 // Obtains short type name.
 template <typename T, detail::enable_if_has_short_name_t<T, int> = 0>
-[[nodiscard]] constexpr const auto& nameof_short_type() noexcept {
+[[nodiscard]] constexpr name_view nameof_short_type() noexcept {
   using U = detail::identity<detail::remove_cvref_t<T>>;
   static_assert(detail::supported_v<is_nameof_type_supported, U>, "nameof::nameof_short_type is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::short_type_name_v<U>;
@@ -1929,14 +2156,14 @@ template <typename T, detail::enable_if_has_short_name_t<T, int> = 0>
 
 // Obtains name of member.
 template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> = 0>
-[[nodiscard]] constexpr const auto& nameof_member() noexcept {
+[[nodiscard]] constexpr name_view nameof_member() noexcept {
   static_assert(detail::supported_v<is_nameof_member_supported, decltype(V)>, "nameof::nameof_member is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::member_name_v<V>;
 }
 
 // Obtains name of a function, a global or class static variable.
 template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>, int> = 0>
-[[nodiscard]] constexpr const auto& nameof_pointer() noexcept {
+[[nodiscard]] constexpr name_view nameof_pointer() noexcept {
   static_assert(detail::supported_v<is_nameof_pointer_supported, decltype(V)>, "nameof::nameof_pointer is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
   return detail::pointer_name_v<V>;
 }
@@ -1948,13 +2175,16 @@ template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>,
 #if !defined(NAMEOF_NO_STD_FORMAT) && __has_include(<format>) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 202002L) || __cplusplus >= 202002L)
 #  include <format>
 #  if defined(__cpp_lib_format) && __cpp_lib_format >= 201907L
-template <std::uint16_t N>
-struct std::formatter<nameof::cstring<N>, char> : std::formatter<std::string_view, char> {
+template <>
+struct std::formatter<nameof::name_view, char> : std::formatter<std::string_view, char> {
   template <typename FormatContext>
-  auto format(const nameof::cstring<N>& str, FormatContext& ctx) const {
+  auto format(nameof::name_view str, FormatContext& ctx) const {
     return std::formatter<std::string_view, char>::format(std::string_view{str.data(), str.size()}, ctx);
   }
 };
+
+template <std::uint16_t N>
+struct std::formatter<nameof::cstring<N>, char> : std::formatter<nameof::name_view, char> {};
 #  endif
 #endif
 
@@ -1968,13 +2198,22 @@ FMT_END_NAMESPACE
 template <std::uint16_t N>
 struct fmt::is_range<nameof::cstring<N>, char> : std::false_type {};
 
-template <std::uint16_t N>
-struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<fmt::string_view> {
+// fmt 10.1+ formats name_view through format_as, the same formatter as when fmt is included after nameof.
+#  if FMT_VERSION < 100100
+template <>
+struct fmt::formatter<nameof::name_view> : fmt::formatter<fmt::string_view> {
   template <typename FormatContext>
-  auto format(const nameof::cstring<N>& str, FormatContext& ctx) const {
+  auto format(nameof::name_view str, FormatContext& ctx) const {
     return fmt::formatter<fmt::string_view>::format(fmt::string_view{str.data(), str.size()}, ctx);
   }
 };
+#  endif
+
+// fmt 10+ formats cstring through format_as. An explicit formatter would be ambiguous with fmt's own format_as one.
+#  if FMT_VERSION < 100000
+template <std::uint16_t N>
+struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {};
+#  endif
 #endif
 
 // Obtains name of variable, function, macro.

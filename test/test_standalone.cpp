@@ -108,8 +108,14 @@ int main() {
   if (name[name.size()] != '\0') {
     return 3;
   }
+  // A substr position past the end fails its check too, and then gives the empty end of the name.
+  const nameof::name_view view = name;
+  const auto tail = view.substr(view.size() + 1);
+  if (tail.data() != view.data() + view.size() || tail.size() != 0) {
+    return 6;
+  }
 #  if defined(NAMEOF_TEST_CONFIG_FILE)
-  if (nameof_test_assert_failures != 1) {
+  if (nameof_test_assert_failures != 2) {
     return 4;
   }
 #  endif

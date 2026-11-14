@@ -148,7 +148,7 @@ TEST_CASE("runtime enum backend") {
   static_assert(nameof::nameof_enum(Extreme::Min) == "Min");
   static_assert(nameof::nameof_enum(Extreme::Max) == "Max");
   constexpr auto unicode_runtime_name = nameof::nameof_enum(UnicodeIdentifiers::\u65E5\u672C\u8A9E);
-  constexpr auto& unicode_static_name = nameof::nameof_enum<UnicodeIdentifiers::\u65E5\u672C\u8A9E>();
+  constexpr auto unicode_static_name = nameof::nameof_enum<UnicodeIdentifiers::\u65E5\u672C\u8A9E>();
   static_assert(unicode_runtime_name == "\u65E5\u672C\u8A9E");
   static_assert(unicode_static_name == "\u65E5\u672C\u8A9E");
   static_assert(unicode_runtime_name.data()[unicode_runtime_name.size()] == '\0');

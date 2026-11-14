@@ -12,6 +12,6 @@ nameof::string shared_config::flags_from_other(Flags value) {
   return nameof::nameof_enum_flag(value);
 }
 
-const nameof::cstring<4>& shared_config::constant_from_other() {
+nameof::name_view shared_config::constant_from_other() {
   return nameof::nameof_enum<Value::High>();
 }

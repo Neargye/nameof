@@ -104,7 +104,7 @@ constexpr nameof::string_view nameof::customize::type_name<TooLongName>() noexce
   return {too_long_name, sizeof(too_long_name)};
 }
 
-constexpr auto& too_long_type_name = nameof::nameof_type<TooLongName>();
+constexpr auto too_long_type_name = nameof::nameof_type<TooLongName>();
 
 int main() {}
 
@@ -114,7 +114,7 @@ struct {
   int value;
 } unnamed_struct_object;
 
-constexpr auto& unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_struct_object)>();
+constexpr auto unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_struct_object)>();
 
 int main() {}
 
@@ -122,7 +122,7 @@ int main() {}
 
 enum { unnamed_enum_value };
 
-constexpr auto& unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_enum_value)>();
+constexpr auto unnamed_type_name = nameof::nameof_short_type<decltype(unnamed_enum_value)>();
 
 int main() {}
 
