@@ -123,7 +123,7 @@ static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a mac
 #endif
 
 // Checks nameof_type compiler compatibility.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
+#if defined(__clang__) && __clang_major__ >= 9 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  define NAMEOF_TYPE_SUPPORTED 1
 #endif
 
@@ -142,7 +142,7 @@ static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a mac
 #endif
 
 // Checks nameof_member and nameof_pointer compiler compatibility. MSVC < 19.44 needs C++20 for its data member fallback.
-#if defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && (_MSC_VER >= 1944 || _MSVC_LANG >= 202002L)
+#if defined(__clang__) && __clang_major__ >= 9 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && (_MSC_VER >= 1944 || _MSVC_LANG >= 202002L)
 #  define NAMEOF_MEMBER_SUPPORTED 1
 #  define NAMEOF_POINTER_SUPPORTED 1
 #endif
@@ -152,7 +152,7 @@ static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a mac
 #endif
 
 // Checks nameof_enum compiler compatibility.
-#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_RESHARPER) || defined(__clang__) && __clang_major__ >= 5 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
+#if defined(NAMEOF_DETAIL_USE_STD_REFLECTION) || defined(NAMEOF_DETAIL_RESHARPER) || defined(__clang__) && __clang_major__ >= 9 || defined(__GNUC__) && __GNUC__ >= 9 || defined(_MSC_VER) && _MSC_VER >= 1920
 #  define NAMEOF_ENUM_SUPPORTED 1
 #endif
 
@@ -1262,7 +1262,7 @@ NAMEOF_DETAIL_CONSTEVAL bool same_prefix(const char* str, std::size_t size, std:
   if (b > size || n > size - b) {
     return false;
   }
-#if (defined(__clang__) && __clang_major__ >= 9) || (defined(_MSC_VER) && _MSC_VER >= 1929) || (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 13)
+#if defined(__clang__) || (defined(_MSC_VER) && _MSC_VER >= 1929) || (defined(__GNUC__) && __GNUC__ >= 13)
   return __builtin_memcmp(str + a, str + b, n) == 0;
 #else
   for (std::size_t i = 0; i < n; ++i) {
