@@ -2,7 +2,7 @@
 
 Type, member, and pointer names come from compiler-specific function signatures. See [compiler compatibility](reference.md#compiler-compatibility).
 
-Complex expressions and operator names in template arguments may not parse correctly. Use `NAMEOF_RAW` for expression text.
+Complex expressions, raw string literals and operator names in template arguments may not parse correctly. Use `NAMEOF_RAW` for expression text.
 
 ## C++26 Standard Reflection
 
@@ -12,29 +12,27 @@ Standard reflection is selected automatically for enum APIs when available.
 
 * Aliased values use the first matching enumerator in the reflected sequence.
 
-* `customize::enum_name(E)` overrides reflection for declared or synthetic values.
-
-`NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` selects range-based reflection. Define it before including `nameof.hpp` in every translation unit or in none, mixing backends violates the ODR.
+`NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` selects compiler-specific reflection, which scans an [enum range](#nameof-enum). Define it before including `nameof.hpp`. Every translation unit must use the same backend, mixing them violates the ODR.
 
 ## Nameof
 
-* `NAMEOF` and `NAMEOF_FULL` fail to compile for expressions without a name, including casts, and do not support raw string literals. Use `NAMEOF_RAW` for them. `NAMEOF(*p)` gives `"p"`.
+* `NAMEOF` and `NAMEOF_FULL` fail to compile for expressions without a name, such as `static_cast<long>(x)`, `long(x)` and `sizeof(x)`. Operators and C-style casts are skipped: `NAMEOF(*p)` gives `"p"`, `NAMEOF((long)x)` gives `"x"`, `NAMEOF(a + b)` gives `"b"`.
 
 * A temporary `cstring` does not convert to `string_view` or `name_view`, and its `c_str()` and `data()` dangle. Save `NAMEOF(x)` in a variable first.
 
 * `cstring` and `name_view` data members are public for technical reasons. Use `data()` and the string interface.
 
-* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 (not Apple Clang). It is compared by address, not by characters, so equal names from different calls can be different arguments. Its mangled names are not stable.
+* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 and newer (not Apple Clang). It is compared by address, not by characters, so equal names from different calls can be different arguments.
 
 ## Nameof Type
 
-* Fundamental types keep the compiler spelling: `long long` is `long long int` on GCC and `__int64` on MSVC. nameof does not normalize them: the same types inside other names would keep that spelling, and `std::int64_t` is a different type on different platforms.
+* Fundamental types keep the compiler spelling: `long long` is `long long int` on GCC and `__int64` on MSVC.
 
-* On MSVC, type names keep the `class `, `struct ` and `enum ` prefixes (`class std::vector<...>`). Short type names drop them.
+* With MSVC, type names keep the `class `, `struct `, `union ` and `enum ` prefixes (`class std::vector<...>`). clang-cl keeps them only in RTTI names. Short type names drop them.
 
 * Type names depend on the compiler and the nameof version. Do not store or compare them between builds, use `customize::type_name` for stable names.
 
-* RTTI-based APIs follow `typeid` rules: the dynamic type is reported only for polymorphic glvalues.
+* Short type name APIs reject array, pointer, member pointer, and function types.
 
 * `nameof_member` and `nameof_pointer` return an empty name for operators.
 
@@ -44,7 +42,7 @@ Standard reflection is selected automatically for enum APIs when available.
 
 * With MSVC, same-type union members at the same offset may resolve to the first member's name.
 
-* With Visual Studio before 2022 17.14, `nameof_member` does not compile for data members of local or anonymous-namespace classes.
+* With Visual Studio before 2022 17.14, `nameof_member` requires the class of a data member to be fully defined and have external linkage (not local or in an anonymous namespace).
 
 ## Nameof Enum
 
@@ -80,7 +78,7 @@ Standard reflection is selected automatically for enum APIs when available.
 
   * Enum ranges are limited to fewer than `UINT16_MAX` values.
 
-  * Check large enums: `static_assert(static_cast<int>(E::Max) <= NAMEOF_ENUM_RANGE_MAX);`.
+  * For an enum without a custom range, check its largest value: `static_assert(static_cast<int>(E::Max) <= NAMEOF_ENUM_RANGE_MAX);`.
 
 * With compiler-specific reflection, names of aliased enum values are compiler-dependent.
 
@@ -89,8 +87,6 @@ Standard reflection is selected automatically for enum APIs when available.
 * `nameof_enum(E)` returns custom names without copying. Their storage must outlive the result and provide null termination if needed. `nameof_enum<V>()` copies them into null-terminated static storage.
 
 * With standard reflection, `nameof_enum(E).data()` can be a pointer template argument. With compiler-specific reflection, use `nameof_enum<V>().data()` instead (C++20 and newer).
-
-* With compiler-specific reflection, a non-empty scan range must contain an enumerator for `nameof_enum(E)`. `nameof_enum_flag` requires a single-bit enumerator. A custom name in the scan range also satisfies these checks.
 
 * Standard reflection requires complete enums.
 

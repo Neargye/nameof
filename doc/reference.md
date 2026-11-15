@@ -35,7 +35,7 @@
 
   Unsupported APIs fail to compile when used. Define `NAMEOF_ENUM_NO_CHECK_SUPPORT` to disable enum support checks, or `NAMEOF_TYPE_NO_CHECK_SUPPORT` for the other APIs above.
 
-* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Save it before taking a view or `c_str()`: `constexpr auto name = NAMEOF(x);`. Other APIs return `nameof::name_view`, a view of a static name. Both have a `string_view`-like interface and convert to `string_view`. `name_view::substr` returns a `string_view`, `cstring` has no `substr`.
+* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Save it before taking a view or `c_str()`: `constexpr auto name = NAMEOF(x);`. Compile-time names of enum values, types, members and pointers are `nameof::name_view`, a view of a static name. Both have `c_str()`, `str()`, `find`, `rfind`, `starts_with`, `ends_with`, comparisons and `operator<<`, and convert to `string_view`. `name_view::substr` returns a `string_view`, `cstring` has no `substr`.
 
 * In C++20 a `name_view` can be a template argument: `template <nameof::name_view Name> struct Tag` and `Tag<NAMEOF_TYPE(int)>`. See the [limitations](limitations.md#nameof).
 
@@ -60,7 +60,7 @@
   }
   ```
 
-* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep range-based reflection, or `NAMEOF_REQUIRE_STD_REFLECTION` to fail compilation without standard reflection.
+* Enum APIs use [C++26 standard reflection](limitations.md#c26-standard-reflection) when available. Define `NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION` before including `nameof.hpp` to keep compiler-specific reflection, or `NAMEOF_REQUIRE_STD_REFLECTION` to fail compilation without standard reflection.
 
 * To change the string types, use these macros:
 
@@ -74,7 +74,7 @@
 
   Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `cstring` and `name_view` support `std::format` and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. For `fmt` older than 10.1, include `<fmt/format.h>` before `<nameof.hpp>`.
+* `cstring` and `name_view` support `std::format` and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. With `fmt` 9, include `<fmt/format.h>` before `<nameof.hpp>` to format `cstring`.
 
 * `NAMEOF_ASSERT` checks preconditions, such as the index of `operator[]`, and defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` (an expression valid in a `constexpr` function) or disable checks with `NAMEOF_NO_ASSERT`.
 
@@ -87,13 +87,15 @@
 
   Use the same options in every translation unit to avoid ODR violations.
 
+* `NAMEOF_VERSION_MAJOR`, `NAMEOF_VERSION_MINOR` and `NAMEOF_VERSION_PATCH` hold the library version.
+
 * `NAMEOF`, `NAMEOF_FULL`, `NAMEOF_RAW`, and `*_TYPE_EXPR` do not evaluate their arguments. RTTI APIs follow `typeid` rules and evaluate polymorphic glvalues to obtain the dynamic type.
 
 ## Compiler compatibility
 
 nameof requires C++17 or newer and supports:
 
-* Clang/LLVM >= 5
+* Clang/LLVM >= 9
 * GCC >= 9
 * Visual Studio >= 2019
 
@@ -166,7 +168,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns a custom or reflected name, otherwise an empty `string_view`.
 
-* With compiler-specific reflection, non-empty scan ranges require an enumerator or a custom name, otherwise compilation fails. Use `NAMEOF_ENUM_OR` for fallback lookup.
+* Compiler-specific reflection finds only values in the [enum range](limitations.md#nameof-enum). A non-empty range requires an enumerator or a custom name, otherwise compilation fails. Use `NAMEOF_ENUM_OR` for fallback lookup.
 
 * Examples
 
@@ -273,8 +275,6 @@ nameof requires C++17 or newer and supports:
 
 * Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
-* Array, pointer, member pointer, and function types are not supported.
-
 * If type has no short name, compilation fails: `"nameof::nameof_short_type requires a type with a short name."`
 
 * Examples
@@ -324,8 +324,6 @@ nameof requires C++17 or newer and supports:
 * Obtains short type name of expression.
 
 * Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
-
-* Array, pointer, member pointer, and function types are not supported.
 
 * If type has no short name, compilation fails: `"nameof::nameof_short_type requires a type with a short name."`
 
@@ -379,8 +377,6 @@ nameof requires C++17 or newer and supports:
 
 * Returns `string`.
 
-* Array, pointer, member pointer, and function types are not supported.
-
 * Examples
 
   ```cpp
@@ -396,8 +392,6 @@ nameof requires C++17 or newer and supports:
 * Returns `nameof::name_view`. Marked `constexpr` and `noexcept`.
 
 * If member pointer is null, returns `"nullptr"` by default.
-
-* For data members on Visual Studio before 2022 17.14, the containing class must be fully defined and have external linkage.
 
 * Examples
 

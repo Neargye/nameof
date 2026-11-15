@@ -12,6 +12,7 @@ A header-only C++17 library for obtaining names of variables, types, functions, 
 
 * [Reference](doc/reference.md)
 * [Limitations](doc/limitations.md)
+* [Migration](doc/migration.md)
 * [Custom names](example/example_custom_name.cpp)
 * [Integration](#integration)
 
@@ -154,7 +155,7 @@ A header-only C++17 library for obtaining names of variables, types, functions, 
 
 nameof requires C++17 or newer and supports:
 
-* Clang/LLVM >= 5
+* Clang/LLVM >= 9
 * GCC >= 9
 * Visual Studio >= 2019
 
