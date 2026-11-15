@@ -233,6 +233,7 @@ make_compile_fail_test(range-max-not-integral 20 "nameof::customize::enum_range 
 make_compile_fail_test(full-expression-no-name 21 "NAMEOF_FULL requires a named expression")
 make_compile_fail_test(cast-no-name 23 "NAMEOF requires a named expression")
 make_compile_fail_test(full-cast-no-name 24 "NAMEOF_FULL requires a named expression")
+make_compile_fail_test(functional-cast-no-name 25 "NAMEOF requires a named expression")
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     make_compile_fail_test(pretty-function-macro 22 "nameof requires the builtin __PRETTY_FUNCTION__, not a macro")
 endif()

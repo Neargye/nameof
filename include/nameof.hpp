@@ -669,13 +669,15 @@ constexpr bool is_name_char(char c) noexcept {
 
 // Find the opening quote of the literal whose closing quote is at end, or npos.
 constexpr std::size_t find_literal_begin(string_view name, std::size_t end) noexcept {
+  // A raw pointer indexes faster in constant evaluation than string_view, here and in the parsers below.
+  const auto str = name.data();
   for (std::size_t i = end; i > 0; --i) {
-    if (name[i - 1] != name[end]) {
+    if (str[i - 1] != str[end]) {
       continue;
     }
     // A quote preceded by an odd number of backslashes is escaped.
     std::size_t escapes_begin = i - 1;
-    while (escapes_begin > 0 && name[escapes_begin - 1] == '\\') {
+    while (escapes_begin > 0 && str[escapes_begin - 1] == '\\') {
       --escapes_begin;
     }
     if ((i - 1 - escapes_begin) % 2 == 0) {
@@ -688,15 +690,17 @@ constexpr std::size_t find_literal_begin(string_view name, std::size_t end) noex
 
 // Find the start of trailing open/close groups and preceding spaces, or npos if unbalanced: " (a)(b)" in "f<int> (a)(b)" for '(' and ')'.
 constexpr std::size_t find_suffix_begin(string_view name, char open, char close) noexcept {
-  for (std::size_t i = name.size(), suffix_depth = 0, nested_depth = 0; i > 0; --i) {
-    const auto c = name[i - 1];
+  const auto str = name.data();
+  const auto size = name.size();
+  for (std::size_t i = size, suffix_depth = 0, nested_depth = 0; i > 0; --i) {
+    const auto c = str[i - 1];
     // Inside a suffix group only brackets and quotes matter.
     if (suffix_depth > 0 && c != '(' && c != ')' && c != '[' && c != ']' && c != '{' && c != '}' && c != '<' && c != '>' && c != '`' && c != '\'' && c != '"') {
       continue;
     }
-    const auto next = i < name.size() ? name[i] : '\0';
+    const auto next = i < size ? str[i] : '\0';
     // MSVC quotes scopes as in `anonymous namespace'::name.
-    const auto closes_scope = c == '\'' && next == ':' && i + 1 < name.size() && name[i + 1] == ':';
+    const auto closes_scope = c == '\'' && next == ':' && i + 1 < size && str[i + 1] == ':';
     // Ignore digit separators such as 1'000 and 0xFF'FF.
     const auto closes_literal = c == '"' || (c == '\'' && (next == '_' || !is_name_char(next)));
     if (suffix_depth > 0 && c != close && (c == ')' || c == ']' || c == '}' || closes_scope)) {
@@ -716,7 +720,7 @@ constexpr std::size_t find_suffix_begin(string_view name, char open, char close)
       --nested_depth;
     } else if (nested_depth > 0) {
       continue;
-    } else if (c == close && !(c == '>' && i > 1 && name[i - 2] == '-')) { // "->" is not a bracket.
+    } else if (c == close && !(c == '>' && i > 1 && str[i - 2] == '-')) { // "->" is not a bracket.
       ++suffix_depth;
     } else if (c == open) {
       if (suffix_depth == 0) {
@@ -725,7 +729,7 @@ constexpr std::size_t find_suffix_begin(string_view name, char open, char close)
       --suffix_depth;
     } else if (suffix_depth == 0) {
       // The first character outside the groups ends the name.
-      while (i > 0 && name[i - 1] == ' ') {
+      while (i > 0 && str[i - 1] == ' ') {
         --i;
       }
       return i;
@@ -737,17 +741,19 @@ constexpr std::size_t find_suffix_begin(string_view name, char open, char close)
 
 // The last identifier of an expression, empty if it has no name: "ns::S<int>::f<int>(x)" -> "f", or "f<int>" without remove_suffix.
 constexpr string_view pretty_name(string_view name, bool remove_suffix = true) noexcept {
+  const auto str = name.data();
+  const auto size = name.size();
   std::size_t prefix_end = 0;
-  while (prefix_end < name.size() && is_name_char(name[prefix_end])) {
+  while (prefix_end < size && is_name_char(str[prefix_end])) {
     ++prefix_end;
   }
-  if (prefix_end < name.size() && (name[prefix_end] == '"' || name[prefix_end] == '\'')) {
+  if (prefix_end < size && (str[prefix_end] == '"' || str[prefix_end] == '\'')) {
     return {}; // Literal, possibly with an encoding or raw prefix.
-  } else if (!name.empty() && name[0] >= '0' && name[0] <= '9') {
+  } else if (size != 0 && str[0] >= '0' && str[0] <= '9') {
     return {};
   }
   // Fast path for a plain identifier.
-  if (prefix_end != 0 && prefix_end == name.size()) {
+  if (prefix_end != 0 && prefix_end == size) {
     return name;
   }
 
@@ -764,30 +770,47 @@ constexpr string_view pretty_name(string_view name, bool remove_suffix = true) n
 
   // The name is the identifier right before the suffix, so qualifiers and object expressions are dropped.
   std::size_t name_begin = suffix_begin;
-  while (name_begin > 0 && is_name_char(name[name_begin - 1])) {
+  while (name_begin > 0 && is_name_char(str[name_begin - 1])) {
     --name_begin;
   }
 
   const auto name_size = (remove_suffix ? suffix_begin : name_end) - name_begin;
-  if (name_size > 0 && is_name_start(name[name_begin])) {
+  if (name_size > 0 && is_name_start(str[name_begin])) {
     return {name.data() + name_begin, name_size};
   }
 
   return {};
 }
 
-// A cast has no name, but pretty_name yields its keyword ("static_cast<long>(v)" gives "static_cast"). Kept out of pretty_name, which enum names use.
+// True if name starts with a keyword that pretty_name yields for casts and operators: "static_cast<long>(v)" gives "static_cast", "long(v)" gives "long".
+constexpr bool is_unnamed_keyword(string_view name) noexcept {
+  constexpr const char* keywords[] = {"static_cast", "dynamic_cast", "const_cast", "reinterpret_cast", "sizeof", "alignof", "typeid", "noexcept",
+                                      "bool", "char", "char8_t", "char16_t", "char32_t", "wchar_t", "short", "int", "long", "float", "double", "signed", "unsigned", "void", "auto"};
+  const auto c0 = name[0];
+  const auto c1 = name.size() > 1 ? name[1] : '\0';
+  std::size_t size = 0;
+  for (const auto keyword : keywords) {
+    // Two characters filter out most names cheaply, which compiles faster than comparing every keyword.
+    if (keyword[0] == c0 && keyword[1] == c1) {
+      while (size < name.size() && is_name_char(name[size])) {
+        ++size;
+      }
+      if (string_view{name.data(), size}.compare(keyword) == 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// The name of an expression, empty when it is a keyword. Kept out of pretty_name, which enum and type names use.
 constexpr string_view expression_name(string_view expr, bool remove_suffix = true) noexcept {
   const auto name = pretty_name(expr, remove_suffix);
-  std::size_t size = 0;
-  while (size < name.size() && name[size] != '<') {
-    ++size;
+  // A keyword has an operand after it, so a name that ends the expression needs no check.
+  if (name.empty() || name.data() + name.size() == expr.data() + expr.size() || !is_unnamed_keyword(name)) {
+    return name;
   }
-  const string_view keyword{name.data(), size};
-  if (keyword.compare("static_cast") == 0 || keyword.compare("dynamic_cast") == 0 || keyword.compare("const_cast") == 0 || keyword.compare("reinterpret_cast") == 0) {
-    return {};
-  }
-  return name;
+  return {};
 }
 
 constexpr bool is_operator_keyword(string_view str, std::size_t i) noexcept {

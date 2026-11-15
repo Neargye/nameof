@@ -425,6 +425,23 @@ static_assert(nameof::detail::pretty_name("<").empty());
 static_assert(nameof::detail::expression_name("static_cast<long>(v)").empty() && nameof::detail::expression_name("dynamic_cast<B&>(*p)", false).empty());
 static_assert(nameof::detail::expression_name("std::any_cast<int>(a)") == "any_cast" && nameof::detail::expression_name("my_const_cast(v)") == "my_const_cast");
 
+TEST_CASE("expressions without a name") {
+  using nameof::detail::expression_name;
+
+  // A keyword before its operand is not a name.
+  static_assert(expression_name("long(v)").empty() && expression_name("sizeof(v)").empty() && expression_name("typeid(v)").empty());
+  static_assert(expression_name("static_cast <long>(v)").empty() && expression_name("static_cast <long>(v)", false).empty());
+  static_assert(expression_name("*static_cast<int*>(p)").empty() && expression_name("-long(v)").empty());
+  static_assert(expression_name("integer(v)") == "integer" && expression_name("ns::long_name<int>(v)", false) == "long_name<int>");
+
+  // Operators and C-style casts give the name of the last operand.
+  static_assert(expression_name("-v") == "v" && expression_name("(long)v") == "v" && expression_name("a + v") == "v" && expression_name("!f()") == "f");
+  static_assert(expression_name("*p") == "p" && expression_name("**&p") == "p" && expression_name("& v") == "v" && expression_name("&S::m") == "m");
+  static_assert(expression_name("(*p).m") == "m" && expression_name("a->m") == "m" && expression_name("a -> m") == "m" && expression_name("a . m") == "m");
+  static_assert(expression_name("a.*m") == "m" && expression_name("a->*m") == "m" && expression_name("::v") == "v" && expression_name("a.template f<int>()") == "f");
+  static_assert(expression_name("static_cast<S&>(s).m") == "m" && expression_name("a.f<int>(-1, !b)", false) == "f<int>" && expression_name("sizeof v") == "v");
+}
+
 TEST_CASE("expression name parsing") {
   using nameof::detail::pretty_name;
   static_assert(pretty_name("ns::outer<inner<int>, tag<void()>> (call(1, (2)))") == "outer");
