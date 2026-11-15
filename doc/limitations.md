@@ -16,13 +16,13 @@ Standard reflection is selected automatically for enum APIs when available.
 
 ## Nameof
 
-* `NAMEOF` and `NAMEOF_FULL` fail to compile for expressions without a name, such as `static_cast<long>(x)`, `long(x)` and `sizeof(x)`. Operators and C-style casts are skipped: `NAMEOF(*p)` gives `"p"`, `NAMEOF((long)x)` gives `"x"`, `NAMEOF(a + b)` gives `"b"`.
+* `NAMEOF` and `NAMEOF_FULL` fail to compile for some expressions without a name, such as `static_cast<long>(x)`, `long(x)` and `sizeof(x)`. Other keywords are returned as is: `NAMEOF(nullptr)` gives `"nullptr"`. Operators and C-style casts are skipped: `NAMEOF(*p)` gives `"p"`, `NAMEOF((long)x)` gives `"x"`, `NAMEOF(a + b)` gives `"b"`.
 
-* A temporary `cstring` does not convert to `string_view` or `name_view`, and its `c_str()` and `data()` dangle. Save `NAMEOF(x)` in a variable first.
+* A temporary `cstring` does not convert to `string_view` or `name_view`. Pointers into a non-empty temporary dangle after the full expression. Save `NAMEOF(x)` in a variable before keeping its `c_str()` or `data()` pointer.
 
 * `cstring` and `name_view` data members are public for technical reasons. Use `data()` and the string interface.
 
-* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 and newer (not Apple Clang). It is compared by address, not by characters, so equal names from different calls can be different arguments.
+* A `name_view` template argument requires C++20 and GCC 11, Clang 18 or Visual Studio 2019 and newer (not Apple Clang). Template argument identity depends on the storage address and size, not the characters, so equal names from different calls can be different arguments.
 
 ## Nameof Type
 
@@ -46,7 +46,7 @@ Standard reflection is selected automatically for enum APIs when available.
 
 ## Nameof Enum
 
-* With compiler-specific reflection, `nameof_enum(value)` finds only values in `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]`, others get an empty name. `nameof_enum<V>()` and the flag APIs are not limited by it.
+* With compiler-specific reflection, `nameof_enum(value)` uses `[NAMEOF_ENUM_RANGE_MIN, NAMEOF_ENUM_RANGE_MAX]` or `customize::enum_range<E>` for automatic name lookup. `nameof_enum<V>()` and the flag APIs are not limited by it.
 
   * By default, `NAMEOF_ENUM_RANGE_MIN = -128`, `NAMEOF_ENUM_RANGE_MAX = 127`.
 
@@ -76,9 +76,9 @@ Standard reflection is selected automatically for enum APIs when available.
     };
     ```
 
-  * Enum ranges are limited to fewer than `UINT16_MAX` values.
+  * Range bounds must be integral. After clamping, non-empty ranges must have bounds that fit in `int` and contain fewer than `UINT16_MAX` values.
 
-  * For an enum without a custom range, check its largest value: `static_assert(static_cast<int>(E::Max) <= NAMEOF_ENUM_RANGE_MAX);`.
+  * For an enum without a custom range, check that its largest value has a name: `static_assert(!nameof::nameof_enum(E::Max).empty());`.
 
 * With compiler-specific reflection, names of aliased enum values are compiler-dependent.
 
@@ -96,6 +96,6 @@ Standard reflection is selected automatically for enum APIs when available.
 
 ## NVCC and NVC++
 
-* Enum names are empty for enums declared inside functions.
+* Enums declared inside functions are unsupported: `NAMEOF_ENUM` fails to compile and `NAMEOF_ENUM_CONST` may differ between nvcc passes. Declare the enum outside the function.
 
 * Unnamed types are spelled `<unnamed>` at compile time. Under nvcc, results computed at run time come from the host compiler.

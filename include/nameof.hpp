@@ -160,12 +160,12 @@ static_assert(false, "nameof requires the builtin __PRETTY_FUNCTION__, not a mac
 #  define NAMEOF_DETAIL_NVCC 1
 #endif
 
-// Enum value must be greater than or equal to NAMEOF_ENUM_RANGE_MIN (-128 by default). Redefine the macro to change it for all enum types.
+// Default lower bound for compiler-specific enum range scanning. Redefine it globally or specialize customize::enum_range.
 #if !defined(NAMEOF_ENUM_RANGE_MIN)
 #  define NAMEOF_ENUM_RANGE_MIN -128
 #endif
 
-// Enum value must be less than or equal to NAMEOF_ENUM_RANGE_MAX (127 by default). Redefine the macro to change it for all enum types.
+// Default upper bound for compiler-specific enum range scanning. Redefine it globally or specialize customize::enum_range.
 #if !defined(NAMEOF_ENUM_RANGE_MAX)
 #  define NAMEOF_ENUM_RANGE_MAX 127
 #endif
@@ -427,7 +427,7 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
-  // fmt 10.1+ formats through this, whatever the include order.
+  // fmt 10+ formats through this, whatever the include order.
   [[nodiscard]] friend constexpr std::string_view format_as(const cstring& str) noexcept { return {str.data(), N}; }
 
   // Without the cstring<M> overloads, comparing two cstrings is ambiguous between the string_view ones.
@@ -541,7 +541,7 @@ class [[nodiscard]] name_view {
   // fmt 11+ and fmt/ranges.h detect a string by this member, whatever the include order.
   [[nodiscard]] constexpr size_type find_first_of(char c, size_type pos = 0) const noexcept { return detail::find(data_, size_, c, pos); }
 
-  // A part of a name is not null-terminated, so it is a string_view.
+  // A part of a name need not be null-terminated, so it is a string_view.
   [[nodiscard]] constexpr string_view substr(size_type pos = 0, size_type count = npos) const noexcept {
     NAMEOF_DETAIL_ASSERT(pos <= size_);
     pos = pos < size_ ? pos : size_;
@@ -803,7 +803,7 @@ constexpr bool is_unnamed_keyword(string_view name) noexcept {
   return false;
 }
 
-// The name of an expression, empty when it is a keyword. Kept out of pretty_name, which enum and type names use.
+// Reject keywords used as cast or operator names. Kept out of pretty_name, which enum and type names use.
 constexpr string_view expression_name(string_view expr, bool remove_suffix = true) noexcept {
   const auto name = pretty_name(expr, remove_suffix);
   // A keyword has an operand after it, so a name that ends the expression needs no check.
@@ -2219,7 +2219,7 @@ template <auto V, std::enable_if_t<std::is_member_pointer_v<decltype(V)>, int> =
   return detail::member_name_v<V>;
 }
 
-// Obtains name of a function, a global or class static variable.
+// Obtains name of a function, global variable, or static data member.
 template <auto V, std::enable_if_t<std::is_pointer_v<std::decay_t<decltype(V)>>, int> = 0>
 [[nodiscard]] constexpr name_view nameof_pointer() noexcept {
   static_assert(detail::supported_v<is_nameof_pointer_supported, decltype(V)>, "nameof::nameof_pointer is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
@@ -2281,7 +2281,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {}
   static_assert(!nameof_detail_name.empty(), "NAMEOF requires a named expression.");          \
   return ::nameof::detail::to_cstring<nameof_detail_name.size()>(nameof_detail_name); }()
 
-// Obtains full name of variable, function, macro.
+// Obtains name of variable, function, or macro, including template arguments.
 #define NAMEOF_FULL(...) []() constexpr noexcept {                                            \
   ::std::void_t<decltype(__VA_ARGS__)>();                                                     \
   constexpr auto nameof_detail_name = ::nameof::detail::expression_name(#__VA_ARGS__, false); \
@@ -2336,7 +2336,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {}
 // Obtains name of member.
 #define NAMEOF_MEMBER(...) ::nameof::nameof_member<__VA_ARGS__>()
 
-// Obtains name of a function, a global or class static variable.
+// Obtains name of a function, global variable, or static data member.
 #define NAMEOF_POINTER(...) ::nameof::nameof_pointer<__VA_ARGS__>()
 
 #undef NAMEOF_FOR_EACH_256

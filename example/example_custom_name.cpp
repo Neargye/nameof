@@ -37,9 +37,9 @@ constexpr std::string_view nameof::customize::enum_name<Color>(Color value) noex
     case Color::BLUE:
       return "The BLUE";
     case Color::GREEN:
-      return {}; // Empty string for default value.
+      return {}; // An empty name selects the reflected name.
   }
-  return {}; // Empty string for unknown value.
+  return {};
 }
 
 // Custom enum names: specialize `enum_name` in `namespace nameof::customize`.
@@ -49,7 +49,7 @@ constexpr std::string_view nameof::customize::enum_name<Numbers>(Numbers value) 
     case Numbers::One:
       return "the one";
     default:
-      return {}; // Empty string for default or unknown value.
+      return {}; // Use reflection for values without a custom name.
   }
 }
 #endif
@@ -80,6 +80,7 @@ int main() {
   std::cout << nameof::nameof_enum(Numbers::Three) << std::endl; // 'Three'
 #endif
 
+  // Uncustomized type spellings below are compiler-specific, the comments show GCC and Clang output.
   std::cout << nameof::nameof_type<Color>() << std::endl; // 'The Color'
   std::cout << nameof::nameof_type<Numbers>() << std::endl; // 'Numbers'
   std::cout << nameof::nameof_type<a1_test>() << std::endl; // 'Animal'

@@ -188,7 +188,7 @@ int main() {
   std::cout << NAMEOF_TYPE_RTTI(*ptr) << std::endl; // 'Derived'
 #endif
 
-  // Some more complex example.
+  // Some more complex example (GCC and Clang output).
 
   std::cout << SomeMethod4<int>(structvar) << std::endl; // 'SomeMethod4<int, SomeStruct>(SomeStruct value)'
 
@@ -208,7 +208,7 @@ int main() {
 
   /* Remarks */
 #if 0
-  // These expressions have no names, so NAMEOF does not compile. Use NAMEOF_RAW for their text.
+  // NAMEOF rejects these forms. NAMEOF_RAW preserves the text of a valid C++ expression.
   std::cout << NAMEOF(ptrvar[0]) << std::endl;
   std::cout << NAMEOF(42.0) << std::endl;
   std::cout << NAMEOF(42) << std::endl;

@@ -4,15 +4,17 @@ Only changes that need action are listed. Apply every section newer than your ve
 
 ## Upgrading to 0.12.0
 
-* `nameof_enum<V>()`, `nameof_type`, `nameof_full_type`, `nameof_short_type`, `nameof_member`, `nameof_pointer` and their macros return `nameof::name_view` by value instead of `const nameof::cstring<N>&`. Replace `auto&` and `const nameof::cstring<N>&` with `auto` or `nameof::name_view`.
+* `nameof_enum<V>()`, `nameof_type`, `nameof_full_type`, `nameof_short_type`, `nameof_member`, `nameof_pointer` and their macros return `nameof::name_view` by value instead of `const nameof::cstring<N>&`. Replace `auto&`, `nameof::cstring<N>` and `const nameof::cstring<N>&` with `auto` or `nameof::name_view`.
 
-* Remove a user-defined `fmt::formatter<nameof::cstring<N>>`. nameof formats `cstring` itself, and the two conflict with fmt 10 and newer.
+* With fmt 10, remove a user-defined `fmt::formatter<nameof::cstring<N>>`. nameof formats `cstring` itself, and the two are ambiguous.
 
 * `NAMEOF_ENUM_SUPPORTED_ALIASES` is removed. Use `NAMEOF_ENUM_SUPPORTED`.
 
 * Clang 9 and Xcode 11 are the minimum versions.
 
 * `NAMEOF` and `NAMEOF_FULL` fail to compile for `static_cast<T>(x)`, `long(x)` and `sizeof(x)` instead of returning the keyword. Pass the operand or use `NAMEOF_RAW`.
+
+* With compiler-specific reflection, GCC rejects `nameof_enum(value).data()` as a pointer template argument. Use `nameof_enum<V>().data()` (C++20 and newer).
 
 * Clang warns with `-Wdangling` about a kept `NAMEOF(x).c_str()` or `NAMEOF(x).data()`, which dangles. Save `NAMEOF(x)` in a variable first.
 
@@ -36,7 +38,7 @@ Only changes that need action are listed. Apply every section newer than your ve
 
 ## Upgrading to 0.10.6
 
-* Since 0.10.5, names of types, members, pointers and `nameof_enum<V>()` are no longer `string_view`. Where code needs other `string_view` members, `?:` with a string literal or an implicit conversion, write `std::string_view name = NAMEOF_TYPE(T);` instead of `auto`.
+* Since 0.10.5 (0.10.6 for `nameof_type` and `nameof_full_type`), names of types, members, pointers and `nameof_enum<V>()` are no longer `string_view`. Where code needs other `string_view` members, `std::hash`, `?:` with a string literal or an implicit conversion, write `std::string_view name = NAMEOF_TYPE(T);` instead of `auto`.
 
 * `NAMEOF(x)` cannot be passed directly to a `string_view` parameter. Save it in a variable first.
 

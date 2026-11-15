@@ -35,7 +35,7 @@
 
   Unsupported APIs fail to compile when used. Define `NAMEOF_ENUM_NO_CHECK_SUPPORT` to disable enum support checks, or `NAMEOF_TYPE_NO_CHECK_SUPPORT` for the other APIs above.
 
-* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Save it before taking a view or `c_str()`: `constexpr auto name = NAMEOF(x);`. Compile-time names of enum values, types, members and pointers are `nameof::name_view`, a view of a static name. Both have `c_str()`, `str()`, `find`, `rfind`, `starts_with`, `ends_with`, comparisons and `operator<<`, and convert to `string_view`. `name_view::substr` returns a `string_view`, `cstring` has no `substr`.
+* `NAMEOF`, `NAMEOF_FULL` and `NAMEOF_RAW` return `nameof::cstring<N>`, a constexpr null-terminated string. Save it before taking a view or `c_str()`: `constexpr auto name = NAMEOF(x);`. Compile-time names of enum values, types, members and pointers are `nameof::name_view`, a view of a static name. Both have `c_str()`, `str()`, `find`, `rfind`, `starts_with`, `ends_with`, comparisons and `operator<<`, and convert to `string_view`. `name_view::substr` returns a `string_view` and requires `pos <= size()` (checked with `NAMEOF_ASSERT`). `cstring` has no `substr`.
 
 * In C++20 a `name_view` can be a template argument: `template <nameof::name_view Name> struct Tag` and `Tag<NAMEOF_TYPE(int)>`. See the [limitations](limitations.md#nameof).
 
@@ -74,7 +74,7 @@
 
   Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `cstring` and `name_view` support `std::format` and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. With `fmt` 9, include `<fmt/format.h>` before `<nameof.hpp>` to format `cstring`.
+* `cstring` and `name_view` support `std::format` (C++20 and newer) and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. With `fmt` 9, include `<fmt/format.h>` before `<nameof.hpp>` to format `cstring`.
 
 * `NAMEOF_ASSERT` checks preconditions, such as the index of `operator[]`, and defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` (an expression valid in a `constexpr` function) or disable checks with `NAMEOF_NO_ASSERT`.
 
@@ -107,7 +107,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
-* If argument has no name, compilation fails: `"NAMEOF requires a named expression."`
+* Fails to compile for some expressions without a name: `"NAMEOF requires a named expression."` See the [limitations](limitations.md#nameof).
 
 * Examples
 
@@ -135,7 +135,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns `nameof::cstring`. Marked `constexpr` and `noexcept`.
 
-* If argument has no name, compilation fails: `"NAMEOF_FULL requires a named expression."`
+* Fails to compile for some expressions without a name: `"NAMEOF_FULL requires a named expression."` See the [limitations](limitations.md#nameof).
 
 * Examples
 
@@ -168,7 +168,7 @@ nameof requires C++17 or newer and supports:
 
 * Returns a custom or reflected name, otherwise an empty `string_view`.
 
-* Compiler-specific reflection finds only values in the [enum range](limitations.md#nameof-enum). A non-empty range requires an enumerator or a custom name, otherwise compilation fails. Use `NAMEOF_ENUM_OR` for fallback lookup.
+* Automatic lookup with compiler-specific reflection is limited to the [enum range](limitations.md#nameof-enum). A non-empty range requires an enumerator or a custom name, otherwise compilation fails. Use `NAMEOF_ENUM_OR` for fallback lookup.
 
 * Examples
 
@@ -242,6 +242,8 @@ nameof requires C++17 or newer and supports:
   ```
 
 ## `NAMEOF_TYPE`
+
+Exact type spellings in the examples are compiler-specific. See the [type limitations](limitations.md#nameof-type).
 
 * Obtains type name. Reference and cv-qualifiers are ignored (`NAMEOF_TYPE(const T&) == NAMEOF_TYPE(T)`).
 
