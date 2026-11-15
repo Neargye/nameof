@@ -132,6 +132,11 @@ int main() {
     return 5;
   }
 #endif
+#if defined(NAMEOF_NO_STD_FORMAT) && defined(__cpp_lib_format_ranges)
+  if (std::format("{}", NAMEOF(DefaultRangeBoundary::lower)) != "['l', 'o', 'w', 'e', 'r']") {
+    return 6;
+  }
+#endif
 #if defined(NAMEOF_TYPE_RTTI_SUPPORTED)
   StandaloneRttiDerived derived;
   StandaloneRttiBase& base = derived;

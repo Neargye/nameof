@@ -2267,7 +2267,7 @@ struct fmt::formatter<nameof::name_view> : fmt::formatter<fmt::string_view> {
 };
 #  endif
 
-// fmt 10+ formats cstring through format_as. An explicit formatter would be ambiguous with fmt's own format_as one.
+// fmt 10+ formats cstring through format_as. On fmt 10 an explicit formatter is ambiguous with fmt's own format_as one.
 #  if FMT_VERSION < 100000
 template <std::uint16_t N>
 struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {};

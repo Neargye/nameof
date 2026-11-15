@@ -20,15 +20,17 @@
 
 [[maybe_unused]] static int some_variable = 0;
 
+// name_view formats in any include order since fmt 9, cstring since fmt 10.
 TEST_CASE("fmt included after nameof") {
-#if defined(FMT_VERSION) && FMT_VERSION >= 100100
-  // name_view and cstring format through format_as, not as ranges.
+#if defined(FMT_VERSION) && FMT_VERSION >= 90000
   static constexpr nameof::cstring<3> storage{"abc"};
   constexpr nameof::name_view name = storage;
   REQUIRE(fmt::format("{}", name) == "abc");
   REQUIRE(fmt::format("{:>5}", name) == "  abc");
   REQUIRE(fmt::format("{:.2}", name) == "ab");
   REQUIRE(fmt::format("{}", nameof::name_view{}).empty());
+#endif
+#if defined(FMT_VERSION) && FMT_VERSION >= 100000
   constexpr auto expression = NAMEOF(some_variable);
   REQUIRE(fmt::format("{}", expression) == "some_variable");
   REQUIRE(fmt::format("{:>15}", expression) == "  some_variable");
