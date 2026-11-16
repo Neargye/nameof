@@ -82,7 +82,7 @@ Standard reflection is selected automatically for enum APIs when available.
 
 * With compiler-specific reflection, names of aliased enum values are compiler-dependent.
 
-* `customize::enum_name(E)` takes precedence over either backend, including for values outside the range or reflected sequence. Flags use customization for each set bit.
+* `customize::enum_name(E)` takes precedence over either backend, including for values outside the range or reflected sequence. Flags use customization for each set bit and for zero.
 
 * `nameof_enum(E)` returns custom names without copying. Their storage must outlive the result and provide null termination if needed. `nameof_enum<V>()` copies them into null-terminated static storage.
 

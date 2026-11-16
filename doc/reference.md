@@ -219,9 +219,9 @@ nameof requires C++17 or newer and supports:
 
 * Joins custom or reflected names of individual set bits with `sep` (`'|'` by default). Composite enumerator names are ignored.
 
-* If value is zero or contains unnamed bit, returns empty `string`.
+* Zero gives its name, such as `"None"`, or an empty `string` with `NAMEOF_NO_NAMED_ZERO_IN_FLAGS`. A value with an unnamed bit gives an empty `string`.
 
-* Compiler-specific reflection requires a single-bit enumerator or custom flag name, otherwise compilation fails.
+* Compiler-specific reflection requires a single-bit enumerator, a named zero or a custom flag name, otherwise compilation fails.
 
 * Examples
 

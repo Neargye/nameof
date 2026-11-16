@@ -280,6 +280,7 @@ if(NAMEOF_CAN_COMPILE_STD_REFLECTION)
 
     # Checks that NAMEOF_DETAIL_USE_STD_REFLECTION does not leak.
     make_test(test_standalone.cpp test-standalone-reflection-cpp26 "")
+    target_compile_definitions(test-standalone-reflection-cpp26 PRIVATE NAMEOF_NO_NAMED_ZERO_IN_FLAGS)
 
     make_test(test_reflection.cpp test-reflection-force-compiler-specific-cpp26 "" DOCTEST)
     target_compile_definitions(test-reflection-force-compiler-specific-cpp26 PRIVATE NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION=1)

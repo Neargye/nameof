@@ -1813,6 +1813,19 @@ constexpr string_view enum_name(E value) noexcept {
 #endif
 }
 
+// Name of zero for flags. Flag tables hold only single bits, so zero uses the constant lookup.
+template <typename E>
+constexpr string_view flag_zero_name() noexcept {
+#if defined(NAMEOF_NO_NAMED_ZERO_IN_FLAGS)
+  return string_view{""};
+#else
+  if (auto custom_name = customize::enum_name<E>(static_cast<E>(0)); !custom_name.empty()) {
+    return custom_name;
+  }
+  return enum_name_v<E, static_cast<E>(0)>;
+#endif
+}
+
 #if defined(_MSC_VER) && !defined(__clang__)
 // MSVC prints a class-key before class and enum types. Wrapping every type keeps the prefix of n() fixed.
 template <typename T>
@@ -2148,7 +2161,7 @@ template <typename E>
   using U = detail::make_unsigned_t<std::underlying_type_t<D>>;
   static_assert(detail::supported_v<is_nameof_enum_supported, D>, "nameof::nameof_enum_flag is not supported by this compiler (https://github.com/Neargye/nameof#compiler-compatibility).");
 #if !defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
-  static_assert(detail::has_names_v<D, true>, "nameof::nameof_enum_flag requires a defined enum with a single-bit enumerator or a custom flag name.");
+  static_assert(detail::has_names_v<D, true> || !detail::flag_zero_name<D>().empty(), "nameof::nameof_enum_flag requires a defined enum with a single-bit enumerator, a named zero or a custom flag name.");
 #endif
 
   string name;
@@ -2156,6 +2169,9 @@ template <typename E>
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
   // The early zero return helps only reflection: the scanner is faster with its while loop.
   if (bits == U{0}) {
+    if (const auto zero_name = detail::flag_zero_name<D>(); !zero_name.empty()) {
+      name.append(zero_name.data(), zero_name.size());
+    }
     return name;
   }
   do {
@@ -2175,6 +2191,12 @@ template <typename E>
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
   } while (bits != U{0});
 #else
+  }
+  // An unnamed bit returns early, so only zero leaves the name empty.
+  if (name.empty()) {
+    if (const auto zero_name = detail::flag_zero_name<D>(); !zero_name.empty()) {
+      name.append(zero_name.data(), zero_name.size());
+    }
   }
 #endif
   return name;

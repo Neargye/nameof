@@ -81,6 +81,9 @@ constexpr nameof::string_view nameof::customize::enum_name<CustomizedFlags>(Cust
   if (value == static_cast<CustomizedFlags>(4)) {
     return "SyntheticFlag";
   }
+  if (value == static_cast<CustomizedFlags>(0)) {
+    return "NoFlags";
+  }
   return {};
 }
 
@@ -174,17 +177,18 @@ TEST_CASE("flag backend") {
   CHECK(nameof::nameof_enum_flag(static_cast<WideFlags>(static_cast<std::uint64_t>(WideFlags::A) |
                                                        static_cast<std::uint64_t>(WideFlags::High))) == "A|High");
   CHECK(nameof::nameof_enum_flag(static_cast<WideFlags>(std::uint64_t{4})).empty());
-  CHECK(nameof::nameof_enum_flag(WideFlags::None).empty());
+  CHECK(nameof::nameof_enum_flag(WideFlags::None) == "None");
   CHECK(nameof::nameof_enum_flag(CustomizedFlags::AB) == "RenamedA|B");
   CHECK(nameof::nameof_enum_flag(static_cast<CustomizedFlags>(4)) == "SyntheticFlag");
+  CHECK(nameof::nameof_enum_flag(static_cast<CustomizedFlags>(0)) == "NoFlags");
   CHECK(nameof::nameof_enum_flag(SyntheticOnlyFlags::Composite) == "SyntheticA|SyntheticB");
   CHECK(nameof::nameof_enum_flag(UnscopedComposite) == "UnscopedA|UnscopedB");
-  // With compiler-specific reflection, an enum without single-bit enumerators or custom flag names is rejected by nameof_enum_flag.
+  // With compiler-specific reflection, an enum without single-bit enumerators, a named zero or custom flag names is rejected by nameof_enum_flag.
 #if defined(NAMEOF_TEST_STD_REFLECTION)
   CHECK(nameof::nameof_enum_flag(CompositeOnlyFlags::Composite).empty());
 #endif
   CHECK(nameof::nameof_enum_flag(BoolFlags::Enabled) == "Enabled");
-  CHECK(nameof::nameof_enum_flag(BoolFlags::Disabled).empty());
+  CHECK(nameof::nameof_enum_flag(BoolFlags::Disabled) == "Disabled");
 }
 
 TEST_CASE("enum lookup across named values and gaps") {

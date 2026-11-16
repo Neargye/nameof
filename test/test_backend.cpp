@@ -347,13 +347,13 @@ bool check_width() {
       return false;
     }
   }
-  return nameof::nameof_enum_flag(static_cast<E>(T{0})).empty();
+  return nameof::nameof_enum_flag(static_cast<E>(T{0})) == "None";
 }
 
 int lookup_check() {
   using Byte = WidthFlags<std::uint8_t>::E;
   for (unsigned mask = 0; mask < 256; ++mask) {
-    nameof::string expected;
+    nameof::string expected = mask == 0 ? "None" : "";
     for (unsigned bit = 0; bit < 8; ++bit) {
       if ((mask & (1u << bit)) != 0) {
         if (!expected.empty()) {
@@ -441,7 +441,7 @@ int check() {
     return 3;
   }
   return flags_from_other(static_cast<Flags>(131)) == "Low|SyntheticBit|High" &&
-         flags_from_other(Flags::None).empty() && flags_from_other(static_cast<Flags>(4)).empty() ? 0 : 4;
+         flags_from_other(Flags::None) == "None" && flags_from_other(static_cast<Flags>(4)).empty() ? 0 : 4;
 }
 
 } // namespace shared_config

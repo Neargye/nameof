@@ -11,6 +11,8 @@
 #  define NAMEOF_FORCE_COMPILER_SPECIFIC_REFLECTION 1
 #endif
 
+#define NAMEOF_NO_NAMED_ZERO_IN_FLAGS 1
+
 inline int nameof_test_assert_failures = 0;
 
 // Counts failed checks instead of aborting. Holding checks stay constant expressions.

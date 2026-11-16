@@ -8,6 +8,8 @@ Only changes that need action are listed. Apply every section newer than your ve
 
 * With fmt 10, a user-defined `fmt::formatter<nameof::cstring<N>>` is ambiguous. Remove it or define `NAMEOF_NO_FMT_FORMAT`. fmt 11 and newer ignore it.
 
+* `nameof_enum_flag` returns the name of zero, such as `"None"`, instead of an empty string. Define `NAMEOF_NO_NAMED_ZERO_IN_FLAGS` to keep it empty.
+
 * `NAMEOF_ENUM_SUPPORTED_ALIASES` is removed. Use `NAMEOF_ENUM_SUPPORTED`.
 
 * Clang 9 and Xcode 11 are the minimum versions.

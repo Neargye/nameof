@@ -61,6 +61,8 @@ static_assert(NAMEOF_POINTER(&weak_function) == "weak_function");
 
 enum UnfixedEnum { unfixed_first = 1, unfixed_second = 2 };
 
+enum class ZeroFlags : unsigned { zero_none = 0, zero_first = 1 };
+
 #if defined(NAMEOF_ENUM_SUPPORTED)
 static_assert(nameof::nameof_enum(unfixed_second) == "unfixed_second");
 static_assert(nameof::nameof_enum(static_cast<UnfixedEnum>(3)).empty());
@@ -126,6 +128,15 @@ int main() {
   if (nameof::nameof_enum_flag(static_cast<UnfixedEnum>(3)) != "unfixed_first|unfixed_second") {
     return 2;
   }
+#  if defined(NAMEOF_NO_NAMED_ZERO_IN_FLAGS)
+  if (!nameof::nameof_enum_flag(ZeroFlags::zero_none).empty() || nameof::nameof_enum_flag(ZeroFlags::zero_first) != "zero_first") {
+    return 7;
+  }
+#  else
+  if (nameof::nameof_enum_flag(ZeroFlags::zero_none) != "zero_none" || nameof::nameof_enum_flag(ZeroFlags::zero_first) != "zero_first") {
+    return 7;
+  }
+#  endif
 #endif
 #if defined(NAMEOF_NO_STD_FORMAT) && defined(__cpp_lib_format_ranges) && defined(NAMEOF_TYPE_SUPPORTED)
   if (std::format("{}", NAMEOF_TYPE(int)) != "['i', 'n', 't']") {

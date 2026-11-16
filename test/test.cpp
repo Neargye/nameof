@@ -161,6 +161,10 @@ enum class BoolEnum : bool { Off = false, On = true };
 
 enum class BoolFlag : bool { On = true };
 
+enum class ZeroFlags : unsigned { None = 0, A = 1, B = 2 };
+
+enum class ZeroOnlyFlags : unsigned { None = 0 };
+
 enum class BoolRange : bool { On = true };
 
 template <>
@@ -1766,6 +1770,13 @@ TEST_CASE("nameof_enum_flag") {
   REQUIRE(nameof::nameof_enum_flag(static_cast<BoolFlag>(false)).empty());
 
   REQUIRE(nameof::nameof_enum_flag(static_cast<InvertedRangeFlags>(1u | (1u << 20))) == "A|B");
+
+  // A named zero is the name of an empty mask, not a part of combinations.
+  REQUIRE(nameof::nameof_enum_flag(ZeroFlags::None) == "None");
+  REQUIRE(nameof::nameof_enum_flag(static_cast<ZeroFlags>(3)) == "A|B");
+  REQUIRE(nameof::nameof_enum_flag(static_cast<ZeroFlags>(4)).empty());
+  REQUIRE(nameof::nameof_enum_flag(ZeroOnlyFlags::None) == "None");
+  REQUIRE(nameof::nameof_enum_flag(static_cast<ZeroOnlyFlags>(1)).empty());
 }
 
 TEST_CASE("NAMEOF_ENUM") {
