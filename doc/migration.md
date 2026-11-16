@@ -6,7 +6,7 @@ Only changes that need action are listed. Apply every section newer than your ve
 
 * `nameof_enum<V>()`, `nameof_type`, `nameof_full_type`, `nameof_short_type`, `nameof_member`, `nameof_pointer` and their macros return `nameof::name_view` by value instead of `const nameof::cstring<N>&`. Replace `auto&`, `nameof::cstring<N>` and `const nameof::cstring<N>&` with `auto` or `nameof::name_view`.
 
-* With fmt 10, remove a user-defined `fmt::formatter<nameof::cstring<N>>`. nameof formats `cstring` itself, and the two are ambiguous.
+* With fmt 10, a user-defined `fmt::formatter<nameof::cstring<N>>` is ambiguous. Remove it or define `NAMEOF_NO_FMT_FORMAT`. fmt 11 and newer ignore it.
 
 * `NAMEOF_ENUM_SUPPORTED_ALIASES` is removed. Use `NAMEOF_ENUM_SUPPORTED`.
 

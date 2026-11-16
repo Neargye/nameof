@@ -427,8 +427,10 @@ class [[nodiscard]] cstring {
 
   [[nodiscard]] explicit operator string() const { return {data(), size()}; }
 
+#if !defined(NAMEOF_NO_FMT_FORMAT)
   // fmt 10+ formats through this, whatever the include order.
   [[nodiscard]] friend constexpr std::string_view format_as(const cstring& str) noexcept { return {str.data(), N}; }
+#endif
 
   // Without the cstring<M> overloads, comparing two cstrings is ambiguous between the string_view ones.
   template <std::uint16_t M>
@@ -574,8 +576,10 @@ class [[nodiscard]] name_view {
 
   [[nodiscard]] explicit operator string() const { return {data_, size_}; }
 
+#if !defined(NAMEOF_NO_FMT_FORMAT)
   // fmt 10.1+ formats through this, whatever the include order.
   [[nodiscard]] friend constexpr std::string_view format_as(name_view name) noexcept { return {name.data_, name.size_}; }
+#endif
 
   // Without the name_view and cstring<M> overloads, such comparisons are ambiguous between the string_view ones.
   [[nodiscard]] friend constexpr bool operator==(name_view lhs, name_view rhs) noexcept { return lhs.size_ == rhs.size_ && lhs.compare(rhs) == 0; }
@@ -2256,8 +2260,10 @@ FMT_END_NAMESPACE
 template <std::uint16_t N>
 struct fmt::is_range<nameof::cstring<N>, char> : std::false_type {};
 
+// NAMEOF_NO_FMT_FORMAT drops format_as and these formatters for user ones. fmt 11+ formats names as strings by find_first_of and data().
+#  if !defined(NAMEOF_NO_FMT_FORMAT)
 // fmt 10.1+ formats name_view through format_as, the same formatter as when fmt is included after nameof.
-#  if FMT_VERSION < 100100
+#    if FMT_VERSION < 100100
 template <>
 struct fmt::formatter<nameof::name_view> : fmt::formatter<fmt::string_view> {
   template <typename FormatContext>
@@ -2265,12 +2271,13 @@ struct fmt::formatter<nameof::name_view> : fmt::formatter<fmt::string_view> {
     return fmt::formatter<fmt::string_view>::format(fmt::string_view{str.data(), str.size()}, ctx);
   }
 };
-#  endif
+#    endif
 
 // fmt 10+ formats cstring through format_as. On fmt 10 an explicit formatter is ambiguous with fmt's own format_as one.
-#  if FMT_VERSION < 100000
+#    if FMT_VERSION < 100000
 template <std::uint16_t N>
 struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {};
+#    endif
 #  endif
 #endif
 

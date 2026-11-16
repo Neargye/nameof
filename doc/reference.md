@@ -74,7 +74,7 @@
 
   Aliases must support the `std::string` and `std::string_view` operations used by nameof. See the [minimal interface](../test/test_aliases.cpp).
 
-* `cstring` and `name_view` support `std::format` (C++20 and newer) and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. With `fmt` 9, include `<fmt/format.h>` before `<nameof.hpp>` to format `cstring`.
+* `cstring` and `name_view` support `std::format` (C++20 and newer) and `fmt`. With `NAMEOF_NO_STD_FORMAT`, `<format>` is not included: pass a `string_view` to `std::format`. With `fmt` 9, include `<fmt/format.h>` before `<nameof.hpp>` to format `cstring`. `NAMEOF_NO_FMT_FORMAT` removes the `fmt` support, so `fmt` 10 and older can use your own `fmt::formatter`. `fmt` 11 and newer ignore it and format names as strings.
 
 * `NAMEOF_ASSERT` checks preconditions, such as the index of `operator[]`, and defaults to `assert`. Define your own `NAMEOF_ASSERT(...)` (an expression valid in a `constexpr` function) or disable checks with `NAMEOF_NO_ASSERT`.
 
