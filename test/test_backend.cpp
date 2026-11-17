@@ -548,7 +548,7 @@ constexpr auto msvc_names = signature_names<3>("auto __cdecl nb<E::A,(enum E)0x2
 static_assert(gcc_names.valid && gcc_names.count == 2 && gcc_names.names[0] == "A" && gcc_names.names[2] == "B");
 static_assert(clang_names.valid && clang_names.count == 2 && clang_names.names[1].empty());
 static_assert(msvc_names.valid && msvc_names.count == 2 && msvc_names.names[2] == "B");
-constexpr auto simple_casts = signature_names<5>("auto nb() [V = <(E)-12, (enum N::E)0xFF, (E)001, (E)-0x1, E::A>");
+constexpr auto simple_casts = signature_names<5>("auto nb() [V = <(E)-12, (E)0xFF, (E)001, (E)-0x1, E::A>");
 static_assert(simple_casts.valid && simple_casts.count == 1 && simple_casts.names[4] == "A");
 constexpr auto quoted_casts = signature_names<3>("auto __cdecl nb<(enum `anonymous namespace'::E)0x1,(enum `void __cdecl f(int,int)'::E)-0x2,E::A");
 static_assert(quoted_casts.valid && quoted_casts.count == 1 && quoted_casts.names[2] == "A");
@@ -559,9 +559,17 @@ constexpr auto parenthesized_name = signature_names<2>("auto nb() [V = <(E)1, (E
 static_assert(parenthesized_name.valid && parenthesized_name.names[1] == "A");
 constexpr auto reused_stack = signature_names<4>("auto nb() [V = <Host<int,int>::E::A, (E)3, Other<int[2]>::E::B, (N::E)-7>");
 static_assert(reused_stack.valid && reused_stack.count == 2 && reused_stack.names[0] == "A" && reused_stack.names[2] == "B");
+// After a known qualifier, anything but an identifier and ',' takes the full parse.
+constexpr auto repeated_qualifier = signature_names<5>("auto nb() [V = <N::E::A, N::E::B, (N::E)2, M::E::C, N::E::D>");
+static_assert(repeated_qualifier.valid && repeated_qualifier.count == 4 && repeated_qualifier.names[1] == "B" && repeated_qualifier.names[3] == "C" && repeated_qualifier.names[4] == "D");
+static_assert(!signature_names<2>("auto nb() [V = <N::E::A, N::E::B<int>>").valid);
+static_assert(!signature_names<2>("auto nb() [V = <N::E::A, N::E::1>").valid);
 static_assert(!signature_names<2>("auto nb() [V = <(E)1,>").valid);
 static_assert(!signature_names<2>("auto nb() [V = <(E)1, (E)0x>").valid);
 static_assert(!signature_names<2>("auto nb() [V = <(E)1, (E)2junk>").valid);
+// A cast is recognised by ')' at the known cast length.
+constexpr auto same_length_casts = signature_names<3>("auto nb() [V = <(A)1, (B)2, (C)::D>");
+static_assert(same_length_casts.valid && same_length_casts.count == 1 && same_length_casts.names[2] == "D");
 
 static_assert(signature_names<0>("auto nb() [V = <>").valid);
 static_assert(signature_names<0>("auto nb() [with auto ...V = {}").valid);

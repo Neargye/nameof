@@ -1029,8 +1029,7 @@ inline constexpr auto names_v = names<E>();
 template <typename E, std::size_t... K>
 constexpr auto enum_name([[maybe_unused]] E value, std::index_sequence<K...>) noexcept {
   string_view result{""};
-  static_cast<void>(((entries_v<E>[K].value == static_cast<std::underlying_type_t<E>>(value)
-                     ? (static_cast<void>(result = entries_v<E>[K].name), true) : false) || ...));
+  static_cast<void>(((entries_v<E>[K].value == static_cast<std::underlying_type_t<E>>(value) ? (static_cast<void>(result = entries_v<E>[K].name), true) : false) || ...));
   return result;
 }
 
@@ -1262,21 +1261,20 @@ struct signature_names_t {
   bool valid = false;
 };
 
-NAMEOF_DETAIL_CONSTEVAL bool same_prefix(const char* str, std::size_t size, std::size_t a, std::size_t b, std::size_t n) noexcept {
-  if (b > size || n > size - b) {
-    return false;
-  }
+// Compares a known prefix inline.
 #if defined(__clang__) || (defined(_MSC_VER) && _MSC_VER >= 1929) || (defined(__GNUC__) && __GNUC__ >= 13)
-  return __builtin_memcmp(str + a, str + b, n) == 0;
+#  define NAMEOF_DETAIL_SAME_PREFIX(a, b, n) (__builtin_memcmp(a, b, n) == 0)
 #else
+NAMEOF_DETAIL_CONSTEVAL bool same_prefix(const char* a, const char* b, std::size_t n) noexcept {
   for (std::size_t i = 0; i < n; ++i) {
-    if (str[a + i] != str[b + i]) {
+    if (a[i] != b[i]) {
       return false;
     }
   }
   return true;
-#endif
 }
+#  define NAMEOF_DETAIL_SAME_PREFIX(a, b, n) same_prefix(a, b, n)
+#endif
 
 // Split the top-level commas of GCC's `{...}`, Clang's `<...>` or MSVC's unclosed `nb<...`, e.g. `Host<int, void>::E::A, (E)2`. Any mismatch rejects the entire list.
 template <std::size_t N>
@@ -1300,7 +1298,7 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
   if (begin == 0) {
     return result;
   }
-  std::size_t item = 0, cast = 0, cast_size = 0;
+  std::size_t item = 0, cast = 0, cast_size = 0, qualifier = 0, qualifier_size = 0;
   // Each push overwrites its slot and depth resets per item, so the stack is initialised only once.
   char closes[64]{};
   while (begin < end) {
@@ -1310,8 +1308,8 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
     if (begin == end || item == N) {
       return signature_names_t<N>{};
     }
-    // Unnamed values are numeric casts (`(E)-2`, MSVC `(enum E)0x2`) that repeat their type, so a known prefix up to ')' is compared instead of parsed.
-    if (cast_size != 0 && str[begin] == '(' && same_prefix(str, end, cast, begin, cast_size)) {
+    // Unnamed values are casts to the list's one enum type (`(E)-2`, MSVC `(enum E)0x2`). A name never ends in ')' and digits, so ')' at the cast length suffices.
+    if (cast_size != 0 && str[begin] == '(' && cast_size < end - begin && str[begin + cast_size - 1] == ')') {
       auto pos = begin + cast_size;
       if (pos < end && str[pos] == '-') {
         ++pos;
@@ -1319,8 +1317,7 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
       const bool hex = end - pos >= 2 && str[pos] == '0' && str[pos + 1] == 'x';
       pos += hex ? 2u : 0u;
       const auto digits = pos;
-      while (pos < end && ((str[pos] >= '0' && str[pos] <= '9') ||
-                           (hex && ((str[pos] >= 'a' && str[pos] <= 'f') || (str[pos] >= 'A' && str[pos] <= 'F'))))) {
+      while (pos < end && ((str[pos] >= '0' && str[pos] <= '9') || (hex && ((str[pos] >= 'a' && str[pos] <= 'f') || (str[pos] >= 'A' && str[pos] <= 'F'))))) {
         ++pos;
       }
       if (pos > digits) {
@@ -1334,6 +1331,20 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
         }
       }
     }
+    // Names repeat the qualifier (`N::E::` in `N::E::A, N::E::B`), so only the identifier after it is parsed.
+    if (qualifier_size != 0 && qualifier_size < end - begin && NAMEOF_DETAIL_SAME_PREFIX(str + qualifier, str + begin, qualifier_size) && is_name_start(str[begin + qualifier_size])) {
+      auto pos = begin + qualifier_size + 1;
+      while (pos < end && ((str[pos] >= 'a' && str[pos] <= 'z') || (str[pos] >= 'A' && str[pos] <= 'Z') || (str[pos] >= '0' && str[pos] <= '9') || str[pos] == '_' || static_cast<unsigned char>(str[pos]) >= 0x80)) {
+        ++pos;
+      }
+      if (pos == end || str[pos] == ',') {
+        result.names[item] = {str + begin + qualifier_size, pos - begin - qualifier_size};
+        ++result.count;
+        ++item;
+        begin = pos + 1;
+        continue;
+      }
+    }
     // Deeper or unfamiliar compiler spellings use the per-value scanner.
     std::size_t depth = 0, i = begin, name = begin, name_end = begin;
     for (; i < end; ++i) {
@@ -1343,8 +1354,7 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
         // Consume an identifier once (backward revalidation exceeds constexpr limits on long names), with inline tests (is_name_char costs MSVC 5% time and 27% memory).
         while (i + 1 < end) {
           const auto next = str[i + 1];
-          if (!((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') ||
-                (next >= '0' && next <= '9') || next == '_' || static_cast<unsigned char>(next) >= 0x80)) {
+          if (!((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || (next >= '0' && next <= '9') || next == '_' || static_cast<unsigned char>(next) >= 0x80)) {
             break;
           }
           ++i;
@@ -1403,10 +1413,12 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
     }
     const auto previous = name > begin ? str[name - 1] : '\0';
     // A top-level '<' or ',' cannot precede the name here, unlike in enum_name_valid.
-    if (name_end == stop && name < stop && is_name_start(str[name]) &&
-        (name == begin || previous == ' ' || (previous == ':' && name - begin >= 2 && str[name - 2] == ':'))) {
+    if (name_end == stop && name < stop && is_name_start(str[name]) && (name == begin || previous == ' ' || (previous == ':' && name - begin >= 2 && str[name - 2] == ':'))) {
       result.names[item] = {str + name, stop - name};
       ++result.count;
+      // An unqualified name disables the qualifier check.
+      qualifier = begin;
+      qualifier_size = name - begin;
     } else {
       // Anything else must be a cast: remember its prefix for the check above. A prefix already retried is an unrecognised expression.
       auto number = stop;
@@ -2375,6 +2387,7 @@ struct fmt::formatter<nameof::cstring<N>> : fmt::formatter<nameof::name_view> {}
 #undef NAMEOF_DETAIL_CDECL
 #undef NAMEOF_DETAIL_TEST_FALLBACK
 #undef NAMEOF_DETAIL_SIGNATURE
+#undef NAMEOF_DETAIL_SAME_PREFIX
 #undef NAMEOF_DETAIL_CONSTEVAL
 #undef NAMEOF_DETAIL_USE_STD_REFLECTION
 #undef NAMEOF_DETAIL_HAS_BIT_CAST
