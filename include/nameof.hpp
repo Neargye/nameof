@@ -1308,7 +1308,7 @@ NAMEOF_DETAIL_CONSTEVAL auto signature_names(string_view signature) noexcept {
     if (begin == end || item == N) {
       return signature_names_t<N>{};
     }
-    // Unnamed values are casts to the list's one enum type (`(E)-2`, MSVC `(enum E)0x2`). A name never ends in ')' and digits, so ')' at the cast length suffices.
+    // Unnamed values are casts to the list's one enum type (`(E)-2`, MSVC `(enum E)0x2`), which this check relies on. A name never ends in ')' and digits, so ')' at the cast length suffices.
     if (cast_size != 0 && str[begin] == '(' && cast_size < end - begin && str[begin + cast_size - 1] == ')') {
       auto pos = begin + cast_size;
       if (pos < end && str[pos] == '-') {
@@ -2181,9 +2181,8 @@ template <typename E>
 #if defined(NAMEOF_DETAIL_USE_STD_REFLECTION)
   // The early zero return helps only reflection: the scanner is faster with its while loop.
   if (bits == U{0}) {
-    if (const auto zero_name = detail::flag_zero_name<D>(); !zero_name.empty()) {
-      name.append(zero_name.data(), zero_name.size());
-    }
+    const auto zero_name = detail::flag_zero_name<D>();
+    name.append(zero_name.data(), zero_name.size());
     return name;
   }
   do {
@@ -2206,9 +2205,8 @@ template <typename E>
   }
   // An unnamed bit returns early, so only zero leaves the name empty.
   if (name.empty()) {
-    if (const auto zero_name = detail::flag_zero_name<D>(); !zero_name.empty()) {
-      name.append(zero_name.data(), zero_name.size());
-    }
+    const auto zero_name = detail::flag_zero_name<D>();
+    name.append(zero_name.data(), zero_name.size());
   }
 #endif
   return name;

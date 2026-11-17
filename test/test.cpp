@@ -246,6 +246,9 @@ inline int custom_pointer_value = 0;
 
 template <>
 constexpr nameof::string_view nameof::customize::enum_name<CustomEnum>(CustomEnum value) noexcept {
+  if (value == CustomEnum{}) {
+    return "nothing";
+  }
   switch (value) {
     case CustomEnum::custom_name:
       return "custom enum";
@@ -1975,6 +1978,7 @@ TEST_CASE("customize") {
 #if defined(NAMEOF_ENUM_SUPPORTED)
   REQUIRE(nameof::nameof_enum(CustomEnum::custom_name) == "custom enum");
   REQUIRE(nameof::nameof_enum(CustomEnum::default_name) == "default_name");
+  REQUIRE(nameof::nameof_enum_flag(CustomEnum{}) == "nothing");
   require_string_view_contract(nameof::nameof_enum(CustomEnum::custom_name), "custom enum");
   require_cstring_contract(nameof::nameof_enum<CustomEnum::custom_name>(), "custom enum");
   require_cstring_contract(NAMEOF_ENUM_CONST(CustomEnum::custom_name), "custom enum");
